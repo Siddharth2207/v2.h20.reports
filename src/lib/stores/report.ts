@@ -1,6 +1,5 @@
-import {writable} from "svelte/store"
+import { writable } from 'svelte/store';
 import { type MultiSubgraphArgs } from '@rainlanguage/orderbook/js_api';
-
 
 export const settings = writable<any>(undefined);
 export const tokenSlug = writable<string | undefined>(undefined);

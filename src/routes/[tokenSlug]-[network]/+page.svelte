@@ -107,7 +107,7 @@
                     </th>
             
                     <th class="px-4 py-3 text-center">
-                    <select
+                    <select 
                         class="rounded bg-gray-100 p-1 text-gray-700 focus:outline-none"
                     >
                         <option value="inputAsc">Input Balance ↑</option>
@@ -137,7 +137,10 @@
                             <td class="px-4 py-3 text-center text-sm" >{ order.order.trades.length > 0 ? formatTimestamp(order.order.trades[order.order.trades.length - 1].timestamp) : 'N/A'}</td>
                             <td class="px-4 py-3 text-center text-sm" >{ order.order.trades.length > 0 ? formatTimestamp(order.order.trades[0].timestamp) : 'N/A'}</td>
                             <td class="px-4 py-3 text-center text-sm" >{order.order.trades.length}</td>
-                            <td class="px-4 py-3 text-center text-sm" >{order.order.trades.length > 0 ? order.order.trades.filter((trade: any) => (Date.now() / 1000) - trade.timestamp <= 86400).length : 'N/A'}</td>
+                            <td class="px-4 py-3 text-center text-sm" >{
+                                order.order.trades.length > 0 ? order.order.trades.filter((trade: any) => (Date.now() / 1000) - trade.timestamp <= 86400).length : 'N/A'
+                            }
+                            </td>
                             <td class="px-4 py-3 text-center text-sm">-</td>
                             <td class="px-4 py-3 text-center text-sm">-</td>
                             <td class="px-4 py-3 text-center text-sm">-</td>
