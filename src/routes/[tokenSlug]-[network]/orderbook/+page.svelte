@@ -1,11 +1,9 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { type MultiSubgraphArgs } from '@rainlanguage/orderbook/js_api';
 
-	const { settings, tokenSlug, network, activeSubgraphs } = $page.data.stores;
+	const { settings, tokenSlug, network } = $page.data.stores;
 	let tokenSlugValue: string | undefined = $tokenSlug;
 	let networkValue: string | undefined = $network;
-	let activeSubgraphsValue: MultiSubgraphArgs[] | undefined = $activeSubgraphs;
 </script>
 
 <h1>Orderbook</h1>

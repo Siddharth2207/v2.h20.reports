@@ -1,4 +1,3 @@
-import { writable, get } from 'svelte/store';
 import { tokenSlug, network, activeSubgraphs, settings } from '$lib/stores/report';
 
 export const load = async ({ fetch, params }) => {

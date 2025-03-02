@@ -3,7 +3,6 @@ import { get } from 'svelte/store';
 import { tokenConfig } from '$lib/constants';
 
 import { getOrders, getOrderTradesList } from '@rainlanguage/orderbook/js_api';
-import { type MultiSubgraphArgs } from '@rainlanguage/orderbook/js_api';
 
 export const getTokenOrders = async () => {
 	const tokenSlugValue = get(tokenSlug);

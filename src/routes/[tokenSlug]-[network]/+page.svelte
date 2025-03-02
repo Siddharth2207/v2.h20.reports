@@ -2,7 +2,7 @@
     import "../../app.css";
     import { page } from '$app/stores';
     import { getTokenOrders, formatTimestamp } from '$lib/orders';
-    import { type MultiSubgraphArgs } from '@rainlanguage/orderbook/js_api';
+    import type { MultiSubgraphArgs } from '@rainlanguage/orderbook/js_api';
 
     const { settings, activeSubgraphs, tokenSlug, network } = $page.data.stores;
     let activeSubgraphsValue: MultiSubgraphArgs[] = $activeSubgraphs;
@@ -12,6 +12,10 @@
     let orders: any = null;
     let loading = true;
     let errorMessage: string = '';
+
+    interface Trade {
+        timestamp: number;
+    }
 
     $: {
         (async () => {
@@ -137,7 +141,13 @@
                             <td class="px-4 py-3 text-center text-sm" >{ order.order.trades.length > 0 ? formatTimestamp(order.order.trades[order.order.trades.length - 1].timestamp) : 'N/A'}</td>
                             <td class="px-4 py-3 text-center text-sm" >{ order.order.trades.length > 0 ? formatTimestamp(order.order.trades[0].timestamp) : 'N/A'}</td>
                             <td class="px-4 py-3 text-center text-sm" >{order.order.trades.length}</td>
-                            <td class="px-4 py-3 text-center text-sm" >{order.order.trades.length > 0 ? order.order.trades.filter(trade => (Date.now() / 1000) - trade.timestamp <= 86400).length : 'N/A'}</td>
+                            <td class="px-4 py-3 text-center text-sm">
+                                {order.order.trades.length > 0 ? 
+                                    order.order.trades.filter(trade => 
+                                        (Date.now() / 1000) - trade.timestamp <= 86400
+                                    ).length : 'N/A'
+                                }
+                            </td>
                             <td class="px-4 py-3 text-center text-sm">-</td>
                             <td class="px-4 py-3 text-center text-sm">-</td>
                             <td class="px-4 py-3 text-center text-sm">-</td>
