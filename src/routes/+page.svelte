@@ -1,9 +1,37 @@
 <script lang="ts">
 	import '../app.css';
 	import { page } from '$app/stores';
+	import { Button } from 'flowbite-svelte';
+	import { goto } from '$app/navigation';
+
 	console.log($page.url.pathname);
 </script>
 
-<div class="flex h-screen flex-col items-center justify-center space-y-4 bg-gray-100">
-	<h1 class="font-instrument-serif text-5xl font-bold text-primary-700">H20 Reports</h1>
+<div class="mx-auto flex min-h-screen w-full flex-col">
+
+	{#if $page.url.pathname === '/'}
+		<div
+			class="flex w-full flex-row justify-center border-b-2 border-gray-300 bg-gray-200 px-4 dark:border-gray-600 dark:bg-gray-700"
+		>
+			<div class="my-24 flex w-full max-w-4xl flex-col">
+				<h1
+					class="light:text-gray-900 text-left font-instrument-serif text-7xl font-light leading-tight dark:text-white lg:text-6xl"
+				>
+					H20 Reports
+					<br />
+					Get summaries of your orders
+				</h1>
+				<div class="mt-8 flex justify-start gap-x-4">
+					<a href="https://v2.raindex.finance">
+						<button
+							class="rounded bg-blue-700 px-4 py-2 text-white hover:bg-blue-800"
+							on:click={() => goto('https://v2.raindex.finance')}>Try Raindex</button
+						>
+					</a>
+				</div>
+			</div>
+		</div>
+	{:else}
+		<slot />
+	{/if}
 </div>

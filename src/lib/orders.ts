@@ -20,7 +20,8 @@ export const getTokenOrders = async () => {
 		get(activeSubgraphs),
 		{
 			owners: [],
-			active: true
+			active: undefined,
+			orderHash: undefined
 		},
 		{ page: 1, pageSize: 1000 }
 	);
@@ -80,3 +81,17 @@ export function formatTimestamp(timestamp: number) {
 
 	return `${date} ${time}`;
 }
+
+export const formatBalance = (balance: number) => {
+  if (!balance || isNaN(balance)) return '0.00';
+  
+  const absValue = Math.abs(balance);
+  const sign = balance < 0 ? '-' : '';
+  
+  const formatter = new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    maximumFractionDigits: 2
+  });
+
+  return sign + formatter.format(absValue);
+};
