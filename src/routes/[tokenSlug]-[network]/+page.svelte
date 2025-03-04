@@ -1,23 +1,26 @@
 <script lang="ts">
 	import '../../app.css';
 	import { page } from '$app/stores';
-	import { getTokenOrders, formatTimestamp, formatBalance } from '$lib/orders';
+	import { getTokenOrders } from '$lib/orders';
 	import type { MultiSubgraphArgs } from '@rainlanguage/orderbook/js_api';
+	import TradesTables from '$lib/components/TradesTables.svelte';
+	import BalancesTable from '$lib/components/BalancesTable.svelte';
+	import VaultsTable from '$lib/components/VaultsTable.svelte';
+	import ProfitLossTable from '$lib/components/ProfitLossTable.svelte';
 	import { ethers } from 'ethers';
 	import { onMount } from 'svelte';
-	const { settings, activeSubgraphs, tokenSlug, network, orderActiveState, orderHashState } =
+	const { activeSubgraphs, tokenSlug, network, orderActiveState, orderHashState } =
 		$page.data.stores;
 	let activeSubgraphsValue: MultiSubgraphArgs[] = $activeSubgraphs;
-	let settingsValue: any = $settings;
 	let tokenSlugValue: string = $tokenSlug;
 	let networkValue: string = $network;
 	let orderActiveStateValue: boolean | undefined = $orderActiveState;
 	let orderHashStateValue: string | undefined = $orderHashState;
 	let orders: any[] = [];
-	let volumes: any = null;
 	let loading = true;
 	let errorMessage: string = '';
 	let isStatusDropdownOpen = false;
+	let activeTab = 'Trades';
 
 	async function fetchOrders() {
 		if (!tokenSlugValue || !networkValue || !activeSubgraphsValue) return;
@@ -30,8 +33,9 @@
 				order.order['totalVolume24h'] = calculateTradeVolume(
 					order.order.trades.filter((trade: any) => Date.now() / 1000 - trade.timestamp <= 86400)
 				);
+				calculateBalanceChanges(order);
+				calculateTotalDepositsAndWithdrawals(order);
 			}
-			console.log('Orders fetched:', JSON.stringify(orders));
 		} catch (error) {
 			console.error('Failed to fetch orders:', error);
 			errorMessage = 'Failed to fetch orders';
@@ -94,7 +98,101 @@
 		}
 	}
 
-	$: console.log(JSON.stringify(volumes));
+	function calculateBalanceChanges(order: any) {
+		const trades24h = order.order.trades.filter(
+			(trade: any) => Date.now() / 1000 - trade.timestamp <= 86400
+		);
+		function calculateTokenBalanceChanges(item: any, isInput: boolean) {
+			if (trades24h.length === 0) {
+				item['balanceChange24h'] = 0;
+				item['percentageChange24h'] = 0;
+				return;
+			}
+			const oldestTrade = trades24h[trades24h.length - 1];
+			const latestTrade = trades24h[0];
+			const getBalance = (trade: any) => {
+				const primaryChange = isInput
+					? trade.inputVaultBalanceChange
+					: trade.outputVaultBalanceChange;
+				const secondaryChange = isInput
+					? trade.outputVaultBalanceChange
+					: trade.inputVaultBalanceChange;
+
+				return item.token.address === primaryChange?.vault.token.address
+					? primaryChange?.newVaultBalance
+					: secondaryChange?.newVaultBalance;
+			};
+
+			const oldBalance = parseFloat(getBalance(oldestTrade) || '0');
+			const newBalance = parseFloat(getBalance(latestTrade) || '0');
+			const balanceChange = newBalance - oldBalance;
+			const percentageChange = oldBalance > 0 ? (balanceChange / oldBalance) * 100 : 0;
+
+			const balanceChangeBigNum = ethers.BigNumber.from(
+				balanceChange.toLocaleString('fullwide', { useGrouping: false })
+			);
+			const formattedBalanceChange = parseFloat(
+				ethers.utils.formatUnits(balanceChangeBigNum, item.token.decimals).toString()
+			).toFixed(2);
+
+			item['balanceChange24h'] = formattedBalanceChange;
+			item['percentageChange24h'] = percentageChange;
+		}
+		order.order.inputs.forEach((input: any) => calculateTokenBalanceChanges(input, true));
+		order.order.outputs.forEach((output: any) => calculateTokenBalanceChanges(output, false));
+	}
+
+	function calculateTotalDepositsAndWithdrawals(order: any) {
+		order.order['orderDuration'] =  (Date.now() / 1000) - order.order.timestampAdded;
+		for (const input of order.order.inputs) {
+			input['totalDeposits'] = input.balanceChanges
+				.filter((change: any) => change.__typename === 'deposit')
+				.reduce(
+					(sum: any, change: any) =>
+						sum +
+						parseFloat(ethers.utils.formatUnits(change.data.amount, input.token.decimals).toString()),
+					0
+				);
+			input['totalWithdrawals'] = input.balanceChanges
+				.filter((change: any) => change.__typename === 'withdrawal')
+				.reduce(
+					(sum: any, change: any) => 
+						sum +
+						parseFloat(ethers.utils.formatUnits(change.data.amount, input.token.decimals).toString()),
+					0
+				);
+			input['currentVaultInputs'] = input.totalWithdrawals + parseFloat(ethers.utils.formatUnits(input.balance, input.token.decimals).toString());
+			input['curerentVaultDifferential'] = input.currentVaultInputs - input.totalDeposits;
+			input['curerentVaultDifferentialPercentage'] = input.totalDeposits > 0 ? (input.curerentVaultDifferential / input.totalDeposits) * 100 : 0;
+			input['currentVaultApy'] = (input.curerentVaultDifferential * 31536000) / order.order.orderDuration;
+			input['currentVaultApyPercentage'] = (input.curerentVaultDifferentialPercentage * 31536000) / order.order.orderDuration;
+
+
+		}
+		for(const output of order.order.outputs) {
+			output['totalDeposits'] = output.balanceChanges
+				.filter((change: any) => change.__typename === 'deposit')
+				.reduce(
+					(sum: any, change: any) =>
+						sum +
+						parseFloat(ethers.utils.formatUnits(change.data.amount, output.token.decimals).toString()),
+					0
+				);
+			output['totalWithdrawals'] = output.balanceChanges
+				.filter((change: any) => change.__typename === 'withdrawal')
+				.reduce(
+					(sum: any, change: any) =>
+						sum +
+						parseFloat(ethers.utils.formatUnits(change.data.amount, output.token.decimals).toString()),
+					0
+				);
+			output['currentVaultInputs'] = output.totalWithdrawals + parseFloat(ethers.utils.formatUnits(output.balance, output.token.decimals).toString());
+			output['curerentVaultDifferential'] = output.currentVaultInputs - output.totalDeposits;
+			output['curerentVaultDifferentialPercentage'] = output.totalDeposits > 0 ? (output.curerentVaultDifferential / output.totalDeposits) * 100 : 0;
+			output['currentVaultApy'] = (output.curerentVaultDifferential * 31536000) / order.order.orderDuration;
+			output['currentVaultApyPercentage'] = (output.curerentVaultDifferentialPercentage * 31536000) / order.order.orderDuration;
+		}
+	}
 
 	function handleClickOutside(event: MouseEvent) {
 		const target = event.target as HTMLElement;
@@ -128,9 +226,9 @@
 		</h1>
 		<div class="flex gap-4">
 			<div class="flex gap-4">
-                <div class="p-2 text-gray-600">
-                    Total Orders: {orders.length}
-                </div>
+				<div class="p-2 text-gray-600">
+					Total Orders: {orders.length}
+				</div>
 				<div class="relative">
 					<button
 						class="flex min-w-[120px] items-center justify-between rounded bg-gray-100 p-2 text-gray-700 focus:outline-none"
@@ -158,9 +256,9 @@
 										name="orderStatus"
 										checked={orderActiveStateValue === true}
 										on:change={() => {
-                                            orderActiveStateValue = true
-                                            orderActiveState.set(true)
-                                        }}
+											orderActiveStateValue = true;
+											orderActiveState.set(true);
+										}}
 										class="mr-1"
 									/>
 									Active
@@ -171,9 +269,9 @@
 										name="orderStatus"
 										checked={orderActiveStateValue === false}
 										on:change={() => {
-                                            orderActiveStateValue = false
-                                            orderActiveState.set(false)
-                                        }}
+											orderActiveStateValue = false;
+											orderActiveState.set(false);
+										}}
 										class="mr-1"
 									/>
 									Inactive
@@ -184,9 +282,9 @@
 										name="orderStatus"
 										checked={orderActiveStateValue === undefined}
 										on:change={() => {
-                                            orderActiveStateValue = undefined
-                                            orderActiveState.set(undefined)
-                                        }}
+											orderActiveStateValue = undefined;
+											orderActiveState.set(undefined);
+										}}
 										class="mr-1"
 									/>
 									All
@@ -205,165 +303,28 @@
 			</div>
 		</div>
 	</div>
+	<div class="flex rounded-t-lg border-b border-gray-300 bg-gray-100">
+		{#each ['Trades', 'Balances', 'Vaults', 'P&L'] as tab}
+			<button
+				class="border-b-2 px-6 py-3 text-sm font-medium transition-all {activeTab === tab
+					? 'border-indigo-500 bg-white font-semibold text-indigo-600'
+					: 'border-transparent hover:border-gray-300 hover:text-gray-600'}"
+				on:click={() => (activeTab = tab)}
+			>
+				{tab}
+			</button>
+		{/each}
+	</div>
 	<div class="max-w-screen-3xl mx-auto rounded-lg p-8">
-		<div class="overflow-hidden rounded-lg bg-white shadow-lg">
-			<table class="w-full table-auto border-collapse border border-gray-200">
-				<thead class="bg-gray-50 text-sm font-semibold text-gray-800">
-					<th class="px-4 py-3 text-center">
-						<p class="rounded bg-gray-100 p-1 text-gray-700 focus:outline-none">Network</p>
-					</th>
-					<th class="px-4 py-3 text-center">
-						<p class="rounded bg-gray-100 p-1 text-gray-700 focus:outline-none">Order Active</p>
-					</th>
-					<th class="px-4 py-3 text-center">
-						<select class="rounded bg-gray-100 p-1 text-gray-700 focus:outline-none">
-							<option value="lastTradeAsc">Last Trade ↑</option>
-							<option value="lastTradeDesc">Last Trade ↓</option>
-						</select>
-					</th>
-
-					<th class="px-4 py-3 text-center">
-						<select class="rounded bg-gray-100 p-1 text-gray-700 focus:outline-none">
-							<option value="firstTradeAsc">First Trade ↑</option>
-							<option value="firstTradeDesc">First Trade ↓</option>
-						</select>
-					</th>
-
-					<th class="px-4 py-3 text-center">
-						<select class="rounded bg-gray-100 p-1 text-gray-700 focus:outline-none">
-							<option value="totalTradesAsc">Total Trades ↑</option>
-							<option value="totalTradesDesc">Total Trades ↓</option>
-						</select>
-					</th>
-
-					<th class="px-4 py-3 text-center">
-						<select class="rounded bg-gray-100 p-1 text-gray-700 focus:outline-none">
-							<option value="trades24hAsc">24h Trades ↑</option>
-							<option value="trades24hDesc">24h Trades ↓</option>
-						</select>
-					</th>
-
-					<th class="px-4 py-3 text-center">
-						<select class="rounded bg-gray-100 p-1 text-gray-700 focus:outline-none">
-							<option value="volTotalAsc">Total Volume ↑</option>
-							<option value="volTotalDesc">Total Volume ↓</option>
-						</select>
-					</th>
-
-					<th class="px-4 py-3 text-center">
-						<select class="rounded bg-gray-100 p-1 text-gray-700 focus:outline-none">
-							<option value="vol24hAsc">24h Volume ↑</option>
-							<option value="vol24hDesc">24h Volume ↓</option>
-						</select>
-					</th>
-
-					<th class="px-4 py-3 text-center">
-						<select class="rounded bg-gray-100 p-1 text-gray-700 focus:outline-none">
-							<option value="inputAsc">Input Balance ↑</option>
-							<option value="inputDesc">Input Balance ↓</option>
-						</select>
-					</th>
-
-					<th class="px-4 py-3 text-center">
-						<select class="rounded bg-gray-100 p-1 text-gray-700 focus:outline-none">
-							<option value="outputAsc">Output Balance ↑</option>
-							<option value="outputDesc">Output Balance ↓</option>
-						</select>
-					</th>
-
-					<th class="px-4 py-3 text-center">
-						<p class="rounded bg-gray-100 p-1 text-gray-700 focus:outline-none">Order Link</p>
-					</th>
-				</thead>
-				<tbody>
-					{#each filteredOrders as order (order.order.orderHash)}
-						<tr class="border-t border-gray-300 text-gray-700">
-							<td class="px-4 py-3 text-center text-sm">{networkValue}</td>
-							<td class="px-4 py-3 text-center text-sm">
-								<span
-									class={`rounded px-2 py-1 ${order.order.active ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
-								>
-									{order.order.active ? 'Active' : 'Inactive'}
-								</span>
-							</td>
-
-							<td class="px-4 py-3 text-center text-sm"
-								>{order.order.trades.length > 0
-									? formatTimestamp(order.order.trades[order.order.trades.length - 1].timestamp)
-									: 'N/A'}</td
-							>
-							<td class="px-4 py-3 text-center text-sm"
-								>{order.order.trades.length > 0
-									? formatTimestamp(order.order.trades[0].timestamp)
-									: 'N/A'}</td
-							>
-							<td class="px-4 py-3 text-center text-sm">{order.order.trades.length}</td>
-							<td class="px-4 py-3 text-center text-sm">
-								{order.order.trades.length > 0
-									? order.order.trades.filter(
-											(trade) => Date.now() / 1000 - trade.timestamp <= 86400
-										).length
-									: 'N/A'}
-							</td>
-							<td class="px-4 py-3 text-center text-sm">
-								{#each order.order.totalVolume as token (token)}
-									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">{token.token}</span>
-										<span class="text-gray-800">{formatBalance(token.totalVolume)}</span>
-									</div>
-								{/each}
-							</td>
-							<td class="px-4 py-3 text-center text-sm">
-								{#each order.order.totalVolume24h as token (token)}
-									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">{token.token}</span>
-										<span class="text-gray-800">{formatBalance(token.totalVolume)}</span>
-									</div>
-								{/each}
-							</td>
-							<td class="px-4 py-3 text-center text-sm">
-								{#each order.order.inputs as input (input.id)}
-									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">{input.token.symbol}</span>
-										<span class="text-gray-800"
-											>{formatBalance(
-												parseFloat(
-													ethers.utils.formatUnits(input.balance, input.token.decimals).toString()
-												)
-											)}</span
-										>
-									</div>
-								{/each}
-							</td>
-							<td class="px-4 py-3 text-center text-sm">
-								{#each order.order.outputs as output (output.id)}
-									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">{output.token.symbol}</span>
-										<span class="text-gray-800"
-											>{formatBalance(
-												parseFloat(
-													ethers.utils.formatUnits(output.balance, output.token.decimals).toString()
-												)
-											)}</span
-										>
-									</div>
-								{/each}
-							</td>
-							<td class="px-4 py-3 text-center text-sm">
-								<a
-									href={`https://v2.raindex.finance/orders/${networkValue}-${order.order.orderHash}`}
-									target="_blank"
-								>
-									<span class="text-blue-500 hover:text-blue-700"
-										>{order.order.orderHash.slice(0, 6)}...{order.order.orderHash.slice(-4)}</span
-									>
-								</a>
-							</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</div>
+		{#if activeTab === 'Trades'}
+			<TradesTables {filteredOrders} {networkValue} />
+		{:else if activeTab === 'Balances'}
+			<BalancesTable {filteredOrders} {networkValue} />
+		{:else if activeTab === 'Vaults'}
+			<VaultsTable {filteredOrders} {networkValue} />
+		{:else if activeTab === 'P&L'}
+			<ProfitLossTable {filteredOrders} {networkValue} />
+		{/if}
 	</div>
 {:else}
 	<p>No orders available</p>
