@@ -6,7 +6,7 @@
 	export let networkValue: string;
 </script>
 
-<div class="overflow-hidden rounded-lg bg-white shadow-lg">
+<div class="overflow-x-auto w-full rounded-lg bg-white shadow-lg">
 	<table class="w-full table-auto border-collapse border border-gray-200">
 		<thead class="bg-gray-50 text-sm font-semibold text-gray-800">
 			<th class="px-4 py-3 text-center">

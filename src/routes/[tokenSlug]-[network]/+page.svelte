@@ -220,7 +220,7 @@
 		<p class="mt-3 text-lg font-medium text-gray-600">Loading...</p>
 	</div>
 {:else if orders}
-	<div class="flex items-center justify-between border-b border-gray-300 p-6">
+	<div class="flex items-center justify-between border-b border-gray-400">
 		<h1 class="text-2xl font-bold text-gray-800">
 			{tokenSlugValue.toUpperCase()} Order List
 		</h1>

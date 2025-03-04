@@ -1,12 +1,14 @@
 <script lang="ts">
 	import '../app.css';
+    import Sidebar from '$lib/components/Sidebar.svelte';
+
 </script>
-<div class="flex h-16 w-full items-center bg-gray-100 dark:bg-gray-800">
-    <div class="flex w-full items-center justify-between px-4">
-        <div class="flex h-full flex-row items-center gap-x-4">
-            <img src="/h20-logo.png" alt="H20 logo" class="h-10" />
-        </div>
-    </div>
+<div
+    class="flex min-h-screen w-full justify-start bg-white dark:bg-gray-900 dark:text-gray-400"
+>
+    <Sidebar />
+    <main class="mx-auto h-full w-full grow overflow-x-auto px-4 pt-14 lg:ml-64 lg:p-8">
+        <slot />
+    </main>
 </div>
-<slot />
 
