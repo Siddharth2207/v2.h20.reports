@@ -12,34 +12,29 @@
 </script>
 
 <Sidebar
-		activeUrl={$page.url.pathname}
-		asideClass="w-64 z-10 fixed min-h-screen  shadow-lg"
-		data-testid="sidebar"
+  activeUrl={$page.url.pathname}
+  asideClass="w-64 z-10 fixed min-h-screen bg-gray-100 shadow-lg"
+  data-testid="sidebar"
 >
-	<SidebarWrapper divClass="py-11 px-3 bg-gray-100 dark:bg-gray-800 min-h-screen">
-		<SidebarGroup>
-			<SidebarBrand 
-            site={{
-                name: 'H20 Liquidity',
-                href: '/',
-                img: '/h20-logo.png',
-            }}
-            
-            imgClass="w-16 h-16 object-contain rounded-lg p-2"
-            >
-			</SidebarBrand>
-		</SidebarGroup>
-        <SidebarGroup border />
-			
+  <SidebarWrapper divClass="py-6 px-4 bg-gray-100 dark:bg-gray-800 min-h-screen">
+    
+    <SidebarGroup class="flex items-center space-x-3 pb-4 border-b">
+      <img src="/h20-logo.png" alt="H20 Liquidity" class="w-14 h-14 object-contain rounded-lg p-2">
+      <span class="text-xl font-bold text-gray-900 dark:text-white">H20 Liquidity</span>
+    </SidebarGroup>
 
-		<SidebarGroup>
-			<SidebarItem label="Order List" href="/">
-                <svelte:fragment slot="icon">
-                    <ClipboardListSolid class="w-6 h-6 text-gray-700 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" />
-                </svelte:fragment>
-			</SidebarItem>
-		</SidebarGroup>
+    <SidebarGroup border />
 
-		
-	</SidebarWrapper>
+    <SidebarGroup class="gap-4 p-2">
+      <SidebarItem label="" href="/" >
+        <svelte:fragment slot="icon">
+			<ClipboardListSolid class="h-5 w-5" />
+			<span class="text-lg px-3 text-gray-600 dark:text-white hover:text-indigo-600">Order List</span>
+        </svelte:fragment>
+      </SidebarItem>
+
+    </SidebarGroup>
+
+  </SidebarWrapper>
 </Sidebar>
+
