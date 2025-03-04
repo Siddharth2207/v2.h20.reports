@@ -3,7 +3,7 @@
 	import { page } from '$app/stores';
 	import { Button } from 'flowbite-svelte';
 	import { goto } from '$app/navigation';
-
+	
 	console.log($page.url.pathname);
 </script>
 
