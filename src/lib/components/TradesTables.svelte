@@ -112,6 +112,18 @@
 									<span class="text-gray-800">{formatBalance(token.totalVolume)}</span>
 								</div>
 							{/each}
+							<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+								<span class="font-semibold">Total</span>
+								<span class="text-gray-800">
+									${
+										formatBalance(
+											order.order.totalVolume.reduce(
+												(acc, token) => 
+												acc + (token.totalVolume * order.order.tokenPriceUsdMap.get(token.tokenAddress)), 0)
+										)
+									}
+								</span>
+							</div>
 						{:else}
 							-
 						{/if}
@@ -124,6 +136,18 @@
 									<span class="text-gray-800">{formatBalance(token.totalVolume)}</span>
 								</div>
 							{/each}
+							<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+								<span class="font-semibold">Total</span>
+								<span class="text-gray-800">
+									${
+										formatBalance(
+											order.order.totalVolume24h.reduce(
+												(acc, token) => 
+												acc + (token.totalVolume * order.order.tokenPriceUsdMap.get(token.tokenAddress)), 0)
+										)
+									}
+								</span>
+							</div>
 						{:else}
 							-
 						{/if}
@@ -141,6 +165,17 @@
 								>
 							</div>
 						{/each}
+						<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+							<span class="font-semibold">Total</span>
+							<span class="text-gray-800">
+								${formatBalance(
+									order.order.inputs.reduce(
+										(acc, input) => 
+										acc + (parseFloat(ethers.utils.formatUnits(input.balance, input.token.decimals).toString()) * order.order.tokenPriceUsdMap.get(input.token.address)), 0)
+									)
+								}
+							</span>
+						</div>
 					</td>
 					<td class="px-4 py-3 text-center text-sm">
 						{#each order.order.outputs as output (output.id)}
@@ -155,6 +190,17 @@
 								>
 							</div>
 						{/each}
+						<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+							<span class="font-semibold">Total</span>
+							<span class="text-gray-800">
+								${formatBalance(
+									order.order.outputs.reduce(
+										(acc, output) => 
+										acc + (parseFloat(ethers.utils.formatUnits(output.balance, output.token.decimals).toString()) * order.order.tokenPriceUsdMap.get(output.token.address)), 0)
+									)
+								}
+							</span>
+						</div>
 					</td>
 					<td class="px-4 py-3 text-center text-sm">
 						<a

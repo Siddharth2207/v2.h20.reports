@@ -7,6 +7,7 @@
 	import BalancesTable from '$lib/components/BalancesTable.svelte';
 	import VaultsTable from '$lib/components/VaultsTable.svelte';
 	import ProfitLossTable from '$lib/components/ProfitLossTable.svelte';
+	import { getTokenPriceUsd } from '$lib/price';
 	import { ethers } from 'ethers';
 	import { onMount } from 'svelte';
 	const { activeSubgraphs, tokenSlug, network, orderActiveState, orderHashState } =
@@ -28,13 +29,14 @@
 		try {
 			let fetchedOrders = await getTokenOrders();
 			orders = fetchedOrders ?? [];
+			await getTokenPriceUsdMap(orders);
 			for (const order of orders) {
 				order.order['totalVolume'] = calculateTradeVolume(order.order.trades);
 				order.order['totalVolume24h'] = calculateTradeVolume(
 					order.order.trades.filter((trade: any) => Date.now() / 1000 - trade.timestamp <= 86400)
 				);
 				calculateBalanceChanges(order);
-				calculateTotalDepositsAndWithdrawals(order);
+				calculateTotalDepositsAndWithdrawals(order);	
 			}
 		} catch (error) {
 			console.error('Failed to fetch orders:', error);
@@ -166,8 +168,6 @@
 			input['curerentVaultDifferentialPercentage'] = input.totalDeposits > 0 ? (input.curerentVaultDifferential / input.totalDeposits) * 100 : 0;
 			input['currentVaultApy'] = (input.curerentVaultDifferential * 31536000) / order.order.orderDuration;
 			input['currentVaultApyPercentage'] = (input.curerentVaultDifferentialPercentage * 31536000) / order.order.orderDuration;
-
-
 		}
 		for(const output of order.order.outputs) {
 			output['totalDeposits'] = output.balanceChanges
@@ -191,6 +191,43 @@
 			output['curerentVaultDifferentialPercentage'] = output.totalDeposits > 0 ? (output.curerentVaultDifferential / output.totalDeposits) * 100 : 0;
 			output['currentVaultApy'] = (output.curerentVaultDifferential * 31536000) / order.order.orderDuration;
 			output['currentVaultApyPercentage'] = (output.curerentVaultDifferentialPercentage * 31536000) / order.order.orderDuration;
+		}
+		for(const order of orders) {
+			const currentOrder = order.order;
+			const currentOrderTotalDepositsUsd = currentOrder.outputs.reduce((acc: any, output: any) => acc + output.totalDeposits * currentOrder.tokenPriceUsdMap.get(output.token.address), 0);
+			const currentOrderTotalInputsUsd = currentOrder.inputs.reduce((acc: any, input: any) => acc + input.currentVaultInputs * currentOrder.tokenPriceUsdMap.get(input.token.address), 0);
+			currentOrder['roi'] = currentOrderTotalInputsUsd - currentOrderTotalDepositsUsd;
+			currentOrder['roiPercentage'] = currentOrderTotalInputsUsd > 0 ? (currentOrder['roi'] / currentOrderTotalDepositsUsd) * 100 : 0;
+			currentOrder['apy'] = currentOrder['roi'] * 31536000 / currentOrder.orderDuration;
+			currentOrder['apyPercentage'] = currentOrder['roiPercentage'] * 31536000 / currentOrder.orderDuration;
+		}
+	}
+
+	async function getTokenPriceUsdMap(orders: any[]) {
+		try {
+			const tokenPriceUsdMap = new Map<string, any>();
+			for (const order of orders) {
+				for (const input of order.order.inputs) {
+					if (tokenPriceUsdMap.has(input.token.address)) {
+						continue;
+					}
+					const tokenPrice = await getTokenPriceUsd(input.token.address, input.token.symbol);
+					tokenPriceUsdMap.set(input.token.address, tokenPrice.currentPrice);
+				}
+				for (const output of order.order.outputs) {
+					if (tokenPriceUsdMap.has(output.token.address)) {
+						continue;
+					}
+					const tokenPrice = await getTokenPriceUsd(output.token.address, output.token.symbol);
+					tokenPriceUsdMap.set(output.token.address, tokenPrice.currentPrice);
+				}
+				order.order['tokenPriceUsdMap'] = tokenPriceUsdMap;
+			}
+			for (const order of orders) {
+				order.order['tokenPriceUsdMap'] = tokenPriceUsdMap;
+			}
+		} catch (error) {
+			errorMessage = 'Failed to get token price usd map';
 		}
 	}
 

@@ -109,6 +109,18 @@
 									<span class="text-gray-800">{formatBalance(token.totalVolume)}</span>
 								</div>
 							{/each}
+							<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+								<span class="font-semibold">Total</span>
+								<span class="text-gray-800">
+									${
+										formatBalance(
+											order.order.totalVolume.reduce(
+												(acc, token) => 
+												acc + (token.totalVolume * order.order.tokenPriceUsdMap.get(token.tokenAddress)), 0)
+										)
+									}
+								</span>
+							</div>
 						{:else}
 							-
 						{/if}
@@ -120,6 +132,15 @@
 								<span class="text-gray-800">{formatBalance(output.totalDeposits)}</span>
 							</div>
 						{/each}
+						<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+							<span class="font-semibold">Total</span>
+							<span class="text-gray-800">
+								${
+									formatBalance(
+										order.order.outputs.reduce((acc, output) => acc + output.totalDeposits * order.order.tokenPriceUsdMap.get(output.token.address), 0)
+									)
+								}
+						</div>
 					</td>
 
                     <td class="px-4 py-3 text-center text-sm">
@@ -129,6 +150,12 @@
 								<span class="text-gray-800">{formatBalance(input.currentVaultInputs)}</span>
 							</div>
 						{/each}
+						<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+							<span class="font-semibold">Total</span>
+							<span class="text-gray-800">
+								${formatBalance(order.order.inputs.reduce((acc, input) => acc + input.currentVaultInputs * order.order.tokenPriceUsdMap.get(input.token.address), 0))}
+							</span>
+						</div>
 					</td>
 
                     <td class="px-4 py-3 text-center text-sm">
@@ -138,6 +165,12 @@
 								<span class="text-gray-800">{formatBalance(input.curerentVaultDifferential)}</span>
 							</div>
 						{/each}
+						<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+							<span class="font-semibold">Total</span>
+							<span class="text-gray-800">
+								${formatBalance(order.order.roi)}
+							</span>
+						</div>
 					</td>
 
                     <td class="px-4 py-3 text-center text-sm">
@@ -147,6 +180,12 @@
 								<span class="font-medium {input.curerentVaultDifferentialPercentage > 0 ? 'text-green-600' : 'text-red-600'}">{formatBalance(input.curerentVaultDifferentialPercentage)}%</span>
 							</div>
 						{/each}
+						<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+							<span class="font-semibold">Total (USD)</span>
+							<span class="text-gray-800">
+								{formatBalance(order.order.roiPercentage)}%
+							</span>
+						</div>
 					</td>
 
 					<td class="px-4 py-3 text-center text-sm">
