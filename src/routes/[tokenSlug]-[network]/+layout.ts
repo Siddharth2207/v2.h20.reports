@@ -1,5 +1,4 @@
 import { tokenSlug, network, activeSubgraphs, settings } from '$lib/stores/report';
-
 export const load = async ({ fetch, params }) => {
 	const response = await fetch(
 		'https://raw.githubusercontent.com/rainlanguage/rain.strategies/refs/heads/main/settings.json'
