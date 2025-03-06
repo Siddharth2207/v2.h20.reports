@@ -1,4 +1,4 @@
-export const DEFAULT_ORDERS_PAGE_SIZE = 2;
+export const DEFAULT_ORDERS_PAGE_SIZE = 10;
 export const DEFAULT_VAULTS_PAGE_SIZE = 1000;
 export const DEFAULT_TRADES_PAGE_SIZE = 1000;
 
