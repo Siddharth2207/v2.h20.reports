@@ -9,6 +9,7 @@
 		TableHead
 	} from 'flowbite-svelte';
 	import { formatTimestamp, formatBalance } from '$lib/orders';
+	import { type SgTrade } from '@rainlanguage/orderbook/js_api';
 	import { ethers } from 'ethers';
 
 	export let networkValue: string;

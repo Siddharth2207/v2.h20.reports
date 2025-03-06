@@ -2,7 +2,7 @@
 	import '../../app.css';
 	import { page } from '$app/stores';
 	import type { MultiSubgraphArgs } from '@rainlanguage/orderbook/js_api';
-	import OrderListTable from '$lib/components/OrderListTable.svelte';
+	import OrderListTable from "$lib/components/OrderListTable.svelte"
 	import { getTokenPriceUsd } from '$lib/price';
 	import { ethers } from 'ethers';
 	import { orderActiveState } from '$lib/stores/report';
@@ -391,7 +391,7 @@
 	<h1 class="text-2xl font-bold text-gray-800">
 		{tokenSlugValue.toUpperCase()} Order List
 	</h1>
-	<div class="flex gap-3 ">
+	<div class="flex gap-3">
 		<div class="p-2 text-gray-600">
 			Total Orders: {orders.length}
 		</div>

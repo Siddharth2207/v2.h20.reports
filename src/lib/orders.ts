@@ -83,15 +83,15 @@ export function formatTimestamp(timestamp: number) {
 }
 
 export const formatBalance = (balance: number) => {
-  if (!balance || isNaN(balance)) return '0.00';
-  
-  const absValue = Math.abs(balance);
-  const sign = balance < 0 ? '-' : '';
-  
-  const formatter = new Intl.NumberFormat('en-US', {
-    notation: 'compact',
-    maximumFractionDigits: 2
-  });
+	if (!balance || isNaN(balance)) return '0.00';
 
-  return sign + formatter.format(absValue);
+	const absValue = Math.abs(balance);
+	const sign = balance < 0 ? '-' : '';
+
+	const formatter = new Intl.NumberFormat('en-US', {
+		notation: 'compact',
+		maximumFractionDigits: 2
+	});
+
+	return sign + formatter.format(absValue);
 };
