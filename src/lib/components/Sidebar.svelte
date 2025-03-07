@@ -1,11 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import {
-		Sidebar,
-		SidebarGroup,
-		SidebarItem,
-		SidebarWrapper
-	} from 'flowbite-svelte';
+	import { Sidebar, SidebarGroup, SidebarItem, SidebarWrapper } from 'flowbite-svelte';
 	import { ClipboardListSolid, DesktopPcSolid } from 'flowbite-svelte-icons';
 
 	export let network: string;

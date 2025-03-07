@@ -98,7 +98,7 @@
 				networkConfig[tokenConfig[tokenSlugValue.toUpperCase()].network].chainId,
 				order.order.orderHash,
 				Date.now(),
-				10,
+				10
 			);
 			ordersWithSolverLogs.push({ ...order, solverLogs: orderSolverLogs });
 		}
@@ -135,124 +135,131 @@
 {:else if $solverQuery.data?.pages[0].orders.length === 0}
 	<div data-testid="emptyMessage" class="text-center text-gray-900 dark:text-white">None found</div>
 {:else if $solverQuery.data?.pages[0].orders !== undefined && $solverQuery.data?.pages[0].orders.length > 0}
-<Table>
-	<TableHead class="bg-gray-50 text-sm font-semibold text-gray-800">
-		<TableHeadCell class="px-4 py-3 text-center">
-			<p class="rounded bg-gray-100 p-1 text-gray-700 focus:outline-none">Network</p>
-		</TableHeadCell>
-		<TableHeadCell class="px-4 py-3 text-center">
-			<p class="rounded bg-gray-100 p-1 text-gray-700 focus:outline-none">Order Link</p>
-		</TableHeadCell>
-		<TableHeadCell class="px-4 py-3 text-center">
-			<p class="rounded bg-gray-100 p-1 text-gray-700 focus:outline-none">Solver Logs</p>
-		</TableHeadCell>
-	</TableHead>
-	{#each $solverQuery.data.pages as page}
-		{#each page.orders as order (order.order.orderHash)}
-			<TableBody>
-				<TableBodyRow class="border-gray-300 text-gray-700">
-					<TableBodyCell class="px-4 py-3 text-center text-sm">{networkValue}</TableBodyCell>
-					<TableBodyCell class="px-4 py-3 text-center text-sm">
-						<a
-							href={`https://v2.raindex.finance/orders/${networkValue}-${order.order.orderHash}`}
-							target="_blank"
-						>
-							<span class="text-blue-500 hover:text-blue-700"
-								>{order.order.orderHash.slice(0, 6)}...{order.order.orderHash.slice(-4)}</span
+	<Table>
+		<TableHead class="bg-gray-50 text-sm font-semibold text-gray-800">
+			<TableHeadCell class="px-4 py-3 text-center">
+				<p class="rounded bg-gray-100 p-1 text-gray-700 focus:outline-none">Network</p>
+			</TableHeadCell>
+			<TableHeadCell class="px-4 py-3 text-center">
+				<p class="rounded bg-gray-100 p-1 text-gray-700 focus:outline-none">Order Link</p>
+			</TableHeadCell>
+			<TableHeadCell class="px-4 py-3 text-center">
+				<p class="rounded bg-gray-100 p-1 text-gray-700 focus:outline-none">Solver Logs</p>
+			</TableHeadCell>
+		</TableHead>
+		{#each $solverQuery.data.pages as page}
+			{#each page.orders as order (order.order.orderHash)}
+				<TableBody>
+					<TableBodyRow class="border-gray-300 text-gray-700">
+						<TableBodyCell class="px-4 py-3 text-center text-sm">{networkValue}</TableBodyCell>
+						<TableBodyCell class="px-4 py-3 text-center text-sm">
+							<a
+								href={`https://v2.raindex.finance/orders/${networkValue}-${order.order.orderHash}`}
+								target="_blank"
 							>
-						</a>
-					</TableBodyCell>
+								<span class="text-blue-500 hover:text-blue-700"
+									>{order.order.orderHash.slice(0, 6)}...{order.order.orderHash.slice(-4)}</span
+								>
+							</a>
+						</TableBodyCell>
 
-					<TableBodyCell class="px-4 py-3 text-center text-sm">
-						<Table>
-							<TableHead>
-								<TableHeadCell class=" px-4 py-3 text-center">Timestamp</TableHeadCell>
-								<TableHeadCell class=" px-4 py-3 text-center">Pair</TableHeadCell>
-								<TableHeadCell class=" px-4 py-3 text-center">Status</TableHeadCell>
-								<TableHeadCell class=" px-4 py-3 text-center">Order Ratio</TableHeadCell>
-								<TableHeadCell class=" px-4 py-3 text-center"
-									>Order Max Output</TableHeadCell
-								>
-								<TableHeadCell class=" px-4 py-3 text-center">Market Price</TableHeadCell
-								>
-								<TableHeadCell class=" px-4 py-3 text-center">Price Distance</TableHeadCell
-									>
-								<TableHeadCell class=" px-4 py-3 text-center">Error</TableHeadCell>
-								<TableHeadCell class=" px-4 py-3 text-center"
-									>Transaction URL</TableHeadCell
-								>
-							</TableHead>
-							<TableBody>
-								{#if order.solverLogs.length === 0}
-									<TableBodyRow>
-										<TableBodyCell class="px-4 py-3 text-center w-[40px]">-</TableBodyCell>
-										<TableBodyCell class="px-4 py-3 text-center w-[40px]">-</TableBodyCell>
-										<TableBodyCell class="px-4 py-3 text-center w-[150px]">Order not picked up by solver for the timeframe</TableBodyCell>
-										<TableBodyCell class="px-4 py-3 text-center w-[60px]">-</TableBodyCell>
-										<TableBodyCell class="px-4 py-3 text-center w-[60px]">-</TableBodyCell>
-										<TableBodyCell class="px-4 py-3 text-center w-[60px]">-</TableBodyCell>
-										<TableBodyCell class="px-4 py-3 text-center w-[60px]">-</TableBodyCell>
-										<TableBodyCell class="px-4 py-3 text-center w-[60px]">-</TableBodyCell>
-										<TableBodyCell class="px-4 py-3 text-center w-[60px]">-</TableBodyCell>
-									</TableBodyRow>
-								{:else if order.solverLogs.length > 0}
-									{#each order.solverLogs as solverLog}
+						<TableBodyCell class="px-4 py-3 text-center text-sm">
+							<Table>
+								<TableHead>
+									<TableHeadCell class=" px-4 py-3 text-center">Timestamp</TableHeadCell>
+									<TableHeadCell class=" px-4 py-3 text-center">Pair</TableHeadCell>
+									<TableHeadCell class=" px-4 py-3 text-center">Status</TableHeadCell>
+									<TableHeadCell class=" px-4 py-3 text-center">Order Ratio</TableHeadCell>
+									<TableHeadCell class=" px-4 py-3 text-center">Order Max Output</TableHeadCell>
+									<TableHeadCell class=" px-4 py-3 text-center">Market Price</TableHeadCell>
+									<TableHeadCell class=" px-4 py-3 text-center">Price Distance</TableHeadCell>
+									<TableHeadCell class=" px-4 py-3 text-center">Error</TableHeadCell>
+									<TableHeadCell class=" px-4 py-3 text-center">Transaction URL</TableHeadCell>
+								</TableHead>
+								<TableBody>
+									{#if order.solverLogs.length === 0}
 										<TableBodyRow>
-											<TableBodyCell class="px-4 py-3 text-center w-[40px]">{formatTimestamp(solverLog.timestamp)}</TableBodyCell
+											<TableBodyCell class="w-[40px] px-4 py-3 text-center">-</TableBodyCell>
+											<TableBodyCell class="w-[40px] px-4 py-3 text-center">-</TableBodyCell>
+											<TableBodyCell class="w-[150px] px-4 py-3 text-center"
+												>Order not picked up by solver for the timeframe</TableBodyCell
 											>
-											<TableBodyCell class="px-4 py-3 text-center w-[40px]">{solverLog.pair}</TableBodyCell>
-											<TableBodyCell class="px-4 py-3 text-center w-[150px]">
-												<span
-													class={`rounded px-2 py-1 ${solverLog.status === 'found opportunity' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
-												>
-													{solverLog.status}
-												</span>
-											</TableBodyCell>
-											{#if isRainSolverAttempt(solverLog.attemptDetails)}
-												<TableBodyCell class="px-4 py-3 text-center w-[60px]"
-													>{parseFloat(solverLog.attemptDetails?.quote?.ratio).toFixed(6)}</TableBodyCell
-												>
-												<TableBodyCell class="px-4 py-3 text-center w-[60px]"
-													>{parseFloat(solverLog.attemptDetails?.quote?.maxOutput).toFixed(6)}</TableBodyCell
-												>
-												<TableBodyCell class="px-4 py-3 text-center w-[60px]"
-													>{parseFloat(solverLog.attemptDetails?.fullAttempt?.marketPrice).toFixed(6)}</TableBodyCell
-												>
-												<TableBodyCell class="px-4 py-3 text-center w-[60px]"
-													>{(parseFloat(solverLog.attemptDetails?.quote?.ratio) - parseFloat(solverLog.attemptDetails?.fullAttempt?.marketPrice)).toFixed(6)}</TableBodyCell
-												>
-												<TableBodyCell class="w-[300px] px-4 py-3 text-center text-red-500"
-													>{solverLog.attemptDetails?.fullAttempt?.error}</TableBodyCell
-												>
-												<TableBodyCell class="px-4 py-3 text-center w-[60px]">-</TableBodyCell>
-											{:else if !isRainSolverAttempt(solverLog.attemptDetails)}
-												<TableBodyCell class="px-4 py-3 text-center w-[60px]">-</TableBodyCell>
-												<TableBodyCell class="px-4 py-3 text-center w-[60px]">-</TableBodyCell>
-												<TableBodyCell class="px-4 py-3 text-center w-[60px]">-</TableBodyCell>
-												<TableBodyCell class="px-4 py-3 text-center w-[200px]">-</TableBodyCell>
-												<TableBodyCell class="px-4 py-3 text-center w-[300px]">-</TableBodyCell>
-												<TableBodyCell class="px-4 py-3 text-center  w-[60px]">
-													<a href={solverLog.attemptDetails?.txUrl} target="_blank">
-														{#if solverLog.attemptDetails?.txUrl}
-															<span class="text-blue-500 hover:text-blue-700">Link</span>
-														{:else}
-															-
-														{/if}
-													</a>
-												</TableBodyCell>
-											{/if}
+											<TableBodyCell class="w-[60px] px-4 py-3 text-center">-</TableBodyCell>
+											<TableBodyCell class="w-[60px] px-4 py-3 text-center">-</TableBodyCell>
+											<TableBodyCell class="w-[60px] px-4 py-3 text-center">-</TableBodyCell>
+											<TableBodyCell class="w-[60px] px-4 py-3 text-center">-</TableBodyCell>
+											<TableBodyCell class="w-[60px] px-4 py-3 text-center">-</TableBodyCell>
+											<TableBodyCell class="w-[60px] px-4 py-3 text-center">-</TableBodyCell>
 										</TableBodyRow>
-									{/each}
-								{/if}
-					
-							</TableBody>
-						</Table>
-					</TableBodyCell>
-				</TableBodyRow>
-			</TableBody>		
+									{:else if order.solverLogs.length > 0}
+										{#each order.solverLogs as solverLog}
+											<TableBodyRow>
+												<TableBodyCell class="w-[40px] px-4 py-3 text-center"
+													>{formatTimestamp(solverLog.timestamp)}</TableBodyCell
+												>
+												<TableBodyCell class="w-[40px] px-4 py-3 text-center"
+													>{solverLog.pair}</TableBodyCell
+												>
+												<TableBodyCell class="w-[150px] px-4 py-3 text-center">
+													<span
+														class={`rounded px-2 py-1 ${solverLog.status === 'found opportunity' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
+													>
+														{solverLog.status}
+													</span>
+												</TableBodyCell>
+												{#if isRainSolverAttempt(solverLog.attemptDetails)}
+													<TableBodyCell class="w-[60px] px-4 py-3 text-center"
+														>{parseFloat(solverLog.attemptDetails?.quote?.ratio).toFixed(
+															6
+														)}</TableBodyCell
+													>
+													<TableBodyCell class="w-[60px] px-4 py-3 text-center"
+														>{parseFloat(solverLog.attemptDetails?.quote?.maxOutput).toFixed(
+															6
+														)}</TableBodyCell
+													>
+													<TableBodyCell class="w-[60px] px-4 py-3 text-center"
+														>{parseFloat(
+															solverLog.attemptDetails?.fullAttempt?.marketPrice
+														).toFixed(6)}</TableBodyCell
+													>
+													<TableBodyCell class="w-[60px] px-4 py-3 text-center"
+														>{(
+															parseFloat(solverLog.attemptDetails?.quote?.ratio) -
+															parseFloat(solverLog.attemptDetails?.fullAttempt?.marketPrice)
+														).toFixed(6)}</TableBodyCell
+													>
+													<TableBodyCell class="w-[300px] px-4 py-3 text-center text-red-500"
+														>{solverLog.attemptDetails?.fullAttempt?.error}</TableBodyCell
+													>
+													<TableBodyCell class="w-[60px] px-4 py-3 text-center">-</TableBodyCell>
+												{:else if !isRainSolverAttempt(solverLog.attemptDetails)}
+													<TableBodyCell class="w-[60px] px-4 py-3 text-center">-</TableBodyCell>
+													<TableBodyCell class="w-[60px] px-4 py-3 text-center">-</TableBodyCell>
+													<TableBodyCell class="w-[60px] px-4 py-3 text-center">-</TableBodyCell>
+													<TableBodyCell class="w-[200px] px-4 py-3 text-center">-</TableBodyCell>
+													<TableBodyCell class="w-[300px] px-4 py-3 text-center">-</TableBodyCell>
+													<TableBodyCell class="w-[60px] px-4 py-3  text-center">
+														<a href={solverLog.attemptDetails?.txUrl} target="_blank">
+															{#if solverLog.attemptDetails?.txUrl}
+																<span class="text-blue-500 hover:text-blue-700">Link</span>
+															{:else}
+																-
+															{/if}
+														</a>
+													</TableBodyCell>
+												{/if}
+											</TableBodyRow>
+										{/each}
+									{/if}
+								</TableBody>
+							</Table>
+						</TableBodyCell>
+					</TableBodyRow>
+				</TableBody>
+			{/each}
 		{/each}
-	{/each}
-</Table>
+	</Table>
 	<div class="mt-2 flex justify-center">
 		{#if $solverQuery.hasNextPage || $solverQuery.isFetchingNextPage}
 			<Button

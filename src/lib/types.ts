@@ -1,58 +1,60 @@
-import { SgOrderWithSubgraphName } from "@rainlanguage/orderbook/js_api";
+import { SgOrderWithSubgraphName } from '@rainlanguage/orderbook/js_api';
 
 // Solver Types
-export type SgOrderWithSubgraphNameAndSolverLogs = SgOrderWithSubgraphName & { solverLogs: RainSolverLog[] };
+export type SgOrderWithSubgraphNameAndSolverLogs = SgOrderWithSubgraphName & {
+	solverLogs: RainSolverLog[];
+};
 
 export type RainSolverLog = {
-    spanId: string;
-    status: string;
-    pair: string;
-    timestamp: number;
-    orderHash?: string;
-    attemptDetails?: RainSolverTrade | RainSolverAttempt;
+	spanId: string;
+	status: string;
+	pair: string;
+	timestamp: number;
+	orderHash?: string;
+	attemptDetails?: RainSolverTrade | RainSolverAttempt;
 };
 
 export type RainSolverTrade = {
-txUrl: string;
+	txUrl: string;
 };
 
 export type RainSolverOrderQuote = {
-maxOutput: string;
-ratio: string;
+	maxOutput: string;
+	ratio: string;
 };
 
 export type RainSolverAttempt = {
-quote: RainSolverOrderQuote;
-fullAttempt: RainSolverFullAttempt;
-partialAttempt?: RainSolverPartialAttempt;
+	quote: RainSolverOrderQuote;
+	fullAttempt: RainSolverFullAttempt;
+	partialAttempt?: RainSolverPartialAttempt;
 };
 
 export type RainSolverFullAttempt = {
-marketPrice: string;
-error: string;
-route: string;
+	marketPrice: string;
+	error: string;
+	route: string;
 };
 
 export type RainSolverPartialAttempt = {
-amountIn: string;
-marketPrice: string;
-error: string;
-route?: string;
+	amountIn: string;
+	marketPrice: string;
+	error: string;
+	route?: string;
 };
 
 // Constants Types
 export interface NetworkConfig {
-    chainId: number;
-    blockTime: number;
-    rpc: string;
-    subgraphUrl: string;
-    stables: StablesConfig[];
+	chainId: number;
+	blockTime: number;
+	rpc: string;
+	subgraphUrl: string;
+	stables: StablesConfig[];
 }
 
 export interface StablesConfig {
-    symbol: string;
-    decimals: number;
-    address: string;
+	symbol: string;
+	decimals: number;
+	address: string;
 }
 
 export interface NetworkConfigurations extends Record<string, NetworkConfig> {}
@@ -68,5 +70,5 @@ export interface TokenConfig {
 }
 
 export interface Config {
-    [key: string]: TokenConfig;
+	[key: string]: TokenConfig;
 }

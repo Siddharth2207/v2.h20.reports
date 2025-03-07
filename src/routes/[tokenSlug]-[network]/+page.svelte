@@ -2,7 +2,7 @@
 	import '../../app.css';
 	import { page } from '$app/stores';
 	import type { MultiSubgraphArgs } from '@rainlanguage/orderbook/js_api';
-	import OrderListTable from "$lib/components/OrderListTable.svelte"
+	import OrderListTable from '$lib/components/OrderListTable.svelte';
 	import { getTokenPriceUsd } from '$lib/price';
 	import { ethers } from 'ethers';
 	import { orderActiveState } from '$lib/stores/report';
