@@ -106,7 +106,7 @@ export async function queryRainSolverByOrder(
 				body: JSON.stringify(requestBody),
 				headers: {
 					'Content-Type': 'application/json',
-					Authorization: `Bearer ${process.env.REACT_APP_HYPERDX_API_KEY}`
+					Authorization: `Bearer ${process.env.HYPERDX_API_KEY}`
 				}
 			});
 			const result = await response.json();
@@ -289,7 +289,7 @@ export async function queryRainSolverByToken(
 				body: JSON.stringify(requestBody),
 				headers: {
 					'Content-Type': 'application/json',
-					Authorization: `Bearer ${process.env.REACT_APP_HYPERDX_API_KEY}`
+					Authorization: `Bearer ${process.env.HYPERDX_API_KEY}`
 				}
 			});
 			const result = await response.json();
