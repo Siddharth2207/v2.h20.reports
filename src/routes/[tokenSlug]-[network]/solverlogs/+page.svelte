@@ -13,6 +13,7 @@
 	} from 'flowbite-svelte';
 	import {
 		type MultiSubgraphArgs,
+		type SgVault,
 		type SgOrderWithSubgraphName,
 		getOrders
 	} from '@rainlanguage/orderbook/js_api';
@@ -20,7 +21,7 @@
 	import type {
 		SgOrderWithSubgraphNameAndSolverLogs,
 		RainSolverLog,
-		RainSolverAttempt
+		RainSolverAttempt,
 	} from '$lib/types';
 	import { formatTimestamp } from '$lib/orders';
 
@@ -50,14 +51,14 @@
 			);
 
 			let filteredOrders = allOrders.filter(
-				(order: any) =>
+				(order: SgOrderWithSubgraphName) =>
 					order.order.inputs.some(
-						(input: any) =>
+						(input: SgVault) =>
 							input.token.symbol === tokenSymbol &&
 							input.token.address.toLowerCase() === tokenAddress.toLowerCase()
 					) ||
 					order.order.outputs.some(
-						(output: any) =>
+						(output: SgVault) =>
 							output.token.symbol === tokenSymbol &&
 							output.token.address.toLowerCase() === tokenAddress.toLowerCase()
 					)
