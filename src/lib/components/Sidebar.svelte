@@ -4,10 +4,12 @@
 		Sidebar,
 		SidebarGroup,
 		SidebarItem,
-		SidebarWrapper,
-		SidebarBrand
+		SidebarWrapper
 	} from 'flowbite-svelte';
-	import { ClipboardListSolid } from 'flowbite-svelte-icons';
+	import { ClipboardListSolid, DesktopPcSolid } from 'flowbite-svelte-icons';
+
+	export let network: string;
+	export let tokenSlug: string;
 </script>
 
 <Sidebar
@@ -28,11 +30,22 @@
 		<SidebarGroup border />
 
 		<SidebarGroup class="gap-4 p-2">
-			<SidebarItem label="" href="/">
+			<SidebarItem label="" href="/{tokenSlug}-{network}">
 				<svelte:fragment slot="icon">
 					<ClipboardListSolid class="h-5 w-5" />
-					<span class="px-3 text-lg text-gray-600 hover:text-indigo-600 dark:text-white"
+					<span class="px-3 text-base text-gray-600 hover:text-indigo-600 dark:text-white"
 						>Order List</span
+					>
+				</svelte:fragment>
+			</SidebarItem>
+		</SidebarGroup>
+
+		<SidebarGroup class="gap-4 p-2">
+			<SidebarItem label="" href="/{tokenSlug}-{network}/solverlogs">
+				<svelte:fragment slot="icon">
+					<DesktopPcSolid class="h-5 w-5" />
+					<span class="px-3 text-base text-gray-600 hover:text-indigo-600 dark:text-white"
+						>Solver Logs</span
 					>
 				</svelte:fragment>
 			</SidebarItem>

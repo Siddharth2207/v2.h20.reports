@@ -1,4 +1,5 @@
-export const DEFAULT_ORDERS_PAGE_SIZE = 10;
+import type { Config, NetworkConfigurations } from './types';
+export const DEFAULT_ORDERS_PAGE_SIZE = 5;
 export const DEFAULT_VAULTS_PAGE_SIZE = 1000;
 export const DEFAULT_TRADES_PAGE_SIZE = 1000;
 
@@ -21,18 +22,6 @@ export const supportedTokens = [
 	'CYSFLR',
 	'KIMA'
 ];
-
-export interface TokenConfig {
-	symbol: string;
-	decimals: number;
-	network: string;
-	address: string;
-	poolsV2: string[];
-	poolsV3: string[];
-	poolsPancakSwapV3: string[];
-}
-
-export type Config = Record<string, TokenConfig>;
 
 export const tokenConfig: Config = {
 	IOEN: {
@@ -370,7 +359,7 @@ export const tokenConfig: Config = {
 	}
 };
 
-export const networkConfig = {
+export const networkConfig: NetworkConfigurations = {
 	polygon: {
 		chainId: 137,
 		rpc: 'https://rpc.ankr.com/polygon',
