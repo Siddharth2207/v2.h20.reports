@@ -25,17 +25,16 @@
 				</TableHead>
 				<TableBody>
 					{#if $marketDepthQuery.isLoading}
-                        <TableBodyRow>
-                            <TableBodyCell colspan="5" class="h-32 text-center">
-                                <div class="flex h-full flex-col items-center justify-center">
-                                    <div
-                                        class="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-indigo-600"
-                                    ></div>
-                                    <p class="mt-3 text-lg font-medium text-gray-600">Loading...</p>
-                                </div>
-                            </TableBodyCell>
-                        </TableBodyRow>
-                 
+						<TableBodyRow>
+							<TableBodyCell colspan="5" class="h-32 text-center">
+								<div class="flex h-full flex-col items-center justify-center">
+									<div
+										class="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-indigo-600"
+									></div>
+									<p class="mt-3 text-lg font-medium text-gray-600">Loading...</p>
+								</div>
+							</TableBodyCell>
+						</TableBodyRow>
 					{:else if $marketDepthQuery.data?.pages[0].orders.length === 0}
 						<div data-testid="emptyMessage" class="text-center text-gray-900 dark:text-white">
 							None found
@@ -84,16 +83,16 @@
 				</TableHead>
 				<TableBody>
 					{#if $marketDepthQuery.isLoading}
-                        <TableBodyRow>
-                            <TableBodyCell colspan="5" class="h-32 text-center">
-                                <div class="flex h-full flex-col items-center justify-center">
-                                    <div
-                                        class="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-indigo-600"
-                                    ></div>
-                                    <p class="mt-3 text-lg font-medium text-gray-600">Loading...</p>
-                                </div>
-                            </TableBodyCell>
-                        </TableBodyRow>
+						<TableBodyRow>
+							<TableBodyCell colspan="5" class="h-32 text-center">
+								<div class="flex h-full flex-col items-center justify-center">
+									<div
+										class="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-indigo-600"
+									></div>
+									<p class="mt-3 text-lg font-medium text-gray-600">Loading...</p>
+								</div>
+							</TableBodyCell>
+						</TableBodyRow>
 					{:else if $marketDepthQuery.data?.pages[0].orders.length === 0}
 						<div data-testid="emptyMessage" class="text-center text-gray-900 dark:text-white">
 							None found

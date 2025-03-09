@@ -8,5 +8,4 @@ export const activeSubgraphs = writable<MultiSubgraphArgs[]>([]);
 export const orderActiveState = writable<boolean | undefined>(true);
 export const orderHashState = writable<string | undefined>(undefined);
 
-
 export const ssr = false;

@@ -24,7 +24,6 @@ export const supportedTokens = [
 	'KIMA'
 ];
 
-
 export const tokenConfig: Config = {
 	IOEN: {
 		symbol: 'IOEN',
@@ -487,7 +486,6 @@ export const networkConfig: NetworkConfigurations = {
 	}
 };
 
-
 // Orderbook type tuples
 export const IO = '(address token, uint8 decimals, uint256 vaultId)';
 export const EvaluableV3 = '(address interpreter, address store, bytes bytecode)';
@@ -499,9 +497,9 @@ export const QuoteConfig = TakeOrderConfigV3;
 export const orderbookAbi = [
 	`function quote(${QuoteConfig} calldata quoteConfig) external view returns (bool exists, uint256 outputMax, uint256 ioRatio)`
 ];
-  
+
 export const interpreterV3Abi = [
-`function eval3(
+	`function eval3(
 	address store,
 	uint256 namespace,
 	bytes calldata bytecode,
@@ -509,59 +507,66 @@ export const interpreterV3Abi = [
 	uint256[][] calldata context,
 	uint256[] calldata inputs
 ) external view returns (uint256[] calldata stack, uint256[] calldata writes)`
-]
+];
 
 export function qualifyNamespace(stateNamespace: string, sender: string): string {
-    // Convert stateNamespace to a BigNumber and then to a 32-byte hex string
-    let stateNamespaceHex = ethers.utils.hexZeroPad(
-        ethers.BigNumber.from(stateNamespace).toHexString(),
-        32
-    );
+	// Convert stateNamespace to a BigNumber and then to a 32-byte hex string
+	let stateNamespaceHex = ethers.utils.hexZeroPad(
+		ethers.BigNumber.from(stateNamespace).toHexString(),
+		32
+	);
 
-    // Normalize sender address and convert to a 32-byte hex string
-    let senderHex = ethers.utils.hexZeroPad(
-        ethers.utils.getAddress(sender).toLowerCase(),
-        32
-    );
+	// Normalize sender address and convert to a 32-byte hex string
+	let senderHex = ethers.utils.hexZeroPad(ethers.utils.getAddress(sender).toLowerCase(), 32);
 
-    // Concatenate the two 32-byte hex strings
-    let data = ethers.utils.concat([stateNamespaceHex, senderHex]);
+	// Concatenate the two 32-byte hex strings
+	let data = ethers.utils.concat([stateNamespaceHex, senderHex]);
 
-    // Compute the keccak256 hash of the concatenated data
-    let qualifiedNamespace = ethers.utils.keccak256(data);
+	// Compute the keccak256 hash of the concatenated data
+	let qualifiedNamespace = ethers.utils.keccak256(data);
 
-    // Return the hash
-    return qualifiedNamespace;
+	// Return the hash
+	return qualifiedNamespace;
 }
 
 export function getContext(): string[][] {
-    return [
-        [
-            // base column
-            '0','0'
-        ],
-        [
-            // calling context column
-            '0','0','0'
-        ],
-        [
-            // calculateIO context column
-            '0','0'
-        ],
-        [
-            // input context column
-            '0','0','0','0','0'
-        ],
-        [
-            // output context column
-            '0','0','0','0','0'
-        ],
-        [
-            // empty context column
-            '0'
-        ],
-        [
-            '0'
-        ]
-    ];
+	return [
+		[
+			// base column
+			'0',
+			'0'
+		],
+		[
+			// calling context column
+			'0',
+			'0',
+			'0'
+		],
+		[
+			// calculateIO context column
+			'0',
+			'0'
+		],
+		[
+			// input context column
+			'0',
+			'0',
+			'0',
+			'0',
+			'0'
+		],
+		[
+			// output context column
+			'0',
+			'0',
+			'0',
+			'0',
+			'0'
+		],
+		[
+			// empty context column
+			'0'
+		],
+		['0']
+	];
 }

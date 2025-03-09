@@ -75,11 +75,11 @@ export interface Config {
 
 // Market Depth Types
 export interface MarketDepthOrder {
-    decodedOrder: OrderV3;
+	decodedOrder: OrderV3;
 	sgOrder: SgOrder;
-    type: "buy" | "sell";
-    inputIOIndex: number;
-    outputIOIndex: number;
-    maxOutput: string;
-    ratio: string;
+	type: 'buy' | 'sell';
+	inputIOIndex: number;
+	outputIOIndex: number;
+	maxOutput: string;
+	ratio: string;
 }
