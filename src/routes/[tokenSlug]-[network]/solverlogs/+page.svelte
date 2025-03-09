@@ -21,7 +21,7 @@
 	import type {
 		SgOrderWithSubgraphNameAndSolverLogs,
 		RainSolverLog,
-		RainSolverAttempt,
+		RainSolverAttempt
 	} from '$lib/types';
 	import { formatTimestamp } from '$lib/orders';
 
