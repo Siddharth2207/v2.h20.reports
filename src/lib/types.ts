@@ -1,4 +1,4 @@
-import { SgOrderWithSubgraphName } from '@rainlanguage/orderbook/js_api';
+import type { SgOrderWithSubgraphName, OrderV3, SgOrder } from '@rainlanguage/orderbook/js_api';
 
 // Solver Types
 export type SgOrderWithSubgraphNameAndSolverLogs = SgOrderWithSubgraphName & {
@@ -71,4 +71,15 @@ export interface TokenConfig {
 
 export interface Config {
 	[key: string]: TokenConfig;
+}
+
+// Market Depth Types
+export interface MarketDepthOrder {
+    decodedOrder: OrderV3;
+	sgOrder: SgOrder;
+    type: "buy" | "sell";
+    inputIOIndex: number;
+    outputIOIndex: number;
+    maxOutput: string;
+    ratio: string;
 }
