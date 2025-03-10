@@ -12,11 +12,11 @@
 	asideClass="w-64 z-10 fixed min-h-screen bg-gray-100 shadow-lg hidden md:block"
 	data-testid="sidebar"
 >
-	<div class="md:hidden flex items-center">
+	<div class="flex items-center md:hidden">
 		<button class="hamburger focus:outline-none">
-			<span class="block w-8 h-1 bg-gray-900 mb-1"></span>
-			<span class="block w-8 h-1 bg-gray-900 mb-1"></span>
-			<span class="block w-8 h-1 bg-gray-900"></span>
+			<span class="mb-1 block h-1 w-8 bg-gray-900"></span>
+			<span class="mb-1 block h-1 w-8 bg-gray-900"></span>
+			<span class="block h-1 w-8 bg-gray-900"></span>
 		</button>
 	</div>
 	<SidebarWrapper divClass="py-6 px-4 bg-gray-100 dark:bg-gray-800 min-h-screen">

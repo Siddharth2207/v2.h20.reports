@@ -11,7 +11,10 @@
 	import type { MarketDepthOrder } from '$lib/types';
 
 	export let network: string;
-	export let marketDepthQuery: CreateInfiniteQueryResult<InfiniteData<{orders: MarketDepthOrder[]}, unknown>, Error>;
+	export let marketDepthQuery: CreateInfiniteQueryResult<
+		InfiniteData<{ orders: MarketDepthOrder[] }, unknown>,
+		Error
+	>;
 </script>
 
 <div>

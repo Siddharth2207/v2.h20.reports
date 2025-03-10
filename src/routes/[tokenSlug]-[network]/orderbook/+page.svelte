@@ -17,7 +17,6 @@
 	import type { MarketDepthOrder } from '$lib/types';
 	import { ethers } from 'ethers';
 	import { OrderV3 as OrderV3Tuple } from '$lib/constants';
-	
 
 	const { settings, tokenSlug, network } = $page.data.stores;
 
@@ -155,7 +154,9 @@
 			const quoteSpecs: OrderQuoteValue[] = await doQuoteSpecs(
 				orderBatchQuoteSpecs,
 				$settings.subgraphs[$network],
-				networkRpc === '' || networkRpc === undefined ? $settings.networks[$network].rpc : networkRpc
+				networkRpc === '' || networkRpc === undefined
+					? $settings.networks[$network].rpc
+					: networkRpc
 			);
 
 			for (let i = 0; i < orders.length; i++) {
@@ -291,7 +292,6 @@
 		<h2 class="text-2xl font-bold text-gray-800">Market Depth</h2>
 	</div>
 	<div class="mb-5 flex flex-col gap-4">
-		
 		<div>
 			<label for="base-token-select" class="block font-semibold">Base Token:</label>
 			<input
