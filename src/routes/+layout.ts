@@ -1,5 +1,5 @@
 import { ConfigSource } from '@rainlanguage/orderbook/js_api';
-import { writable, derived } from 'svelte/store';
+import { writable } from 'svelte/store';
 
 export const load = async ({ fetch }) => {
 	const response = await fetch(

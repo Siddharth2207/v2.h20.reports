@@ -1,2 +1,7 @@
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
+// See https://svelte.dev/docs/kit/types#app.d.ts
+// for information about these interfaces
+declare global {
+	namespace App {}
+}
+
+export {};

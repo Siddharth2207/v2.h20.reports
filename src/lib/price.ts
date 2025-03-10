@@ -26,6 +26,7 @@ export async function getTokenPriceUsd(tokenAddress: string, tokenSymbol: string
 		// Handle WFLR special case
 		if (tokenAddress.toLowerCase() === '0x1d80c49bbbcd1c0911346656b529df9e5c2f783d') {
 			const specialPair = pairs.find(
+				// eslint-disable-next-line
 				(pair: any) =>
 					pair.baseToken.address.toLowerCase() ===
 						'0xfbda5f676cb37624f28265a144a48b0d6e87d3b6'.toLowerCase() &&

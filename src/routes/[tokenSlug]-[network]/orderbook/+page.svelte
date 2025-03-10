@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Header from '$lib/components/Header.svelte';
 	import MarketDepthTable from '$lib/components/MarketDepthTable.svelte';
 	import {
 		DEFAULT_ORDERS_PAGE_SIZE,
@@ -40,12 +39,15 @@
 					active: true,
 					orderHash: undefined
 				},
-				{ page: pageParam + 1, pageSize: DEFAULT_ORDERS_PAGE_SIZE + 95 }
+				{ page: pageParam + 1, pageSize: DEFAULT_ORDERS_PAGE_SIZE }
 			);
 
-			const filteredBuySellOrders = await getFilteredBuySellOrders(allOrders);
-			const orderQuotes = await getOrderQuotes(filteredBuySellOrders);
+			console.log("allOrders : ", allOrders.length);
 
+			const filteredBuySellOrders = await getFilteredBuySellOrders(allOrders);
+			console.log("filteredBuySellOrders : ", filteredBuySellOrders.length);
+			const orderQuotes = await getOrderQuotes(filteredBuySellOrders);
+			console.log("orderQuotes : ", orderQuotes.length);
 			const filteredValidOrders: MarketDepthOrder[] = [];
 			for (const order of orderQuotes) {
 				const valid = await validateHandleIO(order);
@@ -53,9 +55,10 @@
 					filteredValidOrders.push(order);
 				}
 			}
+			console.log("filteredValidOrders : ", filteredValidOrders.length);
 			return {
 				orders: filteredValidOrders,
-				hasMore: allOrders.length === DEFAULT_ORDERS_PAGE_SIZE + 95
+				hasMore: allOrders.length === DEFAULT_ORDERS_PAGE_SIZE
 			};
 		},
 		initialPageParam: 0,

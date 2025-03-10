@@ -57,6 +57,7 @@ export interface StablesConfig {
 	address: string;
 }
 
+// eslint-disable-next-line
 export interface NetworkConfigurations extends Record<string, NetworkConfig> {}
 
 export interface TokenConfig {

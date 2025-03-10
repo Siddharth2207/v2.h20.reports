@@ -78,6 +78,7 @@
 		enabled: true
 	});
 
+	// eslint-disable-next-line
 	function isRainSolverAttempt(attemptDetails: any): attemptDetails is RainSolverAttempt {
 		return (
 			attemptDetails &&
