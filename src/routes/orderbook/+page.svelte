@@ -71,69 +71,71 @@
 		try {
 			let filteredBuySellOrders: MarketDepthOrder[] = [];
 
-		for (const order of orders) {
-			const currentOrder: OrderV3 = ethers.utils.defaultAbiCoder.decode(
-				[OrderV3Tuple],
-				order.order.orderBytes
-			)[0];
+			for (const order of orders) {
+				const currentOrder: OrderV3 = ethers.utils.defaultAbiCoder.decode(
+					[OrderV3Tuple],
+					order.order.orderBytes
+				)[0];
 
-			let isBuyInput = false,
-				isBuyOutput = false,
-				buyInputIndex = 0,
-				buyOutputIndex = 0;
-			let isSellInput = false,
-				isSellOutput = false,
-				sellInputIndex = 0,
-				sellOutputIndex = 0;
+				let isBuyInput = false,
+					isBuyOutput = false,
+					buyInputIndex = 0,
+					buyOutputIndex = 0;
+				let isSellInput = false,
+					isSellOutput = false,
+					sellInputIndex = 0,
+					sellOutputIndex = 0;
 
-			for (let j = 0; j < currentOrder.validInputs.length; j++) {
-				if (currentOrder.validInputs[j].token.toLowerCase() === baseTokenAddress.toLowerCase()) {
-					isBuyInput = true;
-					buyInputIndex = j;
+				for (let j = 0; j < currentOrder.validInputs.length; j++) {
+					if (currentOrder.validInputs[j].token.toLowerCase() === baseTokenAddress.toLowerCase()) {
+						isBuyInput = true;
+						buyInputIndex = j;
+					}
+					if (currentOrder.validInputs[j].token.toLowerCase() === quoteTokenAddress.toLowerCase()) {
+						isSellInput = true;
+						sellInputIndex = j;
+					}
 				}
-				if (currentOrder.validInputs[j].token.toLowerCase() === quoteTokenAddress.toLowerCase()) {
-					isSellInput = true;
-					sellInputIndex = j;
+
+				for (let j = 0; j < currentOrder.validOutputs.length; j++) {
+					if (
+						currentOrder.validOutputs[j].token.toLowerCase() === quoteTokenAddress.toLowerCase()
+					) {
+						isBuyOutput = true;
+						buyOutputIndex = j;
+					}
+					if (currentOrder.validOutputs[j].token.toLowerCase() === baseTokenAddress.toLowerCase()) {
+						isSellOutput = true;
+						sellOutputIndex = j;
+					}
+				}
+
+				if (isBuyInput && isBuyOutput) {
+					filteredBuySellOrders.push({
+						decodedOrder: currentOrder,
+						sgOrder: order.order,
+						type: 'buy',
+						inputIOIndex: buyInputIndex,
+						outputIOIndex: buyOutputIndex,
+						maxOutput: '',
+						ratio: ''
+					});
+				}
+
+				if (isSellInput && isSellOutput) {
+					filteredBuySellOrders.push({
+						decodedOrder: currentOrder,
+						sgOrder: order.order,
+						type: 'sell',
+						inputIOIndex: sellInputIndex,
+						outputIOIndex: sellOutputIndex,
+						maxOutput: '',
+						ratio: ''
+					});
 				}
 			}
 
-			for (let j = 0; j < currentOrder.validOutputs.length; j++) {
-				if (currentOrder.validOutputs[j].token.toLowerCase() === quoteTokenAddress.toLowerCase()) {
-					isBuyOutput = true;
-					buyOutputIndex = j;
-				}
-				if (currentOrder.validOutputs[j].token.toLowerCase() === baseTokenAddress.toLowerCase()) {
-					isSellOutput = true;
-					sellOutputIndex = j;
-				}
-			}
-
-			if (isBuyInput && isBuyOutput) {
-				filteredBuySellOrders.push({
-					decodedOrder: currentOrder,
-					sgOrder: order.order,
-					type: 'buy',
-					inputIOIndex: buyInputIndex,
-					outputIOIndex: buyOutputIndex,
-					maxOutput: '',
-					ratio: ''
-				});
-			}
-
-			if (isSellInput && isSellOutput) {
-				filteredBuySellOrders.push({
-					decodedOrder: currentOrder,
-					sgOrder: order.order,
-					type: 'sell',
-					inputIOIndex: sellInputIndex,
-					outputIOIndex: sellOutputIndex,
-					maxOutput: '',
-					ratio: ''
-				});
-			}
-		}
-
-		return filteredBuySellOrders;
+			return filteredBuySellOrders;
 		} catch {
 			return [];
 		}
@@ -156,10 +158,10 @@
 			);
 
 			for (let i = 0; i < orders.length; i++) {
-				if(quoteSpecs[i].maxOutput !== undefined && quoteSpecs[i].ratio !== undefined) {
+				if (quoteSpecs[i].maxOutput !== undefined && quoteSpecs[i].ratio !== undefined) {
 					orders[i].maxOutput = ethers.utils.formatEther(quoteSpecs[i].maxOutput).toString();
 					orders[i].ratio = ethers.utils.formatEther(quoteSpecs[i].ratio).toString();
-				} else{
+				} else {
 					orders[i].maxOutput = '0';
 					orders[i].ratio = '0';
 				}

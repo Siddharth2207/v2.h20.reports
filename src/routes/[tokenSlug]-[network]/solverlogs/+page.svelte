@@ -260,15 +260,14 @@
 				{/each}
 			{/if}
 		{/each}
-		
 	</Table>
 	<div class="mt-2 flex justify-center">
 		{#if $solverQuery.hasNextPage || $solverQuery.isFetchingNextPage}
-			<Button	
+			<Button
 				data-testid="loadMoreButton"
 				size="xs"
 				color="dark"
-				on:click={async () => {	
+				on:click={async () => {
 					await $solverQuery.fetchNextPage();
 				}}
 				class="rounded bg-gray-800 px-2 py-1 text-sm text-white hover:bg-gray-600"

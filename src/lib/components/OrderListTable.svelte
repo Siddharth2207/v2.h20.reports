@@ -44,7 +44,6 @@
 		if (!data || !data.pages || data.pages.length === 0) return data;
 		const allLoadedOrders = data.pages.flatMap((page: any) => page.orders);
 
-
 		const sortedOrders = [...allLoadedOrders].sort((a: any, b: any) => {
 			switch (currentSort) {
 				case 'totalTrades':
@@ -202,10 +201,10 @@
 
 		const ordersPerPage = DEFAULT_ORDERS_PAGE_SIZE;
 		const newPages = [];
-		 for (let i = 0; i < data.pages.length; i++) {
+		for (let i = 0; i < data.pages.length; i++) {
 			const startIdx = i * ordersPerPage;
 			const pageOrders = sortedOrders.slice(startIdx, startIdx + ordersPerPage);
-			
+
 			newPages.push({
 				...data.pages[i],
 				orders: pageOrders
@@ -228,7 +227,7 @@
 	}
 </script>
 
-{#if $query.isLoading || $query.isFetchingNextPage }
+{#if $query.isLoading || $query.isFetchingNextPage}
 	<div class="mt-10 flex flex-col items-center justify-start">
 		<div
 			class="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-indigo-600"
@@ -984,7 +983,6 @@
 				color="dark"
 				on:click={async () => {
 					await $query.fetchNextPage();
-					
 				}}
 				class="rounded bg-gray-800 px-2 py-1 text-sm text-white hover:bg-gray-600"
 			>
