@@ -68,93 +68,108 @@
 	async function getFilteredBuySellOrders(
 		orders: SgOrderWithSubgraphName[]
 	): Promise<MarketDepthOrder[]> {
-		let filteredBuySellOrders: MarketDepthOrder[] = [];
+		try {
+			let filteredBuySellOrders: MarketDepthOrder[] = [];
 
-		for (const order of orders) {
-			const currentOrder: OrderV3 = ethers.utils.defaultAbiCoder.decode(
-				[OrderV3Tuple],
-				order.order.orderBytes
-			)[0];
+			for (const order of orders) {
+				const currentOrder: OrderV3 = ethers.utils.defaultAbiCoder.decode(
+					[OrderV3Tuple],
+					order.order.orderBytes
+				)[0];
 
-			let isBuyInput = false,
-				isBuyOutput = false,
-				buyInputIndex = 0,
-				buyOutputIndex = 0;
-			let isSellInput = false,
-				isSellOutput = false,
-				sellInputIndex = 0,
-				sellOutputIndex = 0;
+				let isBuyInput = false,
+					isBuyOutput = false,
+					buyInputIndex = 0,
+					buyOutputIndex = 0;
+				let isSellInput = false,
+					isSellOutput = false,
+					sellInputIndex = 0,
+					sellOutputIndex = 0;
 
-			for (let j = 0; j < currentOrder.validInputs.length; j++) {
-				if (currentOrder.validInputs[j].token.toLowerCase() === baseTokenAddress.toLowerCase()) {
-					isBuyInput = true;
-					buyInputIndex = j;
+				for (let j = 0; j < currentOrder.validInputs.length; j++) {
+					if (currentOrder.validInputs[j].token.toLowerCase() === baseTokenAddress.toLowerCase()) {
+						isBuyInput = true;
+						buyInputIndex = j;
+					}
+					if (currentOrder.validInputs[j].token.toLowerCase() === quoteTokenAddress.toLowerCase()) {
+						isSellInput = true;
+						sellInputIndex = j;
+					}
 				}
-				if (currentOrder.validInputs[j].token.toLowerCase() === quoteTokenAddress.toLowerCase()) {
-					isSellInput = true;
-					sellInputIndex = j;
+
+				for (let j = 0; j < currentOrder.validOutputs.length; j++) {
+					if (
+						currentOrder.validOutputs[j].token.toLowerCase() === quoteTokenAddress.toLowerCase()
+					) {
+						isBuyOutput = true;
+						buyOutputIndex = j;
+					}
+					if (currentOrder.validOutputs[j].token.toLowerCase() === baseTokenAddress.toLowerCase()) {
+						isSellOutput = true;
+						sellOutputIndex = j;
+					}
+				}
+
+				if (isBuyInput && isBuyOutput) {
+					filteredBuySellOrders.push({
+						decodedOrder: currentOrder,
+						sgOrder: order.order,
+						type: 'buy',
+						inputIOIndex: buyInputIndex,
+						outputIOIndex: buyOutputIndex,
+						maxOutput: '',
+						ratio: ''
+					});
+				}
+
+				if (isSellInput && isSellOutput) {
+					filteredBuySellOrders.push({
+						decodedOrder: currentOrder,
+						sgOrder: order.order,
+						type: 'sell',
+						inputIOIndex: sellInputIndex,
+						outputIOIndex: sellOutputIndex,
+						maxOutput: '',
+						ratio: ''
+					});
 				}
 			}
 
-			for (let j = 0; j < currentOrder.validOutputs.length; j++) {
-				if (currentOrder.validOutputs[j].token.toLowerCase() === quoteTokenAddress.toLowerCase()) {
-					isBuyOutput = true;
-					buyOutputIndex = j;
-				}
-				if (currentOrder.validOutputs[j].token.toLowerCase() === baseTokenAddress.toLowerCase()) {
-					isSellOutput = true;
-					sellOutputIndex = j;
-				}
-			}
-
-			if (isBuyInput && isBuyOutput) {
-				filteredBuySellOrders.push({
-					decodedOrder: currentOrder,
-					sgOrder: order.order,
-					type: 'buy',
-					inputIOIndex: buyInputIndex,
-					outputIOIndex: buyOutputIndex,
-					maxOutput: '',
-					ratio: ''
-				});
-			}
-
-			if (isSellInput && isSellOutput) {
-				filteredBuySellOrders.push({
-					decodedOrder: currentOrder,
-					sgOrder: order.order,
-					type: 'sell',
-					inputIOIndex: sellInputIndex,
-					outputIOIndex: sellOutputIndex,
-					maxOutput: '',
-					ratio: ''
-				});
-			}
+			return filteredBuySellOrders;
+		} catch {
+			return [];
 		}
-
-		return filteredBuySellOrders;
 	}
 
 	async function getOrderQuotes(orders: MarketDepthOrder[]): Promise<MarketDepthOrder[]> {
-		const orderBatchQuoteSpecs: BatchQuoteSpec = orders.map((order) => ({
-			orderHash: order.sgOrder.orderHash,
-			inputIOIndex: order.inputIOIndex,
-			outputIOIndex: order.outputIOIndex,
-			signedContext: [],
-			orderbook: $settings.orderbooks[network].address
-		}));
+		try {
+			const orderBatchQuoteSpecs: BatchQuoteSpec = orders.map((order) => ({
+				orderHash: order.sgOrder.orderHash,
+				inputIOIndex: order.inputIOIndex,
+				outputIOIndex: order.outputIOIndex,
+				signedContext: [],
+				orderbook: $settings.orderbooks[network].address
+			}));
 
-		const quoteSpecs: OrderQuoteValue[] = await doQuoteSpecs(
-			orderBatchQuoteSpecs,
-			$settings.subgraphs[network],
-			networkRpc === '' || networkRpc === undefined ? $settings.networks[network].rpc : networkRpc
-		);
+			const quoteSpecs: OrderQuoteValue[] = await doQuoteSpecs(
+				orderBatchQuoteSpecs,
+				$settings.subgraphs[network],
+				networkRpc === '' || networkRpc === undefined ? $settings.networks[network].rpc : networkRpc
+			);
 
-		for (let i = 0; i < orders.length; i++) {
-			orders[i].maxOutput = ethers.utils.formatEther(quoteSpecs[i].maxOutput).toString();
-			orders[i].ratio = ethers.utils.formatEther(quoteSpecs[i].ratio).toString();
+			for (let i = 0; i < orders.length; i++) {
+				if (quoteSpecs[i].maxOutput !== undefined && quoteSpecs[i].ratio !== undefined) {
+					orders[i].maxOutput = ethers.utils.formatEther(quoteSpecs[i].maxOutput).toString();
+					orders[i].ratio = ethers.utils.formatEther(quoteSpecs[i].ratio).toString();
+				} else {
+					orders[i].maxOutput = '0';
+					orders[i].ratio = '0';
+				}
+			}
+			return orders.filter((order) => order.maxOutput !== '0' && order.ratio !== '0');
+		} catch {
+			return [];
 		}
-		return orders;
 	}
 
 	async function validateHandleIO(order: MarketDepthOrder): Promise<boolean> {
@@ -260,7 +275,7 @@
 				[]
 			);
 			validHandleIO = true;
-		} catch (e) {
+		} catch {
 			console.log(`HandleIO Eval failed for order ${currentSgOrder.orderHash}`);
 		}
 		return validHandleIO;
