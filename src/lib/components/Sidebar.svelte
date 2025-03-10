@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { Sidebar, SidebarGroup, SidebarItem, SidebarWrapper } from 'flowbite-svelte';
-	import { ClipboardListSolid, DesktopPcSolid } from 'flowbite-svelte-icons';
+	import { ClipboardListSolid, DesktopPcSolid, BookOpenOutline } from 'flowbite-svelte-icons';
 
 	export let network: string;
 	export let tokenSlug: string;
@@ -9,9 +9,16 @@
 
 <Sidebar
 	activeUrl={$page.url.pathname}
-	asideClass="w-64 z-10 fixed min-h-screen bg-gray-100 shadow-lg"
+	asideClass="w-64 z-10 fixed min-h-screen bg-gray-100 shadow-lg hidden md:block"
 	data-testid="sidebar"
 >
+	<div class="md:hidden flex items-center">
+		<button class="hamburger focus:outline-none">
+			<span class="block w-8 h-1 bg-gray-900 mb-1"></span>
+			<span class="block w-8 h-1 bg-gray-900 mb-1"></span>
+			<span class="block w-8 h-1 bg-gray-900"></span>
+		</button>
+	</div>
 	<SidebarWrapper divClass="py-6 px-4 bg-gray-100 dark:bg-gray-800 min-h-screen">
 		<SidebarGroup class="flex items-center space-x-3 border-b pb-4">
 			<img
@@ -41,6 +48,17 @@
 					<DesktopPcSolid class="h-5 w-5" />
 					<span class="px-3 text-base text-gray-600 hover:text-indigo-600 dark:text-white"
 						>Solver Logs</span
+					>
+				</svelte:fragment>
+			</SidebarItem>
+		</SidebarGroup>
+
+		<SidebarGroup class="gap-4 p-2">
+			<SidebarItem label="" href="/{tokenSlug}-{network}/orderbook">
+				<svelte:fragment slot="icon">
+					<BookOpenOutline class="h-5 w-5" />
+					<span class="px-3 text-base text-gray-600 hover:text-indigo-600 dark:text-white"
+						>Order Book</span
 					>
 				</svelte:fragment>
 			</SidebarItem>

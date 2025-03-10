@@ -7,8 +7,11 @@
 		TableBodyCell,
 		TableBodyRow
 	} from 'flowbite-svelte';
+	import type { CreateInfiniteQueryResult, InfiniteData } from '@tanstack/svelte-query';
+	import type { MarketDepthOrder } from '$lib/types';
+
 	export let network: string;
-	export let marketDepthQuery: any;
+	export let marketDepthQuery: CreateInfiniteQueryResult<InfiniteData<{orders: MarketDepthOrder[]}, unknown>, Error>;
 </script>
 
 <div>
