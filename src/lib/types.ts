@@ -83,4 +83,6 @@ export interface MarketDepthOrder {
 	outputIOIndex: number;
 	maxOutput: string;
 	ratio: string;
+	price: string;
+	priceDistance: string;
 }

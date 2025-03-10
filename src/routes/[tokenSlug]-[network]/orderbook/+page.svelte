@@ -16,12 +16,17 @@
 	import type { MarketDepthOrder } from '$lib/types';
 	import { ethers } from 'ethers';
 	import { OrderV3 as OrderV3Tuple } from '$lib/constants';
+	import { fetchDexTokenPrice } from '$lib/price';
 
 	const { settings, tokenSlug, network } = $page.data.stores;
 
 	let baseTokenAddress = tokenConfig[$tokenSlug].address;
 	let quoteTokenAddress = '';
+	let baseTokenDecimals = 18;
+	let quoteTokenDecimals = 18;
 	let networkRpc: string = '';
+	let baseTokenPrice: number = 0;
+	let quoteTokenPrice: number = 0;
 
 	$: marketDepthQuery = createInfiniteQuery({
 		queryKey: [network, baseTokenAddress, quoteTokenAddress, networkRpc],
@@ -41,13 +46,25 @@
 				},
 				{ page: pageParam + 1, pageSize: DEFAULT_ORDERS_PAGE_SIZE }
 			);
-
-			console.log("allOrders : ", allOrders.length);
-
 			const filteredBuySellOrders = await getFilteredBuySellOrders(allOrders);
-			console.log("filteredBuySellOrders : ", filteredBuySellOrders.length);
+		    baseTokenPrice = await fetchDexTokenPrice(
+				$settings.networks[$network]['chain-id'],
+				baseTokenAddress,
+				quoteTokenAddress,
+				baseTokenDecimals,
+				quoteTokenDecimals
+			);
+			quoteTokenPrice = await fetchDexTokenPrice(
+				$settings.networks[$network]['chain-id'],
+				quoteTokenAddress,
+				baseTokenAddress,
+				quoteTokenDecimals,
+				baseTokenDecimals
+			);
+			
+
 			const orderQuotes = await getOrderQuotes(filteredBuySellOrders);
-			console.log("orderQuotes : ", orderQuotes.length);
+
 			const filteredValidOrders: MarketDepthOrder[] = [];
 			for (const order of orderQuotes) {
 				const valid = await validateHandleIO(order);
@@ -55,7 +72,7 @@
 					filteredValidOrders.push(order);
 				}
 			}
-			console.log("filteredValidOrders : ", filteredValidOrders.length);
+		
 			return {
 				orders: filteredValidOrders,
 				hasMore: allOrders.length === DEFAULT_ORDERS_PAGE_SIZE
@@ -93,10 +110,12 @@
 					if (currentOrder.validInputs[j].token.toLowerCase() === baseTokenAddress.toLowerCase()) {
 						isBuyInput = true;
 						buyInputIndex = j;
+						baseTokenDecimals = currentOrder.validInputs[j].decimals;
 					}
 					if (currentOrder.validInputs[j].token.toLowerCase() === quoteTokenAddress.toLowerCase()) {
 						isSellInput = true;
 						sellInputIndex = j;
+						quoteTokenDecimals = currentOrder.validInputs[j].decimals;
 					}
 				}
 
@@ -121,7 +140,9 @@
 						inputIOIndex: buyInputIndex,
 						outputIOIndex: buyOutputIndex,
 						maxOutput: '',
-						ratio: ''
+						ratio: '',
+						price: '',
+						priceDistance: ''
 					});
 				}
 
@@ -133,7 +154,9 @@
 						inputIOIndex: sellInputIndex,
 						outputIOIndex: sellOutputIndex,
 						maxOutput: '',
-						ratio: ''
+						ratio: '',
+						price: '',
+						priceDistance: ''
 					});
 				}
 			}
@@ -166,13 +189,22 @@
 				if (quoteSpecs[i].maxOutput !== undefined && quoteSpecs[i].ratio !== undefined) {
 					orders[i].maxOutput = ethers.utils.formatEther(quoteSpecs[i].maxOutput).toString();
 					orders[i].ratio = ethers.utils.formatEther(quoteSpecs[i].ratio).toString();
+					if (orders[i].type === 'buy') {
+						const price = parseFloat(ethers.utils.formatEther(quoteSpecs[i].ratio))
+						orders[i]['price'] = (1 / price).toFixed(4);
+						orders[i]['priceDistance'] = ((quoteTokenPrice - price)/price * 100).toFixed(2).toString();
+					} else {
+						const price = parseFloat(ethers.utils.formatEther(quoteSpecs[i].ratio).toString());
+						orders[i]['price'] = price.toFixed(4);
+						orders[i]['priceDistance'] = ((baseTokenPrice - price)/price * 100).toFixed(2).toString();
+					}
 				} else {
 					orders[i].maxOutput = '0';
 					orders[i].ratio = '0';
 				}
 			}
 			return orders.filter((order) => order.maxOutput !== '0' && order.ratio !== '0');
-		} catch {
+		} catch(e) {
 			return [];
 		}
 	}
@@ -285,6 +317,8 @@
 		}
 		return validHandleIO;
 	}
+
+	
 </script>
 
 <div
