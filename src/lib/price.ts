@@ -99,7 +99,6 @@ export const fetchDexTokenPrice = async (
 			includeTransaction: true
 		});
 
-		
 		if (data.status === 'Success') {
 			const amountInFormatted: number = parseFloat(
 				ethers.utils.formatUnits(data.amountIn, baseTokenDecimals)
@@ -107,12 +106,11 @@ export const fetchDexTokenPrice = async (
 			const amountOutFormatted: number = parseFloat(
 				ethers.utils.formatUnits(data.assumedAmountOut, quoteTokenDecimals)
 			);
-			const price = amountOutFormatted / amountInFormatted;	
+			const price = amountOutFormatted / amountInFormatted;
 			return parseFloat(price.toFixed(4));
 		}
 
 		return 0;
-
 	} catch (error) {
 		console.error('Error performing swap:', error);
 		return 0;

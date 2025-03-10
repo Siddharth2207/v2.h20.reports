@@ -63,11 +63,8 @@
 									<TableBodyCell class="px-4 py-2 text-center"
 										>{parseFloat(order.ratio).toFixed(4)}</TableBodyCell
 									>
-									<TableBodyCell class="px-4 py-2 text-center"
-										>{order.price}</TableBodyCell
-									>
-									<TableBodyCell class="px-4 py-2 text-center"
-										>{order.priceDistance}%</TableBodyCell
+									<TableBodyCell class="px-4 py-2 text-center">{order.price}</TableBodyCell>
+									<TableBodyCell class="px-4 py-2 text-center">{order.priceDistance}%</TableBodyCell
 									>
 									<TableBodyCell class="px-4 py-2 text-center text-blue-500 underline">
 										<a
@@ -129,11 +126,8 @@
 									<TableBodyCell class="px-4 py-2 text-center"
 										>{parseFloat(order.ratio).toFixed(4)}</TableBodyCell
 									>
-									<TableBodyCell class="px-4 py-2 text-center"
-										>{order.price}</TableBodyCell
-									>
-									<TableBodyCell class="px-4 py-2 text-center"
-										>{order.priceDistance}%</TableBodyCell
+									<TableBodyCell class="px-4 py-2 text-center">{order.price}</TableBodyCell>
+									<TableBodyCell class="px-4 py-2 text-center">{order.priceDistance}%</TableBodyCell
 									>
 									<TableBodyCell class="px-4 py-2 text-center text-blue-500 underline">
 										<a
