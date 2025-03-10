@@ -38,7 +38,7 @@
 
 	$: ordersQuery = createInfiniteQuery({
 		queryKey: ['orders', orderActiveStateValue, orderHashStateValue, orderOwnerValue],
-		queryFn: async ({ pageParam = 0 }) => {
+		queryFn: async ({ pageParam}) => {
 			const allOrders = await getOrders(
 				activeSubgraphsValue,
 				{

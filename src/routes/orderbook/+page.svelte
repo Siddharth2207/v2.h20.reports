@@ -68,7 +68,8 @@
 	async function getFilteredBuySellOrders(
 		orders: SgOrderWithSubgraphName[]
 	): Promise<MarketDepthOrder[]> {
-		let filteredBuySellOrders: MarketDepthOrder[] = [];
+		try {
+			let filteredBuySellOrders: MarketDepthOrder[] = [];
 
 		for (const order of orders) {
 			const currentOrder: OrderV3 = ethers.utils.defaultAbiCoder.decode(
@@ -133,28 +134,40 @@
 		}
 
 		return filteredBuySellOrders;
+		} catch {
+			return [];
+		}
 	}
 
 	async function getOrderQuotes(orders: MarketDepthOrder[]): Promise<MarketDepthOrder[]> {
-		const orderBatchQuoteSpecs: BatchQuoteSpec = orders.map((order) => ({
-			orderHash: order.sgOrder.orderHash,
-			inputIOIndex: order.inputIOIndex,
-			outputIOIndex: order.outputIOIndex,
-			signedContext: [],
-			orderbook: $settings.orderbooks[network].address
-		}));
+		try {
+			const orderBatchQuoteSpecs: BatchQuoteSpec = orders.map((order) => ({
+				orderHash: order.sgOrder.orderHash,
+				inputIOIndex: order.inputIOIndex,
+				outputIOIndex: order.outputIOIndex,
+				signedContext: [],
+				orderbook: $settings.orderbooks[network].address
+			}));
 
-		const quoteSpecs: OrderQuoteValue[] = await doQuoteSpecs(
-			orderBatchQuoteSpecs,
-			$settings.subgraphs[network],
-			networkRpc === '' || networkRpc === undefined ? $settings.networks[network].rpc : networkRpc
-		);
+			const quoteSpecs: OrderQuoteValue[] = await doQuoteSpecs(
+				orderBatchQuoteSpecs,
+				$settings.subgraphs[network],
+				networkRpc === '' || networkRpc === undefined ? $settings.networks[network].rpc : networkRpc
+			);
 
-		for (let i = 0; i < orders.length; i++) {
-			orders[i].maxOutput = ethers.utils.formatEther(quoteSpecs[i].maxOutput).toString();
-			orders[i].ratio = ethers.utils.formatEther(quoteSpecs[i].ratio).toString();
+			for (let i = 0; i < orders.length; i++) {
+				if(quoteSpecs[i].maxOutput !== undefined && quoteSpecs[i].ratio !== undefined) {
+					orders[i].maxOutput = ethers.utils.formatEther(quoteSpecs[i].maxOutput).toString();
+					orders[i].ratio = ethers.utils.formatEther(quoteSpecs[i].ratio).toString();
+				} else{
+					orders[i].maxOutput = '0';
+					orders[i].ratio = '0';
+				}
+			}
+			return orders.filter((order) => order.maxOutput !== '0' && order.ratio !== '0');
+		} catch {
+			return [];
 		}
-		return orders;
 	}
 
 	async function validateHandleIO(order: MarketDepthOrder): Promise<boolean> {
@@ -260,7 +273,7 @@
 				[]
 			);
 			validHandleIO = true;
-		} catch (e) {
+		} catch {
 			console.log(`HandleIO Eval failed for order ${currentSgOrder.orderHash}`);
 		}
 		return validHandleIO;

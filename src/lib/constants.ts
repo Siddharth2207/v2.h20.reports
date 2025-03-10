@@ -1,6 +1,6 @@
 import type { Config, NetworkConfigurations } from './types';
 import { ethers } from 'ethers';
-export const DEFAULT_ORDERS_PAGE_SIZE = 5;
+export const DEFAULT_ORDERS_PAGE_SIZE = 50;
 export const DEFAULT_VAULTS_PAGE_SIZE = 1000;
 export const DEFAULT_TRADES_PAGE_SIZE = 1000;
 

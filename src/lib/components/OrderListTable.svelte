@@ -10,6 +10,7 @@
 	} from 'flowbite-svelte';
 	import { formatTimestamp, formatBalance } from '$lib/orders';
 	import { ethers } from 'ethers';
+	import { DEFAULT_ORDERS_PAGE_SIZE } from '$lib/constants';
 
 	export let networkValue: string;
 	export let query: any;
@@ -37,13 +38,14 @@
 
 	let sortOrder: 'asc' | 'desc' = 'asc';
 	let currentSort = 'totalTrades';
-	let sortedData = $query.data;
+	$: sortedData = $query.data;
 
 	function applySorting(data: any) {
-		if (!data) return data;
-		const allOrders = data.pages.flatMap((page: any) => page.orders);
+		if (!data || !data.pages || data.pages.length === 0) return data;
+		const allLoadedOrders = data.pages.flatMap((page: any) => page.orders);
 
-		allOrders.sort((a: any, b: any) => {
+
+		const sortedOrders = [...allLoadedOrders].sort((a: any, b: any) => {
 			switch (currentSort) {
 				case 'totalTrades':
 					const comparison = a.order.trades.length - b.order.trades.length;
@@ -198,12 +200,15 @@
 			}
 		});
 
-		const ordersPerPage = data.pages[0].orders.length;
+		const ordersPerPage = DEFAULT_ORDERS_PAGE_SIZE;
 		const newPages = [];
-		for (let i = 0; i < allOrders.length; i += ordersPerPage) {
+		 for (let i = 0; i < data.pages.length; i++) {
+			const startIdx = i * ordersPerPage;
+			const pageOrders = sortedOrders.slice(startIdx, startIdx + ordersPerPage);
+			
 			newPages.push({
-				...data.pages[0],
-				orders: allOrders.slice(i, i + ordersPerPage)
+				...data.pages[i],
+				orders: pageOrders
 			});
 		}
 		return {
@@ -221,22 +226,16 @@
 		}
 		sortedData = applySorting($query.data);
 	}
-
-	$: if ($query.data) {
-		sortedData = applySorting($query.data);
-	}
 </script>
 
-{#if sortedData?.pages[0].length === 0}
-	<div data-testid="emptyMessage" class="text-center text-gray-900 dark:text-white">None found</div>
-{:else if $query.isLoading}
+{#if $query.isLoading || $query.isFetchingNextPage }
 	<div class="mt-10 flex flex-col items-center justify-start">
 		<div
 			class="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-indigo-600"
 		></div>
 		<p class="mt-3 text-lg font-medium text-gray-600">Loading...</p>
 	</div>
-{:else if sortedData}
+{:else if $query.data}
 	<Table>
 		<TableHead class="bg-gray-50 text-sm font-semibold text-gray-800">
 			<TableHeadCell class="px-4 py-3 text-center">
@@ -985,13 +984,13 @@
 				color="dark"
 				on:click={async () => {
 					await $query.fetchNextPage();
-					sortedData = applySorting($query.data);
+					
 				}}
 				class="rounded bg-gray-800 px-2 py-1 text-sm text-white hover:bg-gray-600"
 			>
 				{#if $query.isFetchingNextPage}
 					Loading more...
-				{:else}
+				{:else if $query.hasNextPage}
 					Load More
 				{/if}
 			</Button>
