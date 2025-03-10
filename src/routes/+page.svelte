@@ -1,7 +1,6 @@
 <script lang="ts">
 	import '../app.css';
 	import { page } from '$app/stores';
-	import { Button } from 'flowbite-svelte';
 	import { goto } from '$app/navigation';
 	import Header from '$lib/components/Header.svelte';
 

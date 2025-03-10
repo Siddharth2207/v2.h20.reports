@@ -1,6 +1,5 @@
 <script lang="ts">
 	import '../app.css';
-	import Sidebar from '$lib/components/Sidebar.svelte';
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
 
 	const queryClient = new QueryClient({

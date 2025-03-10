@@ -1,3 +1,7 @@
+import { ethers } from 'ethers';
+import { getSwap } from 'sushi';
+import { type ExtractorSupportedChainId } from 'sushi/config';
+
 export interface TokenPrice {
 	averagePrice: number;
 	currentPrice: number;
@@ -26,6 +30,7 @@ export async function getTokenPriceUsd(tokenAddress: string, tokenSymbol: string
 		// Handle WFLR special case
 		if (tokenAddress.toLowerCase() === '0x1d80c49bbbcd1c0911346656b529df9e5c2f783d') {
 			const specialPair = pairs.find(
+				// eslint-disable-next-line
 				(pair: any) =>
 					pair.baseToken.address.toLowerCase() ===
 						'0xfbda5f676cb37624f28265a144a48b0d6e87d3b6'.toLowerCase() &&
@@ -68,3 +73,46 @@ export async function getTokenPriceUsd(tokenAddress: string, tokenSymbol: string
 		return { averagePrice: 0, currentPrice: 0 };
 	}
 }
+
+export const fetchDexTokenPrice = async (
+	chainId: number,
+	baseTokenAddress: string,
+	quoteTokenAddress: string,
+	baseTokenDecimals: number,
+	quoteTokenDecimals: number
+): Promise<number> => {
+	try {
+		// Generate a recipient address dynamically
+		const recipientAddress = ethers.Wallet.createRandom().address;
+
+		// Fixed swap amount of 1 base token
+		const amountIn = ethers.utils.parseUnits('1', baseTokenDecimals).toBigInt();
+
+		// Get the swap data from SushiSwap
+		const data = await getSwap({
+			chainId: chainId as ExtractorSupportedChainId,
+			tokenIn: baseTokenAddress as `0x${string}`,
+			tokenOut: quoteTokenAddress as `0x${string}`,
+			to: recipientAddress as `0x${string}`,
+			amount: amountIn,
+			maxSlippage: 0.005,
+			includeTransaction: true
+		});
+
+		if (data.status === 'Success') {
+			const amountInFormatted: number = parseFloat(
+				ethers.utils.formatUnits(data.amountIn, baseTokenDecimals)
+			);
+			const amountOutFormatted: number = parseFloat(
+				ethers.utils.formatUnits(data.assumedAmountOut, quoteTokenDecimals)
+			);
+			const price = amountOutFormatted / amountInFormatted;
+			return parseFloat(price.toFixed(4));
+		}
+
+		return 0;
+	} catch (error) {
+		console.error('Error performing swap:', error);
+		return 0;
+	}
+};

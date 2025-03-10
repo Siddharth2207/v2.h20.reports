@@ -1,11 +1,11 @@
 <script lang="ts">
-	import Header from '$lib/components/Header.svelte';
 	import MarketDepthTable from '$lib/components/MarketDepthTable.svelte';
 	import {
 		DEFAULT_ORDERS_PAGE_SIZE,
 		getContext,
 		interpreterV3Abi,
-		qualifyNamespace
+		qualifyNamespace,
+		tokenConfig
 	} from '$lib/constants';
 	import { page } from '$app/stores';
 	import type { SgOrderWithSubgraphName, OrderV3, SgVault } from '@rainlanguage/orderbook/js_api';
@@ -16,23 +16,27 @@
 	import type { MarketDepthOrder } from '$lib/types';
 	import { ethers } from 'ethers';
 	import { OrderV3 as OrderV3Tuple } from '$lib/constants';
+	import { fetchDexTokenPrice } from '$lib/price';
 
-	const { settings } = $page.data.stores;
+	const { settings, tokenSlug, network } = $page.data.stores;
 
-	let network = '';
-	let baseTokenAddress = '';
+	let baseTokenAddress = tokenConfig[$tokenSlug].address;
 	let quoteTokenAddress = '';
+	let baseTokenDecimals = 18;
+	let quoteTokenDecimals = 18;
 	let networkRpc: string = '';
+	let baseTokenPrice: number = 0;
+	let quoteTokenPrice: number = 0;
 
 	$: marketDepthQuery = createInfiniteQuery({
 		queryKey: [network, baseTokenAddress, quoteTokenAddress, networkRpc],
 		queryFn: async ({ pageParam = 0 }) => {
-			const subgraph = $settings.subgraphs[network];
+			const subgraph = $settings.subgraphs[$network];
 			const allOrders: SgOrderWithSubgraphName[] = await getOrders(
 				[
 					{
 						url: subgraph,
-						name: network
+						name: $network
 					}
 				],
 				{
@@ -40,10 +44,24 @@
 					active: true,
 					orderHash: undefined
 				},
-				{ page: pageParam + 1, pageSize: DEFAULT_ORDERS_PAGE_SIZE + 95 }
+				{ page: pageParam + 1, pageSize: DEFAULT_ORDERS_PAGE_SIZE }
+			);
+			const filteredBuySellOrders = await getFilteredBuySellOrders(allOrders);
+			baseTokenPrice = await fetchDexTokenPrice(
+				$settings.networks[$network]['chain-id'],
+				baseTokenAddress,
+				quoteTokenAddress,
+				baseTokenDecimals,
+				quoteTokenDecimals
+			);
+			quoteTokenPrice = await fetchDexTokenPrice(
+				$settings.networks[$network]['chain-id'],
+				quoteTokenAddress,
+				baseTokenAddress,
+				quoteTokenDecimals,
+				baseTokenDecimals
 			);
 
-			const filteredBuySellOrders = await getFilteredBuySellOrders(allOrders);
 			const orderQuotes = await getOrderQuotes(filteredBuySellOrders);
 
 			const filteredValidOrders: MarketDepthOrder[] = [];
@@ -53,9 +71,10 @@
 					filteredValidOrders.push(order);
 				}
 			}
+
 			return {
 				orders: filteredValidOrders,
-				hasMore: allOrders.length === DEFAULT_ORDERS_PAGE_SIZE + 95
+				hasMore: allOrders.length === DEFAULT_ORDERS_PAGE_SIZE
 			};
 		},
 		initialPageParam: 0,
@@ -90,10 +109,12 @@
 					if (currentOrder.validInputs[j].token.toLowerCase() === baseTokenAddress.toLowerCase()) {
 						isBuyInput = true;
 						buyInputIndex = j;
+						baseTokenDecimals = currentOrder.validInputs[j].decimals;
 					}
 					if (currentOrder.validInputs[j].token.toLowerCase() === quoteTokenAddress.toLowerCase()) {
 						isSellInput = true;
 						sellInputIndex = j;
+						quoteTokenDecimals = currentOrder.validInputs[j].decimals;
 					}
 				}
 
@@ -118,7 +139,9 @@
 						inputIOIndex: buyInputIndex,
 						outputIOIndex: buyOutputIndex,
 						maxOutput: '',
-						ratio: ''
+						ratio: '',
+						price: '',
+						priceDistance: ''
 					});
 				}
 
@@ -130,7 +153,9 @@
 						inputIOIndex: sellInputIndex,
 						outputIOIndex: sellOutputIndex,
 						maxOutput: '',
-						ratio: ''
+						ratio: '',
+						price: '',
+						priceDistance: ''
 					});
 				}
 			}
@@ -148,26 +173,41 @@
 				inputIOIndex: order.inputIOIndex,
 				outputIOIndex: order.outputIOIndex,
 				signedContext: [],
-				orderbook: $settings.orderbooks[network].address
+				orderbook: $settings.orderbooks[$network].address
 			}));
 
 			const quoteSpecs: OrderQuoteValue[] = await doQuoteSpecs(
 				orderBatchQuoteSpecs,
-				$settings.subgraphs[network],
-				networkRpc === '' || networkRpc === undefined ? $settings.networks[network].rpc : networkRpc
+				$settings.subgraphs[$network],
+				networkRpc === '' || networkRpc === undefined
+					? $settings.networks[$network].rpc
+					: networkRpc
 			);
 
 			for (let i = 0; i < orders.length; i++) {
 				if (quoteSpecs[i].maxOutput !== undefined && quoteSpecs[i].ratio !== undefined) {
 					orders[i].maxOutput = ethers.utils.formatEther(quoteSpecs[i].maxOutput).toString();
 					orders[i].ratio = ethers.utils.formatEther(quoteSpecs[i].ratio).toString();
+					if (orders[i].type === 'buy') {
+						const price = parseFloat(ethers.utils.formatEther(quoteSpecs[i].ratio));
+						orders[i]['price'] = (1 / price).toFixed(4);
+						orders[i]['priceDistance'] = (((quoteTokenPrice - price) / price) * 100)
+							.toFixed(2)
+							.toString();
+					} else {
+						const price = parseFloat(ethers.utils.formatEther(quoteSpecs[i].ratio).toString());
+						orders[i]['price'] = price.toFixed(4);
+						orders[i]['priceDistance'] = (((baseTokenPrice - price) / price) * 100)
+							.toFixed(2)
+							.toString();
+					}
 				} else {
 					orders[i].maxOutput = '0';
 					orders[i].ratio = '0';
 				}
 			}
 			return orders.filter((order) => order.maxOutput !== '0' && order.ratio !== '0');
-		} catch {
+		} catch (e) {
 			return [];
 		}
 	}
@@ -254,7 +294,7 @@
 		context[4][4] = ethers.utils.parseEther(order.maxOutput).toString();
 
 		const networkProvider = new ethers.providers.JsonRpcProvider(
-			networkRpc === '' || networkRpc === undefined ? $settings.networks[network].rpc : networkRpc
+			networkRpc === '' || networkRpc === undefined ? $settings.networks[$network].rpc : networkRpc
 		);
 		const interpreterContract = new ethers.Contract(
 			currentDecodedOrder.evaluable.interpreter,
@@ -282,7 +322,6 @@
 	}
 </script>
 
-<Header />
 <div
 	class="m-2 mx-auto w-full max-w-7xl rounded-lg border border-gray-300 bg-gray-100 p-5 font-sans shadow-lg"
 >
@@ -291,21 +330,6 @@
 		<h2 class="text-2xl font-bold text-gray-800">Market Depth</h2>
 	</div>
 	<div class="mb-5 flex flex-col gap-4">
-		<div>
-			<label for="network-select" class="block font-semibold">Network:</label>
-			<select
-				id="network-select"
-				class="mt-2 w-full rounded border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-				bind:value={network}
-			>
-				<option value="" disabled> Select a Network </option>
-				{#each Object.keys($settings.subgraphs) as network}
-					<option class="text-lg text-gray-700 hover:bg-gray-200 md:text-base" value={network}
-						>{network}</option
-					>
-				{/each}
-			</select>
-		</div>
 		<div>
 			<label for="base-token-select" class="block font-semibold">Base Token:</label>
 			<input
@@ -335,11 +359,11 @@
 		</div>
 	</div>
 
-	{#if network && baseTokenAddress && quoteTokenAddress}
+	{#if $network && baseTokenAddress && quoteTokenAddress}
 		<div class="rounded-md border border-gray-300 bg-white p-5 shadow-md">
-			<MarketDepthTable {marketDepthQuery} {network} />
+			<MarketDepthTable {marketDepthQuery} network={$network} />
 		</div>
-	{:else if !network || !baseTokenAddress || !quoteTokenAddress}
+	{:else if !$network || !baseTokenAddress || !quoteTokenAddress}
 		<div class="rounded-md border border-gray-300 bg-white p-5 shadow-md">
 			<h2 class="text-lg font-medium text-gray-500">
 				Please select a network, base token, and quote token

@@ -57,6 +57,7 @@ export interface StablesConfig {
 	address: string;
 }
 
+// eslint-disable-next-line
 export interface NetworkConfigurations extends Record<string, NetworkConfig> {}
 
 export interface TokenConfig {
@@ -82,4 +83,6 @@ export interface MarketDepthOrder {
 	outputIOIndex: number;
 	maxOutput: string;
 	ratio: string;
+	price: string;
+	priceDistance: string;
 }

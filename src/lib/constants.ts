@@ -511,19 +511,19 @@ export const interpreterV3Abi = [
 
 export function qualifyNamespace(stateNamespace: string, sender: string): string {
 	// Convert stateNamespace to a BigNumber and then to a 32-byte hex string
-	let stateNamespaceHex = ethers.utils.hexZeroPad(
+	const stateNamespaceHex = ethers.utils.hexZeroPad(
 		ethers.BigNumber.from(stateNamespace).toHexString(),
 		32
 	);
 
 	// Normalize sender address and convert to a 32-byte hex string
-	let senderHex = ethers.utils.hexZeroPad(ethers.utils.getAddress(sender).toLowerCase(), 32);
+	const senderHex = ethers.utils.hexZeroPad(ethers.utils.getAddress(sender).toLowerCase(), 32);
 
 	// Concatenate the two 32-byte hex strings
-	let data = ethers.utils.concat([stateNamespaceHex, senderHex]);
+	const data = ethers.utils.concat([stateNamespaceHex, senderHex]);
 
 	// Compute the keccak256 hash of the concatenated data
-	let qualifiedNamespace = ethers.utils.keccak256(data);
+	const qualifiedNamespace = ethers.utils.keccak256(data);
 
 	// Return the hash
 	return qualifiedNamespace;
