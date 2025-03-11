@@ -207,7 +207,7 @@
 				}
 			}
 			return orders.filter((order) => order.maxOutput !== '0' && order.ratio !== '0');
-		} catch (e) {
+		} catch {
 			return [];
 		}
 	}

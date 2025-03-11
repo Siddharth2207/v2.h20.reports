@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '../../app.css';
 	import { page } from '$app/stores';
-	import type { MultiSubgraphArgs } from '@rainlanguage/orderbook/js_api';
+	import type { MultiSubgraphArgs, SgOrder, SgOrderWithSubgraphName, SgTrade, SgVault } from '@rainlanguage/orderbook/js_api';
 	import OrderListTable from '$lib/components/OrderListTable.svelte';
 	import { getTokenPriceUsd } from '$lib/price';
 	import { ethers } from 'ethers';
@@ -18,6 +18,7 @@
 		DEFAULT_VAULTS_PAGE_SIZE,
 		tokenConfig
 	} from '$lib/constants';
+	import type { OrderListOrderWithSubgraphName, OrderListTotalVolume } from '$lib/types';
 	const { activeSubgraphs, tokenSlug, network } = $page.data.stores;
 
 	let activeSubgraphsValue: MultiSubgraphArgs[] = $activeSubgraphs;
@@ -39,7 +40,7 @@
 	$: ordersQuery = createInfiniteQuery({
 		queryKey: ['orders', orderActiveStateValue, orderHashStateValue, orderOwnerValue],
 		queryFn: async ({ pageParam }) => {
-			const allOrders = await getOrders(
+			const allOrders: SgOrderWithSubgraphName[] = await getOrders(
 				activeSubgraphsValue,
 				{
 					owners: orderOwnerValue ? [orderOwnerValue] : [],
@@ -49,34 +50,36 @@
 				{ page: pageParam + 1, pageSize: DEFAULT_ORDERS_PAGE_SIZE }
 			);
 
-			let filteredOrders = allOrders.filter(
-				(order: any) =>
+			let filteredOrders: SgOrderWithSubgraphName[] = allOrders.filter(
+				(order: SgOrderWithSubgraphName) =>
 					order.order.inputs.some(
-						(input: any) =>
+						(input: SgVault) =>
 							input.token.symbol === tokenSymbol &&
 							input.token.address.toLowerCase() === tokenAddress.toLowerCase()
 					) ||
 					order.order.outputs.some(
-						(output: any) =>
+						(output: SgVault) =>
 							output.token.symbol === tokenSymbol &&
 							output.token.address.toLowerCase() === tokenAddress.toLowerCase()
 					)
 			);
 
-			filteredOrders = await orderWithTrades(filteredOrders);
-			filteredOrders = await orderWithBalanceChanges(filteredOrders);
-			filteredOrders = await getTokenPriceUsdMap(filteredOrders);
-			for (let order of filteredOrders) {
+			let filteredOrdersWithTrades: OrderListOrderWithSubgraphName[] = await orderWithTrades(filteredOrders);
+			let filteredOrdersWithVaultBalanceChanges: OrderListOrderWithSubgraphName[] = await orderWithVaultBalanceChanges(filteredOrdersWithTrades);
+			let filteredOrdersWithTokenPriceUsdMap: OrderListOrderWithSubgraphName[] = await getTokenPriceUsdMap(filteredOrdersWithVaultBalanceChanges);
+			for (let order of filteredOrdersWithTokenPriceUsdMap) {
 				order.order['totalVolume'] = calculateTradeVolume(order.order.trades);
 				order.order['totalVolume24h'] = calculateTradeVolume(
 					order.order.trades.filter((trade: any) => Date.now() / 1000 - trade.timestamp <= 86400)
 				);
 			}
-			filteredOrders = calculateBalanceChanges(filteredOrders);
-			filteredOrders = calculateTotalDepositsAndWithdrawals(filteredOrders);
+			let ordersWithBalanceChanges: OrderListOrderWithSubgraphName[] = calculateBalanceChanges(filteredOrdersWithTokenPriceUsdMap);
+			let ordersWithTotalDepositsAndWithdrawals: OrderListOrderWithSubgraphName[] = calculateTotalDepositsAndWithdrawals(ordersWithBalanceChanges);
+
+			console.log("ordersWithTotalDepositsAndWithdrawals : ", JSON.stringify(ordersWithTotalDepositsAndWithdrawals));
 
 			return {
-				orders: filteredOrders,
+				orders: ordersWithTotalDepositsAndWithdrawals,
 				hasMore: allOrders.length === DEFAULT_ORDERS_PAGE_SIZE
 			};
 		},
@@ -87,7 +90,7 @@
 		enabled: true
 	});
 
-	async function orderWithTrades(orders: any[]): Promise<any[]> {
+	async function orderWithTrades(orders: SgOrderWithSubgraphName[]): Promise<OrderListOrderWithSubgraphName[]> {
 		for (const order of orders) {
 			let allTrades: any[] = [];
 			let currentPage = 1;
@@ -112,10 +115,10 @@
 				(a: any, b: any) => b.tradeEvent.transaction.timestamp - a.tradeEvent.transaction.timestamp
 			);
 		}
-		return orders;
+		return orders as OrderListOrderWithSubgraphName[];
 	}
 
-	async function orderWithBalanceChanges(orders: any[]): Promise<any[]> {
+	async function orderWithVaultBalanceChanges(orders: OrderListOrderWithSubgraphName[]): Promise<OrderListOrderWithSubgraphName[]> {
 		for (const order of orders) {
 			const vaultBalanceChangesMap = new Map();
 			const allVaults = [...order.order.inputs, ...order.order.outputs];
@@ -150,7 +153,7 @@
 		return orders;
 	}
 
-	function calculateTradeVolume(trades: any[]) {
+	function calculateTradeVolume(trades: SgTrade[]): OrderListTotalVolume[] {
 		try {
 			const tokenVolumes: Record<string, { totalVolume: number; tokenAddress: string }> = {};
 			for (const trade of trades) {
@@ -160,10 +163,12 @@
 						const { symbol, decimals, address } = vault.token;
 						const volume = parseFloat(ethers.utils.formatUnits(amount, decimals).toString());
 
-						if (!tokenVolumes[symbol]) {
-							tokenVolumes[symbol] = { totalVolume: 0, tokenAddress: address };
+						if(symbol){
+							if (!tokenVolumes[symbol]) {
+								tokenVolumes[symbol] = { totalVolume: 0, tokenAddress: address };
+							}
+							tokenVolumes[symbol].totalVolume += Math.abs(volume);
 						}
-						tokenVolumes[symbol].totalVolume += Math.abs(volume);
 					}
 				}
 				if (trade.inputVaultBalanceChange) {
@@ -172,10 +177,12 @@
 						const { symbol, decimals, address } = vault.token;
 						const volume = parseFloat(ethers.utils.formatUnits(amount, decimals).toString());
 
-						if (!tokenVolumes[symbol]) {
-							tokenVolumes[symbol] = { totalVolume: 0, tokenAddress: address };
+						if (symbol) {
+							if (!tokenVolumes[symbol]) {
+								tokenVolumes[symbol] = { totalVolume: 0, tokenAddress: address };
+							}
+							tokenVolumes[symbol].totalVolume += Math.abs(volume);
 						}
-						tokenVolumes[symbol].totalVolume += Math.abs(volume);
 					}
 				}
 			}
@@ -186,10 +193,11 @@
 			}));
 		} catch {
 			errorMessage = 'Failed to calculate trades volume';
+			return [];
 		}
 	}
 
-	function calculateBalanceChanges(orders: any[]): any[] {
+	function calculateBalanceChanges(orders: OrderListOrderWithSubgraphName[]): OrderListOrderWithSubgraphName[] {
 		try {
 			for (const order of orders) {
 				const trades24h = order.order.trades.filter(
@@ -241,10 +249,10 @@
 		}
 	}
 
-	function calculateTotalDepositsAndWithdrawals(orders: any[]): any[] {
+	function calculateTotalDepositsAndWithdrawals(orders: OrderListOrderWithSubgraphName[]): OrderListOrderWithSubgraphName[] {
 		try {
 			for (const order of orders) {
-				order.order['orderDuration'] = Date.now() / 1000 - order.order.timestampAdded;
+				order.order['orderDuration'] = Date.now() / 1000 - parseFloat(order.order.timestampAdded);
 				for (const input of order.order.inputs) {
 					input['totalDeposits'] = input.balanceChanges
 						.filter((change: any) => change.__typename === 'Deposit')
@@ -315,12 +323,12 @@
 				}
 				const currentOrderTotalDepositsUsd = order.order.outputs.reduce(
 					(acc: any, output: any) =>
-						acc + output.totalDeposits * order.order.tokenPriceUsdMap.get(output.token.address),
+						acc + output.totalDeposits * (order.order.tokenPriceUsdMap.get(output.token.address) || 0),
 					0
 				);
 				const currentOrderTotalInputsUsd = order.order.inputs.reduce(
 					(acc: any, input: any) =>
-						acc + input.currentVaultInputs * order.order.tokenPriceUsdMap.get(input.token.address),
+						acc + input.currentVaultInputs * (order.order.tokenPriceUsdMap.get(input.token.address) || 0),
 					0
 				);
 				order.order['roi'] = currentOrderTotalInputsUsd - currentOrderTotalDepositsUsd;
@@ -339,7 +347,7 @@
 		}
 	}
 
-	async function getTokenPriceUsdMap(orders: any[]): Promise<any[]> {
+	async function getTokenPriceUsdMap(orders: OrderListOrderWithSubgraphName[]): Promise<OrderListOrderWithSubgraphName[]> {
 		try {
 			const tokenPriceUsdMap = new Map<string, any>();
 			for (const order of orders) {
@@ -347,14 +355,14 @@
 					if (tokenPriceUsdMap.has(input.token.address)) {
 						continue;
 					}
-					const tokenPrice = await getTokenPriceUsd(input.token.address, input.token.symbol);
+					const tokenPrice = await getTokenPriceUsd(input.token.address, input.token?.symbol || '');
 					tokenPriceUsdMap.set(input.token.address, tokenPrice.currentPrice);
 				}
 				for (const output of order.order.outputs) {
 					if (tokenPriceUsdMap.has(output.token.address)) {
 						continue;
 					}
-					const tokenPrice = await getTokenPriceUsd(output.token.address, output.token.symbol);
+					const tokenPrice = await getTokenPriceUsd(output.token.address, output.token?.symbol || '');
 					tokenPriceUsdMap.set(output.token.address, tokenPrice.currentPrice);
 				}
 				order.order['tokenPriceUsdMap'] = tokenPriceUsdMap;
