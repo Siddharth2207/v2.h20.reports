@@ -302,7 +302,6 @@
 			networkProvider
 		);
 
-		let validHandleIO = false;
 		try {
 			await interpreterContract.eval3(
 				currentDecodedOrder.evaluable.store,
@@ -314,11 +313,10 @@
 				context,
 				[]
 			);
-			validHandleIO = true;
+			return true;
 		} catch {
-			console.log(`HandleIO Eval failed for order ${currentSgOrder.orderHash}`);
+			return false;
 		}
-		return validHandleIO;
 	}
 </script>
 
