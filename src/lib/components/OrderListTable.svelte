@@ -17,7 +17,7 @@
 		OrderListTotalVolume,
 		OrderListVault
 	} from '$lib/types';
-	import { SgTrade } from '@rainlanguage/orderbook/js_api';
+	import type { SgTrade } from '@rainlanguage/orderbook/js_api';
 
 	export let networkValue: string;
 	export let query: CreateInfiniteQueryResult<
