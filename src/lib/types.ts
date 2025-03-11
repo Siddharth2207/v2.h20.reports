@@ -16,7 +16,7 @@ export interface OrderListTotalVolume {
 
 export interface OrderListVault extends Omit<SgVault, 'balanceChanges'> {
 	balanceChanges: SgVaultBalanceChangeUnwrapped[];
-	balanceChange24h: string;
+	balanceChange24h: number;
 	percentageChange24h: number;
 	totalDeposits: number;
 	totalWithdrawals: number;

@@ -228,7 +228,7 @@
 			isInput: boolean
 		) {
 			if (trades24h.length === 0) {
-				item['balanceChange24h'] = '0';
+				item['balanceChange24h'] = 0;
 				item['percentageChange24h'] = 0;
 				return;
 			}
@@ -259,7 +259,7 @@
 				ethers.utils.formatUnits(balanceChangeBigNum, item.token.decimals).toString()
 			).toFixed(2);
 
-			item['balanceChange24h'] = formattedBalanceChange;
+			item['balanceChange24h'] = parseFloat(formattedBalanceChange);
 			item['percentageChange24h'] = percentageChange;
 		}
 		try {

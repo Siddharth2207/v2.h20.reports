@@ -898,7 +898,7 @@
 													? 'text-green-600'
 													: 'text-red-600'}"
 											>
-												{formatBalance(parseFloat(input.balanceChange24h))} ({formatBalance(
+												{formatBalance(input.balanceChange24h)} ({formatBalance(
 													input.percentageChange24h
 												)}%)
 											</span>
@@ -917,7 +917,7 @@
 													? 'text-green-600'
 													: 'text-red-600'}"
 											>
-												{formatBalance(parseFloat(output.balanceChange24h))} ({formatBalance(
+												{formatBalance(output.balanceChange24h)} ({formatBalance(
 													output.percentageChange24h
 												)}%)
 											</span>
