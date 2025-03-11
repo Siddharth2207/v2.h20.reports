@@ -12,13 +12,18 @@
 	import { formatTimestamp, formatBalance } from '$lib/orders';
 	import { ethers } from 'ethers';
 	import { DEFAULT_ORDERS_PAGE_SIZE } from '$lib/constants';
-	import type { OrderListOrderWithSubgraphName } from '$lib/types';
+	import type {
+		OrderListOrderWithSubgraphName,
+		OrderListTotalVolume,
+		OrderListVault
+	} from '$lib/types';
+	import { SgTrade } from '@rainlanguage/orderbook/js_api';
 
 	export let networkValue: string;
 	export let query: CreateInfiniteQueryResult<
 		InfiniteData<{ orders: OrderListOrderWithSubgraphName[] }, unknown>,
 		Error
-	>;;
+	>;
 
 	export let lastTradeFlag: boolean = true;
 	export let firstTradeFlag: boolean = true;
@@ -45,164 +50,196 @@
 	let currentSort = 'totalTrades';
 	$: sortedData = $query.data;
 
-	function applySorting(data: any) {
+	function applySorting(
+		data: InfiniteData<{ orders: OrderListOrderWithSubgraphName[] }, unknown> | undefined
+	) {
 		if (!data || !data.pages || data.pages.length === 0) return data;
-		const allLoadedOrders = data.pages.flatMap((page: any) => page.orders);
+		const allLoadedOrders = data.pages.flatMap(
+			(page: { orders: OrderListOrderWithSubgraphName[] }) => page.orders
+		);
 
-		const sortedOrders = [...allLoadedOrders].sort((a: any, b: any) => {
-			switch (currentSort) {
-				case 'totalTrades':
-					const comparison = a.order.trades.length - b.order.trades.length;
-					return sortOrder === 'asc' ? comparison : -comparison;
+		const sortedOrders = [...allLoadedOrders].sort(
+			(a: OrderListOrderWithSubgraphName, b: OrderListOrderWithSubgraphName) => {
+				switch (currentSort) {
+					case 'totalTrades': {
+						const comparison = a.order.trades.length - b.order.trades.length;
+						return sortOrder === 'asc' ? comparison : -comparison;
+					}
 
-				case 'firstTrade':
-					const comparisonFirstTrade =
-						a.order.trades[a.order.trades.length - 1].timestamp -
-						b.order.trades[b.order.trades.length - 1].timestamp;
-					return sortOrder === 'asc' ? comparisonFirstTrade : -comparisonFirstTrade;
+					case 'firstTrade': {
+						const comparisonFirstTrade =
+							parseFloat(a.order.trades[a.order.trades.length - 1].timestamp) -
+							parseFloat(b.order.trades[b.order.trades.length - 1].timestamp);
+						return sortOrder === 'asc' ? comparisonFirstTrade : -comparisonFirstTrade;
+					}
 
-				case 'lastTrade':
-					const comparisonLastTrade = a.order.trades[0].timestamp - b.order.trades[0].timestamp;
-					return sortOrder === 'asc' ? comparisonLastTrade : -comparisonLastTrade;
+					case 'lastTrade': {
+						const comparisonLastTrade =
+							parseFloat(a.order.trades[0].timestamp) - parseFloat(b.order.trades[0].timestamp);
+						return sortOrder === 'asc' ? comparisonLastTrade : -comparisonLastTrade;
+					}
 
-				case 'orderDuration':
-					const comparisonOrderDuration = a.order.orderDuration - b.order.orderDuration;
-					return sortOrder === 'asc' ? comparisonOrderDuration : -comparisonOrderDuration;
+					case 'orderDuration': {
+						const comparisonOrderDuration = a.order.orderDuration - b.order.orderDuration;
+						return sortOrder === 'asc' ? comparisonOrderDuration : -comparisonOrderDuration;
+					}
 
-				case 'tradesDuration':
-					const comparisonTradesDuration =
-						a.order.trades[0].timestamp -
-						a.order.trades[a.order.trades.length - 1].timestamp -
-						(b.order.trades[0].timestamp - b.order.trades[b.order.trades.length - 1].timestamp);
-					return sortOrder === 'asc' ? comparisonTradesDuration : -comparisonTradesDuration;
+					case 'tradesDuration': {
+						const comparisonTradesDuration =
+							parseFloat(a.order.trades[0].timestamp) -
+							parseFloat(a.order.trades[a.order.trades.length - 1].timestamp) -
+							(parseFloat(b.order.trades[0].timestamp) -
+								parseFloat(b.order.trades[b.order.trades.length - 1].timestamp));
+						return sortOrder === 'asc' ? comparisonTradesDuration : -comparisonTradesDuration;
+					}
 
-				case 'trades24h':
-					const comparisonTrades24h =
-						a.order.trades.filter((trade: any) => Date.now() / 1000 - trade.timestamp <= 86400)
-							.length -
-						b.order.trades.filter((trade: any) => Date.now() / 1000 - trade.timestamp <= 86400)
-							.length;
-					return sortOrder === 'asc' ? comparisonTrades24h : -comparisonTrades24h;
+					case 'trades24h': {
+						const comparisonTrades24h =
+							a.order.trades.filter(
+								(trade: SgTrade) => Date.now() / 1000 - parseFloat(trade.timestamp) <= 86400
+							).length -
+							b.order.trades.filter(
+								(trade: SgTrade) => Date.now() / 1000 - parseFloat(trade.timestamp) <= 86400
+							).length;
+						return sortOrder === 'asc' ? comparisonTrades24h : -comparisonTrades24h;
+					}
 
-				case 'volumeTotal':
-					const comparisonVolumeTotal =
-						a.order.totalVolume.reduce(
-							(acc: number, token: any) =>
-								acc + token.totalVolume * a.order.tokenPriceUsdMap.get(token.tokenAddress),
-							0
-						) -
-						b.order.totalVolume.reduce(
-							(acc: number, token: any) =>
-								acc + token.totalVolume * b.order.tokenPriceUsdMap.get(token.tokenAddress),
-							0
-						);
-					return sortOrder === 'asc' ? comparisonVolumeTotal : -comparisonVolumeTotal;
+					case 'volumeTotal': {
+						const comparisonVolumeTotal =
+							a.order.totalVolume.reduce(
+								(acc: number, token: OrderListTotalVolume) =>
+									acc + token.totalVolume * (a.order.tokenPriceUsdMap.get(token.tokenAddress) || 0),
+								0
+							) -
+							b.order.totalVolume.reduce(
+								(acc: number, token: OrderListTotalVolume) =>
+									acc + token.totalVolume * (b.order.tokenPriceUsdMap.get(token.tokenAddress) || 0),
+								0
+							);
+						return sortOrder === 'asc' ? comparisonVolumeTotal : -comparisonVolumeTotal;
+					}
 
-				case 'volume24h':
-					const comparisonVolume24h =
-						a.order.totalVolume24h.reduce(
-							(acc: number, token: any) =>
-								acc + token.totalVolume * a.order.tokenPriceUsdMap.get(token.tokenAddress),
-							0
-						) -
-						b.order.totalVolume24h.reduce(
-							(acc: number, token: any) =>
-								acc + token.totalVolume * b.order.tokenPriceUsdMap.get(token.tokenAddress),
-							0
-						);
-					return sortOrder === 'asc' ? comparisonVolume24h : -comparisonVolume24h;
+					case 'volume24h': {
+						const comparisonVolume24h =
+							a.order.totalVolume24h.reduce(
+								(acc: number, token: OrderListTotalVolume) =>
+									acc + token.totalVolume * (a.order.tokenPriceUsdMap.get(token.tokenAddress) || 0),
+								0
+							) -
+							b.order.totalVolume24h.reduce(
+								(acc: number, token: OrderListTotalVolume) =>
+									acc + token.totalVolume * (b.order.tokenPriceUsdMap.get(token.tokenAddress) || 0),
+								0
+							);
+						return sortOrder === 'asc' ? comparisonVolume24h : -comparisonVolume24h;
+					}
 
-				case 'totalDeposits':
-					const comparisonTotalDeposits =
-						a.order.outputs.reduce(
-							(acc: number, output: any) =>
-								acc + output.totalDeposits * a.order.tokenPriceUsdMap.get(output.token.address),
-							0
-						) -
-						b.order.outputs.reduce(
-							(acc: number, output: any) =>
-								acc + output.totalDeposits * b.order.tokenPriceUsdMap.get(output.token.address),
-							0
-						);
-					return sortOrder === 'asc' ? comparisonTotalDeposits : -comparisonTotalDeposits;
+					case 'totalDeposits': {
+						const comparisonTotalDeposits =
+							a.order.outputs.reduce(
+								(acc: number, output: OrderListVault) =>
+									acc +
+									output.totalDeposits * (a.order.tokenPriceUsdMap.get(output.token.address) || 0),
+								0
+							) -
+							b.order.outputs.reduce(
+								(acc: number, output: OrderListVault) =>
+									acc +
+									output.totalDeposits * (b.order.tokenPriceUsdMap.get(output.token.address) || 0),
+								0
+							);
+						return sortOrder === 'asc' ? comparisonTotalDeposits : -comparisonTotalDeposits;
+					}
 
-				case 'totalInputs':
-					const comparisonTotalInputs =
-						a.order.inputs.reduce(
-							(acc: number, input: any) =>
-								acc + input.currentVaultInputs * a.order.tokenPriceUsdMap.get(input.token.address),
-							0
-						) -
-						b.order.inputs.reduce(
-							(acc: number, input: any) =>
-								acc + input.currentVaultInputs * b.order.tokenPriceUsdMap.get(input.token.address),
-							0
-						);
-					return sortOrder === 'asc' ? comparisonTotalInputs : -comparisonTotalInputs;
+					case 'totalInputs': {
+						const comparisonTotalInputs =
+							a.order.inputs.reduce(
+								(acc: number, input: OrderListVault) =>
+									acc +
+									input.currentVaultInputs *
+										(a.order.tokenPriceUsdMap.get(input.token.address) || 0),
+								0
+							) -
+							b.order.inputs.reduce(
+								(acc: number, input: OrderListVault) =>
+									acc +
+									input.currentVaultInputs *
+										(b.order.tokenPriceUsdMap.get(input.token.address) || 0),
+								0
+							);
+						return sortOrder === 'asc' ? comparisonTotalInputs : -comparisonTotalInputs;
+					}
 
-				case 'absoluteChange':
-				case 'roi':
-					const comparisonAbsoluteChange = a.order.roi - b.order.roi;
-					return sortOrder === 'asc' ? comparisonAbsoluteChange : -comparisonAbsoluteChange;
+					case 'absoluteChange':
+					case 'roi': {
+						const comparisonAbsoluteChange = a.order.roi - b.order.roi;
+						return sortOrder === 'asc' ? comparisonAbsoluteChange : -comparisonAbsoluteChange;
+					}
 
-				case 'percentChange':
-				case 'roiPercent':
-					const comparisonRoiPercent = a.order.roiPercentage - b.order.roiPercentage;
-					return sortOrder === 'asc' ? comparisonRoiPercent : -comparisonRoiPercent;
+					case 'percentChange':
+					case 'roiPercent': {
+						const comparisonRoiPercent = a.order.roiPercentage - b.order.roiPercentage;
+						return sortOrder === 'asc' ? comparisonRoiPercent : -comparisonRoiPercent;
+					}
 
-				case 'apy':
-				case 'apyPercent':
-					const comparisonApyPercent = a.order.apyPercentage - b.order.apyPercentage;
-					return sortOrder === 'asc' ? comparisonApyPercent : -comparisonApyPercent;
+					case 'apy':
+					case 'apyPercent': {
+						const comparisonApyPercent = a.order.apyPercentage - b.order.apyPercentage;
+						return sortOrder === 'asc' ? comparisonApyPercent : -comparisonApyPercent;
+					}
 
-				case 'inputBalance':
-					const comparisonInputBalance =
-						a.order.inputs.reduce(
-							(acc: number, input: any) =>
-								acc +
-								parseFloat(
-									ethers.utils.formatUnits(input.balance, input.token.decimals).toString()
-								) *
-									a.order.tokenPriceUsdMap.get(input.token.address),
-							0
-						) -
-						b.order.inputs.reduce(
-							(acc: number, input: any) =>
-								acc +
-								parseFloat(
-									ethers.utils.formatUnits(input.balance, input.token.decimals).toString()
-								) *
-									b.order.tokenPriceUsdMap.get(input.token.address),
-							0
-						);
-					return sortOrder === 'asc' ? comparisonInputBalance : -comparisonInputBalance;
+					case 'inputBalance': {
+						const comparisonInputBalance =
+							a.order.inputs.reduce(
+								(acc: number, input: OrderListVault) =>
+									acc +
+									parseFloat(
+										ethers.utils.formatUnits(input.balance, input.token.decimals).toString()
+									) *
+										(a.order.tokenPriceUsdMap.get(input.token.address) || 0),
+								0
+							) -
+							b.order.inputs.reduce(
+								(acc: number, input: OrderListVault) =>
+									acc +
+									parseFloat(
+										ethers.utils.formatUnits(input.balance, input.token.decimals).toString()
+									) *
+										(b.order.tokenPriceUsdMap.get(input.token.address) || 0),
+								0
+							);
+						return sortOrder === 'asc' ? comparisonInputBalance : -comparisonInputBalance;
+					}
 
-				case 'outputBalance':
-					const comparisonOutputBalance =
-						a.order.outputs.reduce(
-							(acc: number, output: any) =>
-								acc +
-								parseFloat(
-									ethers.utils.formatUnits(output.balance, output.token.decimals).toString()
-								) *
-									a.order.tokenPriceUsdMap.get(output.token.address),
-							0
-						) -
-						b.order.outputs.reduce(
-							(acc: number, output: any) =>
-								acc +
-								parseFloat(
-									ethers.utils.formatUnits(output.balance, output.token.decimals).toString()
-								) *
-									b.order.tokenPriceUsdMap.get(output.token.address),
-							0
-						);
-					return sortOrder === 'asc' ? comparisonOutputBalance : -comparisonOutputBalance;
+					case 'outputBalance': {
+						const comparisonOutputBalance =
+							a.order.outputs.reduce(
+								(acc: number, output: OrderListVault) =>
+									acc +
+									parseFloat(
+										ethers.utils.formatUnits(output.balance, output.token.decimals).toString()
+									) *
+										(a.order.tokenPriceUsdMap.get(output.token.address) || 0),
+								0
+							) -
+							b.order.outputs.reduce(
+								(acc: number, output: OrderListVault) =>
+									acc +
+									parseFloat(
+										ethers.utils.formatUnits(output.balance, output.token.decimals).toString()
+									) *
+										(b.order.tokenPriceUsdMap.get(output.token.address) || 0),
+								0
+							);
+						return sortOrder === 'asc' ? comparisonOutputBalance : -comparisonOutputBalance;
+					}
 
-				default:
-					return 0;
+					default: {
+						return 0;
+					}
+				}
 			}
-		});
+		);
 
 		const ordersPerPage = DEFAULT_ORDERS_PAGE_SIZE;
 		const newPages = [];
@@ -600,7 +637,9 @@
 							{#if lastTradeFlag}
 								<TableBodyCell class="px-4 py-3 text-center text-sm">
 									{order.order.trades.length > 0
-										? formatTimestamp(parseFloat(order.order.trades[order.order.trades.length - 1].timestamp))
+										? formatTimestamp(
+												parseFloat(order.order.trades[order.order.trades.length - 1].timestamp)
+											)
 										: 'N/A'}</TableBodyCell
 								>
 							{/if}
@@ -799,7 +838,9 @@
 													(acc, input) =>
 														acc +
 														parseFloat(
-															ethers.utils.formatUnits(input.balance, input.token.decimals).toString()
+															ethers.utils
+																.formatUnits(input.balance, input.token.decimals)
+																.toString()
 														) *
 															(order.order.tokenPriceUsdMap.get(input.token.address) || 0),
 													0
@@ -818,7 +859,9 @@
 											<span class="text-gray-800"
 												>{formatBalance(
 													parseFloat(
-														ethers.utils.formatUnits(output.balance, output.token.decimals).toString()
+														ethers.utils
+															.formatUnits(output.balance, output.token.decimals)
+															.toString()
 													)
 												)}</span
 											>

@@ -1,7 +1,13 @@
 <script lang="ts">
 	import '../../app.css';
 	import { page } from '$app/stores';
-	import type { MultiSubgraphArgs, SgOrder, SgOrderWithSubgraphName, SgTrade, SgVault } from '@rainlanguage/orderbook/js_api';
+	import type {
+		MultiSubgraphArgs,
+		SgOrderWithSubgraphName,
+		SgTrade,
+		SgVault,
+		SgVaultBalanceChangeUnwrapped
+	} from '@rainlanguage/orderbook/js_api';
 	import OrderListTable from '$lib/components/OrderListTable.svelte';
 	import { getTokenPriceUsd } from '$lib/price';
 	import { ethers } from 'ethers';
@@ -18,7 +24,11 @@
 		DEFAULT_VAULTS_PAGE_SIZE,
 		tokenConfig
 	} from '$lib/constants';
-	import type { OrderListOrderWithSubgraphName, OrderListTotalVolume } from '$lib/types';
+	import type {
+		OrderListOrderWithSubgraphName,
+		OrderListTotalVolume,
+		OrderListVault
+	} from '$lib/types';
 	const { activeSubgraphs, tokenSlug, network } = $page.data.stores;
 
 	let activeSubgraphsValue: MultiSubgraphArgs[] = $activeSubgraphs;
@@ -32,7 +42,7 @@
 	$: orderHashStateValue = undefined;
 	$: orderOwnerValue = undefined;
 
-	let orders: any[] = [];
+	let orders: OrderListOrderWithSubgraphName[] = [];
 	let errorMessage: string = '';
 	let isStatusDropdownOpen = false;
 	let activeTab = 'Trades';
@@ -64,19 +74,25 @@
 					)
 			);
 
-			let filteredOrdersWithTrades: OrderListOrderWithSubgraphName[] = await orderWithTrades(filteredOrders);
-			let filteredOrdersWithVaultBalanceChanges: OrderListOrderWithSubgraphName[] = await orderWithVaultBalanceChanges(filteredOrdersWithTrades);
-			let filteredOrdersWithTokenPriceUsdMap: OrderListOrderWithSubgraphName[] = await getTokenPriceUsdMap(filteredOrdersWithVaultBalanceChanges);
+			let filteredOrdersWithTrades: OrderListOrderWithSubgraphName[] =
+				await orderWithTrades(filteredOrders);
+			let filteredOrdersWithVaultBalanceChanges: OrderListOrderWithSubgraphName[] =
+				await orderWithVaultBalanceChanges(filteredOrdersWithTrades);
+			let filteredOrdersWithTokenPriceUsdMap: OrderListOrderWithSubgraphName[] =
+				await getTokenPriceUsdMap(filteredOrdersWithVaultBalanceChanges);
 			for (let order of filteredOrdersWithTokenPriceUsdMap) {
 				order.order['totalVolume'] = calculateTradeVolume(order.order.trades);
 				order.order['totalVolume24h'] = calculateTradeVolume(
-					order.order.trades.filter((trade: any) => Date.now() / 1000 - trade.timestamp <= 86400)
+					order.order.trades.filter(
+						(trade: SgTrade) => Date.now() / 1000 - parseFloat(trade.timestamp) <= 86400
+					)
 				);
 			}
-			let ordersWithBalanceChanges: OrderListOrderWithSubgraphName[] = calculateBalanceChanges(filteredOrdersWithTokenPriceUsdMap);
-			let ordersWithTotalDepositsAndWithdrawals: OrderListOrderWithSubgraphName[] = calculateTotalDepositsAndWithdrawals(ordersWithBalanceChanges);
-
-			console.log("ordersWithTotalDepositsAndWithdrawals : ", JSON.stringify(ordersWithTotalDepositsAndWithdrawals));
+			let ordersWithBalanceChanges: OrderListOrderWithSubgraphName[] = calculateBalanceChanges(
+				filteredOrdersWithTokenPriceUsdMap
+			);
+			let ordersWithTotalDepositsAndWithdrawals: OrderListOrderWithSubgraphName[] =
+				calculateTotalDepositsAndWithdrawals(ordersWithBalanceChanges);
 
 			return {
 				orders: ordersWithTotalDepositsAndWithdrawals,
@@ -90,9 +106,11 @@
 		enabled: true
 	});
 
-	async function orderWithTrades(orders: SgOrderWithSubgraphName[]): Promise<OrderListOrderWithSubgraphName[]> {
+	async function orderWithTrades(
+		orders: SgOrderWithSubgraphName[]
+	): Promise<OrderListOrderWithSubgraphName[]> {
 		for (const order of orders) {
-			let allTrades: any[] = [];
+			let allTrades: SgTrade[] = [];
 			let currentPage = 1;
 			let hasMore = true;
 
@@ -112,13 +130,17 @@
 			}
 
 			order.order['trades'] = allTrades.sort(
-				(a: any, b: any) => b.tradeEvent.transaction.timestamp - a.tradeEvent.transaction.timestamp
+				(a: SgTrade, b: SgTrade) =>
+					parseFloat(b.tradeEvent.transaction.timestamp) -
+					parseFloat(a.tradeEvent.transaction.timestamp)
 			);
 		}
 		return orders as OrderListOrderWithSubgraphName[];
 	}
 
-	async function orderWithVaultBalanceChanges(orders: OrderListOrderWithSubgraphName[]): Promise<OrderListOrderWithSubgraphName[]> {
+	async function orderWithVaultBalanceChanges(
+		orders: OrderListOrderWithSubgraphName[]
+	): Promise<OrderListOrderWithSubgraphName[]> {
 		for (const order of orders) {
 			const vaultBalanceChangesMap = new Map();
 			const allVaults = [...order.order.inputs, ...order.order.outputs];
@@ -126,7 +148,7 @@
 				(vault, index) => allVaults.findIndex((v) => v.id === vault.id) === index
 			);
 			for (const vault of uniqueVaults) {
-				let allBalanceChanges: any[] = [];
+				let allBalanceChanges: SgVaultBalanceChangeUnwrapped[] = [];
 				let currentPage = 1;
 				let hasMore = true;
 				while (hasMore) {
@@ -141,11 +163,11 @@
 				}
 				vaultBalanceChangesMap.set(vault.id, allBalanceChanges);
 			}
-			order.order['inputs'] = order.order.inputs.map((input: any) => ({
+			order.order['inputs'] = order.order.inputs.map((input: OrderListVault) => ({
 				...input,
 				balanceChanges: vaultBalanceChangesMap.get(input.id) || []
 			}));
-			order.order['outputs'] = order.order.outputs.map((output: any) => ({
+			order.order['outputs'] = order.order.outputs.map((output: OrderListVault) => ({
 				...output,
 				balanceChanges: vaultBalanceChangesMap.get(output.id) || []
 			}));
@@ -163,7 +185,7 @@
 						const { symbol, decimals, address } = vault.token;
 						const volume = parseFloat(ethers.utils.formatUnits(amount, decimals).toString());
 
-						if(symbol){
+						if (symbol) {
 							if (!tokenVolumes[symbol]) {
 								tokenVolumes[symbol] = { totalVolume: 0, tokenAddress: address };
 							}
@@ -197,50 +219,60 @@
 		}
 	}
 
-	function calculateBalanceChanges(orders: OrderListOrderWithSubgraphName[]): OrderListOrderWithSubgraphName[] {
+	function calculateBalanceChanges(
+		orders: OrderListOrderWithSubgraphName[]
+	): OrderListOrderWithSubgraphName[] {
+		function calculateTokenBalanceChanges(
+			trades24h: SgTrade[],
+			item: OrderListVault,
+			isInput: boolean
+		) {
+			if (trades24h.length === 0) {
+				item['balanceChange24h'] = '0';
+				item['percentageChange24h'] = 0;
+				return;
+			}
+			const oldestTrade = trades24h[trades24h.length - 1];
+			const latestTrade = trades24h[0];
+			const getBalance = (trade: SgTrade) => {
+				const primaryChange = isInput
+					? trade.inputVaultBalanceChange
+					: trade.outputVaultBalanceChange;
+				const secondaryChange = isInput
+					? trade.outputVaultBalanceChange
+					: trade.inputVaultBalanceChange;
+
+				return item.token.address === primaryChange?.vault.token.address
+					? primaryChange?.newVaultBalance
+					: secondaryChange?.newVaultBalance;
+			};
+
+			const oldBalance = parseFloat(getBalance(oldestTrade) || '0');
+			const newBalance = parseFloat(getBalance(latestTrade) || '0');
+			const balanceChange = newBalance - oldBalance;
+			const percentageChange = oldBalance > 0 ? (balanceChange / oldBalance) * 100 : 0;
+
+			const balanceChangeBigNum = ethers.BigNumber.from(
+				balanceChange.toLocaleString('fullwide', { useGrouping: false })
+			);
+			const formattedBalanceChange = parseFloat(
+				ethers.utils.formatUnits(balanceChangeBigNum, item.token.decimals).toString()
+			).toFixed(2);
+
+			item['balanceChange24h'] = formattedBalanceChange;
+			item['percentageChange24h'] = percentageChange;
+		}
 		try {
 			for (const order of orders) {
 				const trades24h = order.order.trades.filter(
-					(trade: any) => Date.now() / 1000 - trade.timestamp <= 86400
+					(trade: SgTrade) => Date.now() / 1000 - parseFloat(trade.timestamp) <= 86400
 				);
-				function calculateTokenBalanceChanges(item: any, isInput: boolean) {
-					if (trades24h.length === 0) {
-						item['balanceChange24h'] = 0;
-						item['percentageChange24h'] = 0;
-						return;
-					}
-					const oldestTrade = trades24h[trades24h.length - 1];
-					const latestTrade = trades24h[0];
-					const getBalance = (trade: any) => {
-						const primaryChange = isInput
-							? trade.inputVaultBalanceChange
-							: trade.outputVaultBalanceChange;
-						const secondaryChange = isInput
-							? trade.outputVaultBalanceChange
-							: trade.inputVaultBalanceChange;
-
-						return item.token.address === primaryChange?.vault.token.address
-							? primaryChange?.newVaultBalance
-							: secondaryChange?.newVaultBalance;
-					};
-
-					const oldBalance = parseFloat(getBalance(oldestTrade) || '0');
-					const newBalance = parseFloat(getBalance(latestTrade) || '0');
-					const balanceChange = newBalance - oldBalance;
-					const percentageChange = oldBalance > 0 ? (balanceChange / oldBalance) * 100 : 0;
-
-					const balanceChangeBigNum = ethers.BigNumber.from(
-						balanceChange.toLocaleString('fullwide', { useGrouping: false })
-					);
-					const formattedBalanceChange = parseFloat(
-						ethers.utils.formatUnits(balanceChangeBigNum, item.token.decimals).toString()
-					).toFixed(2);
-
-					item['balanceChange24h'] = formattedBalanceChange;
-					item['percentageChange24h'] = percentageChange;
-				}
-				order.order.inputs.forEach((input: any) => calculateTokenBalanceChanges(input, true));
-				order.order.outputs.forEach((output: any) => calculateTokenBalanceChanges(output, false));
+				order.order.inputs.forEach((input: OrderListVault) =>
+					calculateTokenBalanceChanges(trades24h, input, true)
+				);
+				order.order.outputs.forEach((output: OrderListVault) =>
+					calculateTokenBalanceChanges(trades24h, output, false)
+				);
 			}
 			return orders;
 		} catch {
@@ -249,15 +281,17 @@
 		}
 	}
 
-	function calculateTotalDepositsAndWithdrawals(orders: OrderListOrderWithSubgraphName[]): OrderListOrderWithSubgraphName[] {
+	function calculateTotalDepositsAndWithdrawals(
+		orders: OrderListOrderWithSubgraphName[]
+	): OrderListOrderWithSubgraphName[] {
 		try {
 			for (const order of orders) {
 				order.order['orderDuration'] = Date.now() / 1000 - parseFloat(order.order.timestampAdded);
 				for (const input of order.order.inputs) {
 					input['totalDeposits'] = input.balanceChanges
-						.filter((change: any) => change.__typename === 'Deposit')
+						.filter((change: SgVaultBalanceChangeUnwrapped) => change.__typename === 'Deposit')
 						.reduce(
-							(sum: any, change: any) =>
+							(sum: number, change: SgVaultBalanceChangeUnwrapped) =>
 								sum +
 								parseFloat(
 									ethers.utils.formatUnits(change.amount, input.token.decimals).toString()
@@ -265,9 +299,9 @@
 							0
 						);
 					input['totalWithdrawals'] = input.balanceChanges
-						.filter((change: any) => change.__typename === 'Withdrawal')
+						.filter((change: SgVaultBalanceChangeUnwrapped) => change.__typename === 'Withdrawal')
 						.reduce(
-							(sum: any, change: any) =>
+							(sum: number, change: SgVaultBalanceChangeUnwrapped) =>
 								sum +
 								parseFloat(
 									ethers.utils.formatUnits(change.amount, input.token.decimals).toString()
@@ -289,9 +323,9 @@
 				}
 				for (const output of order.order.outputs) {
 					output['totalDeposits'] = output.balanceChanges
-						.filter((change: any) => change.__typename === 'Deposit')
+						.filter((change: SgVaultBalanceChangeUnwrapped) => change.__typename === 'Deposit')
 						.reduce(
-							(sum: any, change: any) =>
+							(sum: number, change: SgVaultBalanceChangeUnwrapped) =>
 								sum +
 								parseFloat(
 									ethers.utils.formatUnits(change.amount, output.token.decimals).toString()
@@ -299,9 +333,9 @@
 							0
 						);
 					output['totalWithdrawals'] = output.balanceChanges
-						.filter((change: any) => change.__typename === 'Withdrawal')
+						.filter((change: SgVaultBalanceChangeUnwrapped) => change.__typename === 'Withdrawal')
 						.reduce(
-							(sum: any, change: any) =>
+							(sum: number, change: SgVaultBalanceChangeUnwrapped) =>
 								sum +
 								parseFloat(
 									ethers.utils.formatUnits(change.amount, output.token.decimals).toString()
@@ -322,13 +356,15 @@
 						(output.curerentVaultDifferentialPercentage * 31536000) / order.order.orderDuration;
 				}
 				const currentOrderTotalDepositsUsd = order.order.outputs.reduce(
-					(acc: any, output: any) =>
-						acc + output.totalDeposits * (order.order.tokenPriceUsdMap.get(output.token.address) || 0),
+					(acc: number, output: OrderListVault) =>
+						acc +
+						output.totalDeposits * (order.order.tokenPriceUsdMap.get(output.token.address) || 0),
 					0
 				);
 				const currentOrderTotalInputsUsd = order.order.inputs.reduce(
-					(acc: any, input: any) =>
-						acc + input.currentVaultInputs * (order.order.tokenPriceUsdMap.get(input.token.address) || 0),
+					(acc: number, input: OrderListVault) =>
+						acc +
+						input.currentVaultInputs * (order.order.tokenPriceUsdMap.get(input.token.address) || 0),
 					0
 				);
 				order.order['roi'] = currentOrderTotalInputsUsd - currentOrderTotalDepositsUsd;
@@ -347,9 +383,11 @@
 		}
 	}
 
-	async function getTokenPriceUsdMap(orders: OrderListOrderWithSubgraphName[]): Promise<OrderListOrderWithSubgraphName[]> {
+	async function getTokenPriceUsdMap(
+		orders: OrderListOrderWithSubgraphName[]
+	): Promise<OrderListOrderWithSubgraphName[]> {
 		try {
-			const tokenPriceUsdMap = new Map<string, any>();
+			const tokenPriceUsdMap = new Map<string, number>();
 			for (const order of orders) {
 				for (const input of order.order.inputs) {
 					if (tokenPriceUsdMap.has(input.token.address)) {
@@ -362,7 +400,10 @@
 					if (tokenPriceUsdMap.has(output.token.address)) {
 						continue;
 					}
-					const tokenPrice = await getTokenPriceUsd(output.token.address, output.token?.symbol || '');
+					const tokenPrice = await getTokenPriceUsd(
+						output.token.address,
+						output.token?.symbol || ''
+					);
 					tokenPriceUsdMap.set(output.token.address, tokenPrice.currentPrice);
 				}
 				order.order['tokenPriceUsdMap'] = tokenPriceUsdMap;
@@ -371,7 +412,7 @@
 				order.order['tokenPriceUsdMap'] = tokenPriceUsdMap;
 			}
 			return orders;
-		} catch (error) {
+		} catch {
 			errorMessage = 'Failed to get token price usd map';
 			return orders;
 		}
