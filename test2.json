@@ -1,0 +1,42 @@
+ [
+    {
+        "spanId": "79cd36667b628743",
+        "status": "no opportunity",
+        "pair": "WPOL/MNW",
+        "timestamp": 1741346340000,
+        "attemptDetails": {
+            "quote": {
+                "maxOutput": "140.90367516932171961",
+                "ratio": "0.556655690809398792"
+            },
+            "fullAttempt": {
+                "marketPrice": "0.547101290484847659",
+                "error": "Order's ratio greater than market price",
+                "route": "100.00%   --->   WMATIC/MNW (QuickswapV3 0.25880000000000003% 0x1ABc944412f8C8CFAfb3fE7764FA954739aAB044)"
+            }
+        }
+    },
+    {
+        "spanId": "ec5f87b87c6ae357",
+        "status": "no opportunity",
+        "pair": "MNW/WPOL",
+        "timestamp": 1741346340000,
+        "attemptDetails": {
+            "quote": {
+                "maxOutput": "78.14303517471500714",
+                "ratio": "1.862384639923802077"
+            },
+            "fullAttempt": {
+                "marketPrice": "1.849166627082236794",
+                "error": "Order's ratio greater than market price",
+                "route": "100.00%   --->   WETH/WMATIC (UniswapV3 0.05% 0x86f1d8390222A3691C28938eC7404A1661E618e0) >> MNW/WETH (UniswapV3 1% 0x426a2C62bF87D377D7D2EFA13Da2556109DFd098)"
+            },
+            "partialAttempt": {
+                "amountIn": "41.310649788245739009",
+                "marketPrice": "1.880902453439466",
+                "error": "\nReason: Execution reverted for an unknown reason.\nError: EstimateGasExecutionError\nDetails: execution reverted\nError Name: MinimalOutputBalanceViolation\nError Args: [\"71164029672489056504\"]",
+                "route": "100.00%   --->   USDT/WMATIC (UniswapV2 0.3% 0x93CA061a80bFb622E7B529F6de1fDe4A9129CF8E) >> USD Coin/USDT (QuickswapV3 0.001% 0x7B925e617aefd7FB3a93Abe3a701135D7a1Ba710) >> LINK/USD Coin (UniswapV3 0.3% 0x94Ab9E4553fFb839431E37CC79ba8905f45BfBeA) >> WETH/LINK (UniswapV3 0.05% 0x3dC10D7Bfb94eeB009203E84a653E5764F71771d) >> MNW/WETH (UniswapV3 1% 0x426a2C62bF87D377D7D2EFA13Da2556109DFd098)"
+            }
+        }
+    }
+]
