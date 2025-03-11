@@ -1,4 +1,50 @@
-import type { SgOrderWithSubgraphName, OrderV3, SgOrder } from '@rainlanguage/orderbook/js_api';
+import type {
+	SgOrderWithSubgraphName,
+	OrderV3,
+	SgOrder,
+	SgTrade,
+	SgVault,
+	SgVaultBalanceChangeUnwrapped
+} from '@rainlanguage/orderbook/js_api';
+
+// Order List Types
+export interface OrderListTotalVolume {
+	token: string;
+	tokenAddress: string;
+	totalVolume: number;
+}
+
+export interface OrderListVault extends Omit<SgVault, 'balanceChanges'> {
+	balanceChanges: SgVaultBalanceChangeUnwrapped[];
+	balanceChange24h: number;
+	percentageChange24h: number;
+	totalDeposits: number;
+	totalWithdrawals: number;
+	currentVaultInputs: number;
+	curerentVaultDifferential: number;
+	curerentVaultDifferentialPercentage: number;
+	currentVaultApy: number;
+	currentVaultApyPercentage: number;
+}
+
+export interface OrderListOrder extends Omit<SgOrder, 'trades' | 'outputs' | 'inputs'> {
+	trades: SgTrade[];
+	outputs: OrderListVault[];
+	inputs: OrderListVault[];
+	tokenPriceUsdMap: Map<string, number>;
+	totalVolume: OrderListTotalVolume[];
+	totalVolume24h: OrderListTotalVolume[];
+	orderDuration: number;
+	roi: number;
+	roiPercentage: number;
+	apy: number;
+	apyPercentage: number;
+}
+
+export interface OrderListOrderWithSubgraphName {
+	order: OrderListOrder;
+	subgraphName: string;
+}
 
 // Solver Types
 export type SgOrderWithSubgraphNameAndSolverLogs = SgOrderWithSubgraphName & {

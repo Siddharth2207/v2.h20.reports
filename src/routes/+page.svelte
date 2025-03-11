@@ -3,8 +3,6 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import Header from '$lib/components/Header.svelte';
-
-	console.log($page.url.pathname);
 </script>
 
 <div class="mx-auto flex min-h-screen w-full flex-col">

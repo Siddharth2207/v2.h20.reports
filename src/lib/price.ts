@@ -20,7 +20,6 @@ export async function getTokenPriceUsd(tokenAddress: string, tokenSymbol: string
 
 		const pairs = data?.pairs || [];
 		if (pairs.length === 0) {
-			console.warn(`No pairs found for token ${tokenAddress}`);
 			return { averagePrice: 0, currentPrice: 0 };
 		}
 
@@ -51,7 +50,6 @@ export async function getTokenPriceUsd(tokenAddress: string, tokenSymbol: string
 
 				return { averagePrice, currentPrice };
 			} else {
-				console.warn(`Special pair not found for token ${tokenAddress}`);
 				return { averagePrice: 0, currentPrice: 0 };
 			}
 		}
@@ -68,8 +66,7 @@ export async function getTokenPriceUsd(tokenAddress: string, tokenSymbol: string
 			averagePrice = currentPrice;
 		}
 		return { averagePrice, currentPrice };
-	} catch (error) {
-		console.error(`Unexpected error fetching price for token ${tokenAddress}:`, error);
+	} catch {
 		return { averagePrice: 0, currentPrice: 0 };
 	}
 }
@@ -111,8 +108,7 @@ export const fetchDexTokenPrice = async (
 		}
 
 		return 0;
-	} catch (error) {
-		console.error('Error performing swap:', error);
+	} catch {
 		return 0;
 	}
 };

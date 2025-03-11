@@ -8,12 +8,22 @@
 		TableBodyCell,
 		TableHead
 	} from 'flowbite-svelte';
+	import type { CreateInfiniteQueryResult, InfiniteData } from '@tanstack/svelte-query';
 	import { formatTimestamp, formatBalance } from '$lib/orders';
 	import { ethers } from 'ethers';
 	import { DEFAULT_ORDERS_PAGE_SIZE } from '$lib/constants';
+	import type {
+		OrderListOrderWithSubgraphName,
+		OrderListTotalVolume,
+		OrderListVault
+	} from '$lib/types';
+	import type { SgTrade } from '@rainlanguage/orderbook/js_api';
 
 	export let networkValue: string;
-	export let query: any;
+	export let query: CreateInfiniteQueryResult<
+		InfiniteData<{ orders: OrderListOrderWithSubgraphName[] }, unknown>,
+		Error
+	>;
 
 	export let lastTradeFlag: boolean = true;
 	export let firstTradeFlag: boolean = true;
@@ -40,164 +50,196 @@
 	let currentSort = 'totalTrades';
 	$: sortedData = $query.data;
 
-	function applySorting(data: any) {
+	function applySorting(
+		data: InfiniteData<{ orders: OrderListOrderWithSubgraphName[] }, unknown> | undefined
+	) {
 		if (!data || !data.pages || data.pages.length === 0) return data;
-		const allLoadedOrders = data.pages.flatMap((page: any) => page.orders);
+		const allLoadedOrders = data.pages.flatMap(
+			(page: { orders: OrderListOrderWithSubgraphName[] }) => page.orders
+		);
 
-		const sortedOrders = [...allLoadedOrders].sort((a: any, b: any) => {
-			switch (currentSort) {
-				case 'totalTrades':
-					const comparison = a.order.trades.length - b.order.trades.length;
-					return sortOrder === 'asc' ? comparison : -comparison;
+		const sortedOrders = [...allLoadedOrders].sort(
+			(a: OrderListOrderWithSubgraphName, b: OrderListOrderWithSubgraphName) => {
+				switch (currentSort) {
+					case 'totalTrades': {
+						const comparison = a.order.trades.length - b.order.trades.length;
+						return sortOrder === 'asc' ? comparison : -comparison;
+					}
 
-				case 'firstTrade':
-					const comparisonFirstTrade =
-						a.order.trades[a.order.trades.length - 1].timestamp -
-						b.order.trades[b.order.trades.length - 1].timestamp;
-					return sortOrder === 'asc' ? comparisonFirstTrade : -comparisonFirstTrade;
+					case 'firstTrade': {
+						const comparisonFirstTrade =
+							parseFloat(a.order.trades[a.order.trades.length - 1].timestamp) -
+							parseFloat(b.order.trades[b.order.trades.length - 1].timestamp);
+						return sortOrder === 'asc' ? comparisonFirstTrade : -comparisonFirstTrade;
+					}
 
-				case 'lastTrade':
-					const comparisonLastTrade = a.order.trades[0].timestamp - b.order.trades[0].timestamp;
-					return sortOrder === 'asc' ? comparisonLastTrade : -comparisonLastTrade;
+					case 'lastTrade': {
+						const comparisonLastTrade =
+							parseFloat(a.order.trades[0].timestamp) - parseFloat(b.order.trades[0].timestamp);
+						return sortOrder === 'asc' ? comparisonLastTrade : -comparisonLastTrade;
+					}
 
-				case 'orderDuration':
-					const comparisonOrderDuration = a.order.orderDuration - b.order.orderDuration;
-					return sortOrder === 'asc' ? comparisonOrderDuration : -comparisonOrderDuration;
+					case 'orderDuration': {
+						const comparisonOrderDuration = a.order.orderDuration - b.order.orderDuration;
+						return sortOrder === 'asc' ? comparisonOrderDuration : -comparisonOrderDuration;
+					}
 
-				case 'tradesDuration':
-					const comparisonTradesDuration =
-						a.order.trades[0].timestamp -
-						a.order.trades[a.order.trades.length - 1].timestamp -
-						(b.order.trades[0].timestamp - b.order.trades[b.order.trades.length - 1].timestamp);
-					return sortOrder === 'asc' ? comparisonTradesDuration : -comparisonTradesDuration;
+					case 'tradesDuration': {
+						const comparisonTradesDuration =
+							parseFloat(a.order.trades[0].timestamp) -
+							parseFloat(a.order.trades[a.order.trades.length - 1].timestamp) -
+							(parseFloat(b.order.trades[0].timestamp) -
+								parseFloat(b.order.trades[b.order.trades.length - 1].timestamp));
+						return sortOrder === 'asc' ? comparisonTradesDuration : -comparisonTradesDuration;
+					}
 
-				case 'trades24h':
-					const comparisonTrades24h =
-						a.order.trades.filter((trade: any) => Date.now() / 1000 - trade.timestamp <= 86400)
-							.length -
-						b.order.trades.filter((trade: any) => Date.now() / 1000 - trade.timestamp <= 86400)
-							.length;
-					return sortOrder === 'asc' ? comparisonTrades24h : -comparisonTrades24h;
+					case 'trades24h': {
+						const comparisonTrades24h =
+							a.order.trades.filter(
+								(trade: SgTrade) => Date.now() / 1000 - parseFloat(trade.timestamp) <= 86400
+							).length -
+							b.order.trades.filter(
+								(trade: SgTrade) => Date.now() / 1000 - parseFloat(trade.timestamp) <= 86400
+							).length;
+						return sortOrder === 'asc' ? comparisonTrades24h : -comparisonTrades24h;
+					}
 
-				case 'volumeTotal':
-					const comparisonVolumeTotal =
-						a.order.totalVolume.reduce(
-							(acc: number, token: any) =>
-								acc + token.totalVolume * a.order.tokenPriceUsdMap.get(token.tokenAddress),
-							0
-						) -
-						b.order.totalVolume.reduce(
-							(acc: number, token: any) =>
-								acc + token.totalVolume * b.order.tokenPriceUsdMap.get(token.tokenAddress),
-							0
-						);
-					return sortOrder === 'asc' ? comparisonVolumeTotal : -comparisonVolumeTotal;
+					case 'volumeTotal': {
+						const comparisonVolumeTotal =
+							a.order.totalVolume.reduce(
+								(acc: number, token: OrderListTotalVolume) =>
+									acc + token.totalVolume * (a.order.tokenPriceUsdMap.get(token.tokenAddress) || 0),
+								0
+							) -
+							b.order.totalVolume.reduce(
+								(acc: number, token: OrderListTotalVolume) =>
+									acc + token.totalVolume * (b.order.tokenPriceUsdMap.get(token.tokenAddress) || 0),
+								0
+							);
+						return sortOrder === 'asc' ? comparisonVolumeTotal : -comparisonVolumeTotal;
+					}
 
-				case 'volume24h':
-					const comparisonVolume24h =
-						a.order.totalVolume24h.reduce(
-							(acc: number, token: any) =>
-								acc + token.totalVolume * a.order.tokenPriceUsdMap.get(token.tokenAddress),
-							0
-						) -
-						b.order.totalVolume24h.reduce(
-							(acc: number, token: any) =>
-								acc + token.totalVolume * b.order.tokenPriceUsdMap.get(token.tokenAddress),
-							0
-						);
-					return sortOrder === 'asc' ? comparisonVolume24h : -comparisonVolume24h;
+					case 'volume24h': {
+						const comparisonVolume24h =
+							a.order.totalVolume24h.reduce(
+								(acc: number, token: OrderListTotalVolume) =>
+									acc + token.totalVolume * (a.order.tokenPriceUsdMap.get(token.tokenAddress) || 0),
+								0
+							) -
+							b.order.totalVolume24h.reduce(
+								(acc: number, token: OrderListTotalVolume) =>
+									acc + token.totalVolume * (b.order.tokenPriceUsdMap.get(token.tokenAddress) || 0),
+								0
+							);
+						return sortOrder === 'asc' ? comparisonVolume24h : -comparisonVolume24h;
+					}
 
-				case 'totalDeposits':
-					const comparisonTotalDeposits =
-						a.order.outputs.reduce(
-							(acc: number, output: any) =>
-								acc + output.totalDeposits * a.order.tokenPriceUsdMap.get(output.token.address),
-							0
-						) -
-						b.order.outputs.reduce(
-							(acc: number, output: any) =>
-								acc + output.totalDeposits * b.order.tokenPriceUsdMap.get(output.token.address),
-							0
-						);
-					return sortOrder === 'asc' ? comparisonTotalDeposits : -comparisonTotalDeposits;
+					case 'totalDeposits': {
+						const comparisonTotalDeposits =
+							a.order.outputs.reduce(
+								(acc: number, output: OrderListVault) =>
+									acc +
+									output.totalDeposits * (a.order.tokenPriceUsdMap.get(output.token.address) || 0),
+								0
+							) -
+							b.order.outputs.reduce(
+								(acc: number, output: OrderListVault) =>
+									acc +
+									output.totalDeposits * (b.order.tokenPriceUsdMap.get(output.token.address) || 0),
+								0
+							);
+						return sortOrder === 'asc' ? comparisonTotalDeposits : -comparisonTotalDeposits;
+					}
 
-				case 'totalInputs':
-					const comparisonTotalInputs =
-						a.order.inputs.reduce(
-							(acc: number, input: any) =>
-								acc + input.currentVaultInputs * a.order.tokenPriceUsdMap.get(input.token.address),
-							0
-						) -
-						b.order.inputs.reduce(
-							(acc: number, input: any) =>
-								acc + input.currentVaultInputs * b.order.tokenPriceUsdMap.get(input.token.address),
-							0
-						);
-					return sortOrder === 'asc' ? comparisonTotalInputs : -comparisonTotalInputs;
+					case 'totalInputs': {
+						const comparisonTotalInputs =
+							a.order.inputs.reduce(
+								(acc: number, input: OrderListVault) =>
+									acc +
+									input.currentVaultInputs *
+										(a.order.tokenPriceUsdMap.get(input.token.address) || 0),
+								0
+							) -
+							b.order.inputs.reduce(
+								(acc: number, input: OrderListVault) =>
+									acc +
+									input.currentVaultInputs *
+										(b.order.tokenPriceUsdMap.get(input.token.address) || 0),
+								0
+							);
+						return sortOrder === 'asc' ? comparisonTotalInputs : -comparisonTotalInputs;
+					}
 
-				case 'absoluteChange':
-				case 'roi':
-					const comparisonAbsoluteChange = a.order.roi - b.order.roi;
-					return sortOrder === 'asc' ? comparisonAbsoluteChange : -comparisonAbsoluteChange;
+					case 'absoluteChange':
+					case 'roi': {
+						const comparisonAbsoluteChange = a.order.roi - b.order.roi;
+						return sortOrder === 'asc' ? comparisonAbsoluteChange : -comparisonAbsoluteChange;
+					}
 
-				case 'percentChange':
-				case 'roiPercent':
-					const comparisonRoiPercent = a.order.roiPercentage - b.order.roiPercentage;
-					return sortOrder === 'asc' ? comparisonRoiPercent : -comparisonRoiPercent;
+					case 'percentChange':
+					case 'roiPercent': {
+						const comparisonRoiPercent = a.order.roiPercentage - b.order.roiPercentage;
+						return sortOrder === 'asc' ? comparisonRoiPercent : -comparisonRoiPercent;
+					}
 
-				case 'apy':
-				case 'apyPercent':
-					const comparisonApyPercent = a.order.apyPercentage - b.order.apyPercentage;
-					return sortOrder === 'asc' ? comparisonApyPercent : -comparisonApyPercent;
+					case 'apy':
+					case 'apyPercent': {
+						const comparisonApyPercent = a.order.apyPercentage - b.order.apyPercentage;
+						return sortOrder === 'asc' ? comparisonApyPercent : -comparisonApyPercent;
+					}
 
-				case 'inputBalance':
-					const comparisonInputBalance =
-						a.order.inputs.reduce(
-							(acc: number, input: any) =>
-								acc +
-								parseFloat(
-									ethers.utils.formatUnits(input.balance, input.token.decimals).toString()
-								) *
-									a.order.tokenPriceUsdMap.get(input.token.address),
-							0
-						) -
-						b.order.inputs.reduce(
-							(acc: number, input: any) =>
-								acc +
-								parseFloat(
-									ethers.utils.formatUnits(input.balance, input.token.decimals).toString()
-								) *
-									b.order.tokenPriceUsdMap.get(input.token.address),
-							0
-						);
-					return sortOrder === 'asc' ? comparisonInputBalance : -comparisonInputBalance;
+					case 'inputBalance': {
+						const comparisonInputBalance =
+							a.order.inputs.reduce(
+								(acc: number, input: OrderListVault) =>
+									acc +
+									parseFloat(
+										ethers.utils.formatUnits(input.balance, input.token.decimals).toString()
+									) *
+										(a.order.tokenPriceUsdMap.get(input.token.address) || 0),
+								0
+							) -
+							b.order.inputs.reduce(
+								(acc: number, input: OrderListVault) =>
+									acc +
+									parseFloat(
+										ethers.utils.formatUnits(input.balance, input.token.decimals).toString()
+									) *
+										(b.order.tokenPriceUsdMap.get(input.token.address) || 0),
+								0
+							);
+						return sortOrder === 'asc' ? comparisonInputBalance : -comparisonInputBalance;
+					}
 
-				case 'outputBalance':
-					const comparisonOutputBalance =
-						a.order.outputs.reduce(
-							(acc: number, output: any) =>
-								acc +
-								parseFloat(
-									ethers.utils.formatUnits(output.balance, output.token.decimals).toString()
-								) *
-									a.order.tokenPriceUsdMap.get(output.token.address),
-							0
-						) -
-						b.order.outputs.reduce(
-							(acc: number, output: any) =>
-								acc +
-								parseFloat(
-									ethers.utils.formatUnits(output.balance, output.token.decimals).toString()
-								) *
-									b.order.tokenPriceUsdMap.get(output.token.address),
-							0
-						);
-					return sortOrder === 'asc' ? comparisonOutputBalance : -comparisonOutputBalance;
+					case 'outputBalance': {
+						const comparisonOutputBalance =
+							a.order.outputs.reduce(
+								(acc: number, output: OrderListVault) =>
+									acc +
+									parseFloat(
+										ethers.utils.formatUnits(output.balance, output.token.decimals).toString()
+									) *
+										(a.order.tokenPriceUsdMap.get(output.token.address) || 0),
+								0
+							) -
+							b.order.outputs.reduce(
+								(acc: number, output: OrderListVault) =>
+									acc +
+									parseFloat(
+										ethers.utils.formatUnits(output.balance, output.token.decimals).toString()
+									) *
+										(b.order.tokenPriceUsdMap.get(output.token.address) || 0),
+								0
+							);
+						return sortOrder === 'asc' ? comparisonOutputBalance : -comparisonOutputBalance;
+					}
 
-				default:
-					return 0;
+					default: {
+						return 0;
+					}
+				}
 			}
-		});
+		);
 
 		const ordersPerPage = DEFAULT_ORDERS_PAGE_SIZE;
 		const newPages = [];
@@ -559,420 +601,428 @@
 			</TableHeadCell>
 		</TableHead>
 		<TableBody>
-			{#each sortedData.pages as page}
-				{#each page.orders as order (order.order.orderHash)}
-					<TableBodyRow class="border-t border-gray-300 text-gray-700">
-						<TableBodyCell class="px-4 py-3 text-center text-sm">{networkValue}</TableBodyCell>
-						<TableBodyCell class="px-4 py-3 text-center text-sm">
-							<span
-								class={`rounded px-2 py-1 ${order.order.active ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
-							>
-								{order.order.active ? 'Active' : 'Inactive'}
-							</span>
-						</TableBodyCell>
-
-						{#if tradesDurationFlag}
+			{#if sortedData}
+				{#each sortedData.pages as page}
+					{#each page.orders as order (order.order.orderHash)}
+						<TableBodyRow class="border-t border-gray-300 text-gray-700">
+							<TableBodyCell class="px-4 py-3 text-center text-sm">{networkValue}</TableBodyCell>
 							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								{order.order.trades.length > 0
-									? formatBalance(
-											(order.order.trades[0].timestamp -
-												order.order.trades[order.order.trades.length - 1].timestamp) /
-												86400
-										) + ' days'
-									: '-'}
+								<span
+									class={`rounded px-2 py-1 ${order.order.active ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
+								>
+									{order.order.active ? 'Active' : 'Inactive'}
+								</span>
 							</TableBodyCell>
-						{/if}
 
-						{#if orderDurationFlag}
-							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								{order.order.orderDuration > 0
-									? formatBalance(order.order.orderDuration / 86400) + ' days'
-									: '-'}
-							</TableBodyCell>
-						{/if}
+							{#if tradesDurationFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{order.order.trades.length > 0
+										? formatBalance(
+												(parseFloat(order.order.trades[0].timestamp) -
+													parseFloat(order.order.trades[order.order.trades.length - 1].timestamp)) /
+													86400
+											) + ' days'
+										: '-'}
+								</TableBodyCell>
+							{/if}
 
-						{#if lastTradeFlag}
-							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								{order.order.trades.length > 0
-									? formatTimestamp(order.order.trades[order.order.trades.length - 1].timestamp)
-									: 'N/A'}</TableBodyCell
-							>
-						{/if}
+							{#if orderDurationFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{order.order.orderDuration > 0
+										? formatBalance(order.order.orderDuration / 86400) + ' days'
+										: '-'}
+								</TableBodyCell>
+							{/if}
 
-						{#if firstTradeFlag}
-							<TableBodyCell class="px-4 py-3 text-center text-sm"
-								>{order.order.trades.length > 0
-									? formatTimestamp(order.order.trades[0].timestamp)
-									: 'N/A'}</TableBodyCell
-							>
-						{/if}
+							{#if lastTradeFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{order.order.trades.length > 0
+										? formatTimestamp(
+												parseFloat(order.order.trades[order.order.trades.length - 1].timestamp)
+											)
+										: 'N/A'}</TableBodyCell
+								>
+							{/if}
 
-						{#if totalTradesFlag}
-							<TableBodyCell class="px-4 py-3 text-center text-sm"
-								>{order.order.trades.length}</TableBodyCell
-							>
-						{/if}
-						{#if trades24hFlag}
-							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								{order.order.trades.length > 0
-									? order.order.trades.filter(
-											(trade) => Date.now() / 1000 - trade.timestamp <= 86400
-										).length
-									: 'N/A'}
-							</TableBodyCell>
-						{/if}
+							{#if firstTradeFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm"
+									>{order.order.trades.length > 0
+										? formatTimestamp(parseFloat(order.order.trades[0].timestamp))
+										: 'N/A'}</TableBodyCell
+								>
+							{/if}
 
-						{#if volumeTotalFlag}
-							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								{#if order.order.totalVolume.length > 0}
-									{#each order.order.totalVolume as token (token)}
+							{#if totalTradesFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm"
+									>{order.order.trades.length}</TableBodyCell
+								>
+							{/if}
+							{#if trades24hFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{order.order.trades.length > 0
+										? order.order.trades.filter(
+												(trade) => Date.now() / 1000 - parseFloat(trade.timestamp) <= 86400
+											).length
+										: 'N/A'}
+								</TableBodyCell>
+							{/if}
+
+							{#if volumeTotalFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{#if order.order.totalVolume.length > 0}
+										{#each order.order.totalVolume as token (token)}
+											<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+												<span class="font-semibold">{token.token}</span>
+												<span class="text-gray-800">{formatBalance(token.totalVolume)}</span>
+											</div>
+										{/each}
 										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-											<span class="font-semibold">{token.token}</span>
-											<span class="text-gray-800">{formatBalance(token.totalVolume)}</span>
+											<span class="font-semibold">Total</span>
+											<span class="text-gray-800">
+												${formatBalance(
+													order.order.totalVolume.reduce(
+														(acc, token) =>
+															acc +
+															token.totalVolume *
+																(order.order.tokenPriceUsdMap.get(token.tokenAddress) || 0),
+														0
+													)
+												)}
+											</span>
+										</div>
+									{:else}
+										-
+									{/if}
+								</TableBodyCell>
+							{/if}
+
+							{#if volume24hFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{#if order.order.totalVolume24h.length > 0}
+										{#each order.order.totalVolume24h as token (token)}
+											<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+												<span class="font-semibold">{token.token}</span>
+												<span class="text-gray-800">{formatBalance(token.totalVolume)}</span>
+											</div>
+										{/each}
+										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+											<span class="font-semibold">Total</span>
+											<span class="text-gray-800">
+												${formatBalance(
+													order.order.totalVolume24h.reduce(
+														(acc, token) =>
+															acc +
+															token.totalVolume *
+																(order.order.tokenPriceUsdMap.get(token.tokenAddress) || 0),
+														0
+													)
+												)}
+											</span>
+										</div>
+									{:else}
+										-
+									{/if}
+								</TableBodyCell>
+							{/if}
+
+							{#if totalDepositsFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{#each order.order.outputs as output (output.id)}
+										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+											<span class="font-semibold">{output.token.symbol}</span>
+											<span class="text-gray-800">{formatBalance(output.totalDeposits)}</span>
 										</div>
 									{/each}
 									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
 										<span class="font-semibold">Total</span>
 										<span class="text-gray-800">
 											${formatBalance(
-												order.order.totalVolume.reduce(
-													(acc, token) =>
+												order.order.outputs.reduce(
+													(acc, output) =>
 														acc +
-														token.totalVolume *
-															order.order.tokenPriceUsdMap.get(token.tokenAddress),
+														output.totalDeposits *
+															(order.order.tokenPriceUsdMap.get(output.token.address) || 0),
 													0
 												)
 											)}
 										</span>
 									</div>
-								{:else}
-									-
-								{/if}
-							</TableBodyCell>
-						{/if}
+								</TableBodyCell>
+							{/if}
 
-						{#if volume24hFlag}
-							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								{#if order.order.totalVolume24h.length > 0}
-									{#each order.order.totalVolume24h as token (token)}
+							{#if totalInputsFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{#each order.order.inputs as input (input.id)}
 										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-											<span class="font-semibold">{token.token}</span>
-											<span class="text-gray-800">{formatBalance(token.totalVolume)}</span>
+											<span class="font-semibold">{input.token.symbol}</span>
+											<span class="text-gray-800">{formatBalance(input.currentVaultInputs)}</span>
 										</div>
 									{/each}
 									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
 										<span class="font-semibold">Total</span>
 										<span class="text-gray-800">
 											${formatBalance(
-												order.order.totalVolume24h.reduce(
-													(acc, token) =>
+												order.order.inputs.reduce(
+													(acc, input) =>
 														acc +
-														token.totalVolume *
-															order.order.tokenPriceUsdMap.get(token.tokenAddress),
+														input.currentVaultInputs *
+															(order.order.tokenPriceUsdMap.get(input.token.address) || 0),
 													0
 												)
 											)}
 										</span>
 									</div>
-								{:else}
-									-
-								{/if}
-							</TableBodyCell>
-						{/if}
+								</TableBodyCell>
+							{/if}
 
-						{#if totalDepositsFlag}
-							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								{#each order.order.outputs as output (output.id)}
+							{#if absoluteChangeFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{#each order.order.inputs as input (input.id)}
+										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+											<span class="font-semibold">{input.token.symbol}</span>
+											<span class="text-gray-800"
+												>{formatBalance(input.curerentVaultDifferential)}</span
+											>
+										</div>
+									{/each}
 									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">{output.token.symbol}</span>
-										<span class="text-gray-800">{formatBalance(output.totalDeposits)}</span>
+										<span class="font-semibold">Total</span>
+										<span class="text-gray-800">
+											${formatBalance(order.order.roi)}
+										</span>
 									</div>
-								{/each}
-								<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-									<span class="font-semibold">Total</span>
-									<span class="text-gray-800">
-										${formatBalance(
-											order.order.outputs.reduce(
-												(acc, output) =>
-													acc +
-													output.totalDeposits *
-														order.order.tokenPriceUsdMap.get(output.token.address),
-												0
-											)
-										)}
-									</span>
-								</div>
-							</TableBodyCell>
-						{/if}
+								</TableBodyCell>
+							{/if}
 
-						{#if totalInputsFlag}
-							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								{#each order.order.inputs as input (input.id)}
+							{#if percentChangeFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{#each order.order.inputs as input (input.id)}
+										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+											<span class="font-semibold">{input.token.symbol}</span>
+											<span
+												class="font-medium {input.curerentVaultDifferentialPercentage > 0
+													? 'text-green-600'
+													: 'text-red-600'}"
+												>{formatBalance(input.curerentVaultDifferentialPercentage)}%</span
+											>
+										</div>
+									{/each}
 									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">{input.token.symbol}</span>
-										<span class="text-gray-800">{formatBalance(input.currentVaultInputs)}</span>
+										<span class="font-semibold">Total (USD)</span>
+										<span class="text-gray-800">
+											{formatBalance(order.order.roiPercentage)}%
+										</span>
 									</div>
-								{/each}
-								<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-									<span class="font-semibold">Total</span>
-									<span class="text-gray-800">
-										${formatBalance(
-											order.order.inputs.reduce(
-												(acc, input) =>
-													acc +
-													input.currentVaultInputs *
-														order.order.tokenPriceUsdMap.get(input.token.address),
-												0
-											)
-										)}
-									</span>
-								</div>
-							</TableBodyCell>
-						{/if}
+								</TableBodyCell>
+							{/if}
 
-						{#if absoluteChangeFlag}
-							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								{#each order.order.inputs as input (input.id)}
-									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">{input.token.symbol}</span>
-										<span class="text-gray-800"
-											>{formatBalance(input.curerentVaultDifferential)}</span
-										>
-									</div>
-								{/each}
-								<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-									<span class="font-semibold">Total</span>
-									<span class="text-gray-800">
-										${formatBalance(order.order.roi)}
-									</span>
-								</div>
-							</TableBodyCell>
-						{/if}
-
-						{#if percentChangeFlag}
-							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								{#each order.order.inputs as input (input.id)}
-									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">{input.token.symbol}</span>
-										<span
-											class="font-medium {input.curerentVaultDifferentialPercentage > 0
-												? 'text-green-600'
-												: 'text-red-600'}"
-											>{formatBalance(input.curerentVaultDifferentialPercentage)}%</span
-										>
-									</div>
-								{/each}
-								<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-									<span class="font-semibold">Total (USD)</span>
-									<span class="text-gray-800">
-										{formatBalance(order.order.roiPercentage)}%
-									</span>
-								</div>
-							</TableBodyCell>
-						{/if}
-
-						{#if inputBalanceFlag}
-							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								{#each order.order.inputs as input (input.id)}
-									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">{input.token.symbol}</span>
-										<span class="text-gray-800"
-											>{formatBalance(
-												parseFloat(
-													ethers.utils.formatUnits(input.balance, input.token.decimals).toString()
-												)
-											)}</span
-										>
-									</div>
-								{/each}
-								<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-									<span class="font-semibold">Total</span>
-									<span class="text-gray-800">
-										${formatBalance(
-											order.order.inputs.reduce(
-												(acc, input) =>
-													acc +
+							{#if inputBalanceFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{#each order.order.inputs as input (input.id)}
+										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+											<span class="font-semibold">{input.token.symbol}</span>
+											<span class="text-gray-800"
+												>{formatBalance(
 													parseFloat(
 														ethers.utils.formatUnits(input.balance, input.token.decimals).toString()
-													) *
-														order.order.tokenPriceUsdMap.get(input.token.address),
-												0
-											)
-										)}
-									</span>
-								</div>
-							</TableBodyCell>
-						{/if}
-
-						{#if outputBalanceFlag}
-							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								{#each order.order.outputs as output (output.id)}
+													)
+												)}</span
+											>
+										</div>
+									{/each}
 									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">{output.token.symbol}</span>
-										<span class="text-gray-800"
-											>{formatBalance(
-												parseFloat(
-													ethers.utils.formatUnits(output.balance, output.token.decimals).toString()
+										<span class="font-semibold">Total</span>
+										<span class="text-gray-800">
+											${formatBalance(
+												order.order.inputs.reduce(
+													(acc, input) =>
+														acc +
+														parseFloat(
+															ethers.utils
+																.formatUnits(input.balance, input.token.decimals)
+																.toString()
+														) *
+															(order.order.tokenPriceUsdMap.get(input.token.address) || 0),
+													0
 												)
-											)}</span
-										>
+											)}
+										</span>
 									</div>
-								{/each}
-								<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-									<span class="font-semibold">Total</span>
-									<span class="text-gray-800">
-										${formatBalance(
-											order.order.outputs.reduce(
-												(acc, output) =>
-													acc +
+								</TableBodyCell>
+							{/if}
+
+							{#if outputBalanceFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{#each order.order.outputs as output (output.id)}
+										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+											<span class="font-semibold">{output.token.symbol}</span>
+											<span class="text-gray-800"
+												>{formatBalance(
 													parseFloat(
 														ethers.utils
 															.formatUnits(output.balance, output.token.decimals)
 															.toString()
-													) *
-														order.order.tokenPriceUsdMap.get(output.token.address),
-												0
-											)
-										)}
-									</span>
-								</div>
-							</TableBodyCell>
-						{/if}
-
-						{#if inputChangeFlag}
-							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								{#each order.order.inputs as input (input.id)}
+													)
+												)}</span
+											>
+										</div>
+									{/each}
 									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">{input.token.symbol}</span>
-										<span
-											class="font-medium {input.percentageChange24h >= 0
-												? 'text-green-600'
-												: 'text-red-600'}"
-										>
-											{formatBalance(input.balanceChange24h)} ({formatBalance(
-												input.percentageChange24h
-											)}%)
+										<span class="font-semibold">Total</span>
+										<span class="text-gray-800">
+											${formatBalance(
+												order.order.outputs.reduce(
+													(acc, output) =>
+														acc +
+														parseFloat(
+															ethers.utils
+																.formatUnits(output.balance, output.token.decimals)
+																.toString()
+														) *
+															(order.order.tokenPriceUsdMap.get(output.token.address) || 0),
+													0
+												)
+											)}
 										</span>
 									</div>
-								{/each}
-							</TableBodyCell>
-						{/if}
+								</TableBodyCell>
+							{/if}
 
-						{#if outputChangeFlag}
-							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								{#each order.order.outputs as output (output.id)}
+							{#if inputChangeFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{#each order.order.inputs as input (input.id)}
+										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+											<span class="font-semibold">{input.token.symbol}</span>
+											<span
+												class="font-medium {input.percentageChange24h >= 0
+													? 'text-green-600'
+													: 'text-red-600'}"
+											>
+												{formatBalance(input.balanceChange24h)} ({formatBalance(
+													input.percentageChange24h
+												)}%)
+											</span>
+										</div>
+									{/each}
+								</TableBodyCell>
+							{/if}
+
+							{#if outputChangeFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{#each order.order.outputs as output (output.id)}
+										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+											<span class="font-semibold">{output.token.symbol}</span>
+											<span
+												class="font-medium {output.percentageChange24h >= 0
+													? 'text-green-600'
+													: 'text-red-600'}"
+											>
+												{formatBalance(output.balanceChange24h)} ({formatBalance(
+													output.percentageChange24h
+												)}%)
+											</span>
+										</div>
+									{/each}
+								</TableBodyCell>
+							{/if}
+
+							{#if roiFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{#each order.order.inputs as input (input.id)}
+										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+											<span class="font-semibold">{input.token.symbol}</span>
+											<span class="text-gray-800"
+												>{formatBalance(input.curerentVaultDifferential)}</span
+											>
+										</div>
+									{/each}
 									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">{output.token.symbol}</span>
-										<span
-											class="font-medium {output.percentageChange24h >= 0
-												? 'text-green-600'
-												: 'text-red-600'}"
-										>
-											{formatBalance(output.balanceChange24h)} ({formatBalance(
-												output.percentageChange24h
-											)}%)
+										<span class="font-semibold">Total</span>
+										<span class="text-gray-800">
+											${formatBalance(order.order.roi)}
 										</span>
 									</div>
-								{/each}
-							</TableBodyCell>
-						{/if}
+								</TableBodyCell>
+							{/if}
 
-						{#if roiFlag}
-							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								{#each order.order.inputs as input (input.id)}
+							{#if roiPercentFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{#each order.order.inputs as input (input.id)}
+										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+											<span class="font-semibold">{input.token.symbol}</span>
+											<span
+												class="font-medium {input.curerentVaultDifferentialPercentage > 0
+													? 'text-green-600'
+													: 'text-red-600'}"
+												>{formatBalance(input.curerentVaultDifferentialPercentage)}%</span
+											>
+										</div>
+									{/each}
 									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">{input.token.symbol}</span>
-										<span class="text-gray-800"
-											>{formatBalance(input.curerentVaultDifferential)}</span
-										>
+										<span class="font-semibold">Total</span>
+										<span class="text-gray-800">
+											{formatBalance(order.order.roiPercentage)}%
+										</span>
 									</div>
-								{/each}
-								<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-									<span class="font-semibold">Total</span>
-									<span class="text-gray-800">
-										${formatBalance(order.order.roi)}
-									</span>
-								</div>
-							</TableBodyCell>
-						{/if}
+								</TableBodyCell>
+							{/if}
 
-						{#if roiPercentFlag}
-							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								{#each order.order.inputs as input (input.id)}
+							{#if apyFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{#each order.order.inputs as input (input.id)}
+										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+											<span class="font-semibold">{input.token.symbol}</span>
+											<span
+												class="font-medium {input.currentVaultApy > 0
+													? 'text-green-600'
+													: 'text-red-600'}">{formatBalance(input.currentVaultApy)}</span
+											>
+										</div>
+									{/each}
 									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">{input.token.symbol}</span>
-										<span
-											class="font-medium {input.curerentVaultDifferentialPercentage > 0
-												? 'text-green-600'
-												: 'text-red-600'}"
-											>{formatBalance(input.curerentVaultDifferentialPercentage)}%</span
-										>
+										<span class="font-semibold">Total</span>
+										<span class="text-gray-800">
+											{formatBalance(order.order.apy)}%
+										</span>
 									</div>
-								{/each}
-								<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-									<span class="font-semibold">Total</span>
-									<span class="text-gray-800">
-										{formatBalance(order.order.roiPercentage)}%
-									</span>
-								</div>
-							</TableBodyCell>
-						{/if}
+								</TableBodyCell>
+							{/if}
 
-						{#if apyFlag}
-							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								{#each order.order.inputs as input (input.id)}
+							{#if apyPercentFlag}
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{#each order.order.inputs as input (input.id)}
+										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+											<span class="font-semibold">{input.token.symbol}</span>
+											<span
+												class="font-medium {input.currentVaultApyPercentage > 0
+													? 'text-green-600'
+													: 'text-red-600'}">{formatBalance(input.currentVaultApyPercentage)}%</span
+											>
+										</div>
+									{/each}
 									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">{input.token.symbol}</span>
-										<span
-											class="font-medium {input.currentVaultApy > 0
-												? 'text-green-600'
-												: 'text-red-600'}">{formatBalance(input.currentVaultApy)}</span
-										>
+										<span class="font-semibold">Total</span>
+										<span class="text-gray-800">
+											{formatBalance(order.order.apyPercentage)}%
+										</span>
 									</div>
-								{/each}
-								<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-									<span class="font-semibold">Total</span>
-									<span class="text-gray-800">
-										{formatBalance(order.order.apy)}%
-									</span>
-								</div>
-							</TableBodyCell>
-						{/if}
+								</TableBodyCell>
+							{/if}
 
-						{#if apyPercentFlag}
 							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								{#each order.order.inputs as input (input.id)}
-									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">{input.token.symbol}</span>
-										<span
-											class="font-medium {input.currentVaultApyPercentage > 0
-												? 'text-green-600'
-												: 'text-red-600'}">{formatBalance(input.currentVaultApyPercentage)}%</span
-										>
-									</div>
-								{/each}
-								<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-									<span class="font-semibold">Total</span>
-									<span class="text-gray-800">
-										{formatBalance(order.order.apyPercentage)}%
-									</span>
-								</div>
-							</TableBodyCell>
-						{/if}
-
-						<TableBodyCell class="px-4 py-3 text-center text-sm">
-							<a
-								href={`https://v2.raindex.finance/orders/${networkValue}-${order.order.orderHash}`}
-								target="_blank"
-							>
-								<span class="text-blue-500 hover:text-blue-700"
-									>{order.order.orderHash.slice(0, 6)}...{order.order.orderHash.slice(-4)}</span
+								<a
+									href={`https://v2.raindex.finance/orders/${networkValue}-${order.order.orderHash}`}
+									target="_blank"
 								>
-							</a>
-						</TableBodyCell>
-					</TableBodyRow>
+									<span class="text-blue-500 hover:text-blue-700"
+										>{order.order.orderHash.slice(0, 6)}...{order.order.orderHash.slice(-4)}</span
+									>
+								</a>
+							</TableBodyCell>
+						</TableBodyRow>
+					{/each}
 				{/each}
-			{/each}
+			{/if}
 		</TableBody>
 	</Table>
 	<div class="mt-2 flex justify-center">
