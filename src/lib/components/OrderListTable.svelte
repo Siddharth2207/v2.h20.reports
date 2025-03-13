@@ -684,9 +684,18 @@
 														(acc, trade) =>
 															acc +
 															parseFloat(
-																ethers.utils.formatUnits(ethers.BigNumber.from(trade.outputVaultBalanceChange.amount).abs(), trade.outputVaultBalanceChange.vault.token.decimals).toString()
+																ethers.utils
+																	.formatUnits(
+																		ethers.BigNumber.from(
+																			trade.outputVaultBalanceChange.amount
+																		).abs(),
+																		trade.outputVaultBalanceChange.vault.token.decimals
+																	)
+																	.toString()
 															) *
-																(order.order.tokenPriceUsdMap.get(trade.outputVaultBalanceChange.vault.token.address) || 0),
+																(order.order.tokenPriceUsdMap.get(
+																	trade.outputVaultBalanceChange.vault.token.address
+																) || 0),
 														0
 													)
 												)}
@@ -711,15 +720,28 @@
 											<span class="font-semibold">Total</span>
 											<span class="text-gray-800">
 												${formatBalance(
-													order.order.trades.filter(trade => parseFloat(trade.timestamp) > Date.now() / 1000 - 86400).reduce(
-														(acc, trade) =>
-															acc +
-															parseFloat(
-																ethers.utils.formatUnits(ethers.BigNumber.from(trade.outputVaultBalanceChange.amount).abs(), trade.outputVaultBalanceChange.vault.token.decimals).toString()
-															) *
-																(order.order.tokenPriceUsdMap.get(trade.outputVaultBalanceChange.vault.token.address) || 0),
-														0
-													)
+													order.order.trades
+														.filter(
+															(trade) => parseFloat(trade.timestamp) > Date.now() / 1000 - 86400
+														)
+														.reduce(
+															(acc, trade) =>
+																acc +
+																parseFloat(
+																	ethers.utils
+																		.formatUnits(
+																			ethers.BigNumber.from(
+																				trade.outputVaultBalanceChange.amount
+																			).abs(),
+																			trade.outputVaultBalanceChange.vault.token.decimals
+																		)
+																		.toString()
+																) *
+																	(order.order.tokenPriceUsdMap.get(
+																		trade.outputVaultBalanceChange.vault.token.address
+																	) || 0),
+															0
+														)
 												)}
 											</span>
 										</div>
