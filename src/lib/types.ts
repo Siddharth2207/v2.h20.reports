@@ -9,7 +9,6 @@ import type {
 	ConfigSource
 } from '@rainlanguage/orderbook/js_api';
 
-
 export interface LiquidityAnalysisResult {
 	tradesAccordingToTimeStamp: TradesByTimeStamp[];
 	totalTokenExternalVolForDurationUsd: number;
@@ -22,7 +21,6 @@ export interface TradesByTimeStamp {
 	amountInTokens: number;
 	amountInUsd: number;
 }
-
 
 // Network Config Source with Block Time
 export interface NetworkConfigSourceWithBlockTime extends NetworkConfigSource {

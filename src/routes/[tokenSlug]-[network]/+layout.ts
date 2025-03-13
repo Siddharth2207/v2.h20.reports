@@ -10,7 +10,8 @@ export const load = async ({ fetch, params }) => {
 	// Add block time to each network
 	settingsJson.networks = Object.fromEntries(
 		Object.entries(settingsJson.networks).map((network: [string, unknown]) => {
-			const networkConfig: NetworkConfigSourceWithBlockTime = network[1] as NetworkConfigSourceWithBlockTime;
+			const networkConfig: NetworkConfigSourceWithBlockTime =
+				network[1] as NetworkConfigSourceWithBlockTime;
 			networkConfig.blockTime = networkBlockTime[networkConfig['chain-id']];
 			return [network[0], networkConfig];
 		})
