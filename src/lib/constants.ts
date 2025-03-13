@@ -24,6 +24,15 @@ export const supportedTokens = [
 	'KIMA'
 ];
 
+export const networkBlockTime: Record<number, number> = {
+	1: 12,
+	14: 3,
+	56: 3,
+	137: 2.1,
+	8453: 2,
+	42161: 0.25,
+	59144: 2
+};
 export const tokenConfig: Config = {
 	IOEN: {
 		symbol: 'IOEN',
