@@ -34,7 +34,7 @@
 		const allTrades: LiquidityAnalysisResult = await analyzeLiquidity(
 			$network,
 			$tokenSlug.toUpperCase(),
-			new Date().getTime() / 1000 - 60 * 60 * 24 * 7,
+			new Date().getTime() / 1000 - 60 * 60 * 24 * 30,
 			new Date().getTime() / 1000
 		);
 
