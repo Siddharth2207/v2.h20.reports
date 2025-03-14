@@ -9,6 +9,17 @@ import type {
 	ConfigSource
 } from '@rainlanguage/orderbook/js_api';
 
+export interface MarketAnalytics {
+	date: string;
+	timestamp: number;
+	raindexTrades: number;
+	externalTrades: number;
+	totalTrades: number;
+	raindexVolume: number;
+	externalVolume: number;
+	totalVolume: number;
+}
+
 export interface LiquidityAnalysisResult {
 	tradesAccordingToTimeStamp: TradesByTimeStamp[];
 	totalTokenExternalVolForDurationUsd: number;

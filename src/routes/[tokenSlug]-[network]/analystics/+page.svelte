@@ -1,8 +1,5 @@
 <script lang="ts">
-	import type {
-		SgTrade,
-		MultiSubgraphArgs
-	} from '@rainlanguage/orderbook/js_api';
+	import type { SgTrade, MultiSubgraphArgs } from '@rainlanguage/orderbook/js_api';
 	import { getOrders, getOrderTradesList } from '@rainlanguage/orderbook/js_api';
 	import * as Plot from '@observablehq/plot';
 	import { analyzeLiquidity } from '$lib/analyzeLiquidity';
@@ -10,7 +7,8 @@
 	import type {
 		TradesByTimeStamp,
 		OrderListOrderWithSubgraphName,
-		OrderListVault
+		OrderListVault,
+		MarketAnalytics
 	} from '$lib/types';
 	import { tokenConfig, DEFAULT_TRADES_PAGE_SIZE } from '$lib/constants';
 
@@ -28,300 +26,300 @@
 	let weeklyTradesByPercentage: HTMLElement;
 	let weeklyVolumeByPercentage: HTMLElement;
 
-	$: {
-		async function fetchAndPlotData() {
-			const raindexOrdersWithTrades: OrderListOrderWithSubgraphName[] = await fetchAllOrderWithTrades();
-			const allTrades = await analyzeLiquidity(
-				$network,
-				$tokenSlug.toUpperCase(),
-				(new Date().getTime() / 1000) -  60 * 60 * 24 * 7,
-				new Date().getTime() / 1000
+	async function fetchAndPlotData() {
+		const raindexOrdersWithTrades: OrderListOrderWithSubgraphName[] =
+			await fetchAllOrderWithTrades();
+		const allTrades = await analyzeLiquidity(
+			$network,
+			$tokenSlug.toUpperCase(),
+			new Date().getTime() / 1000 - 60 * 60 * 24 * 7,
+			new Date().getTime() / 1000
+		);
+
+		const plotData = getTradesByDay(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp);
+
+		{
+			historicalTrades?.firstChild?.remove();
+			historicalTrades?.append(
+				Plot.plot({
+					grid: true,
+					figure: true,
+					color: { legend: true },
+					title: 'Historical Trade Distribution',
+
+					marks: [
+						Plot.frame(),
+						Plot.ruleY([0]),
+						Plot.barY(plotData, {
+							x: 'date',
+							y: 'totalTrades',
+							fill: 'rgb(38, 128, 217)',
+							tip: { fontSize: 14, fontFamily: 'monospace' }
+						}),
+						Plot.barY(plotData, {
+							x: 'date',
+							y: 'raindexTrades',
+							fill: 'rgb(11, 38, 65)',
+							tip: { fontSize: 14, fontFamily: 'monospace', dx: 20, dy: 20 }
+						})
+					],
+
+					width: 1800,
+					height: 500,
+					inset: 10,
+					aspectRatio: 1,
+					x: {
+						padding: 0.4,
+						label: 'Date',
+						labelAnchor: 'center'
+					},
+					y: {
+						label: 'Trades',
+						labelAnchor: 'center'
+					}
+				})
 			);
+		}
+		{
+			historicalVolume?.firstChild?.remove();
+			historicalVolume?.append(
+				Plot.plot({
+					grid: true,
+					figure: true,
+					color: { legend: true },
+					title: 'Historical Volume Distribution',
 
-			const plotData = getTradesByDay(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp);
+					marks: [
+						Plot.frame(),
+						Plot.ruleY([0]),
+						Plot.barY(plotData, {
+							x: 'date',
+							y: 'totalVolume',
+							fill: 'rgb(38, 128, 217)',
+							tip: { fontSize: 14, fontFamily: 'monospace' }
+						}),
+						Plot.barY(plotData, {
+							x: 'date',
+							y: 'raindexVolume',
+							fill: 'rgb(11, 38, 65)',
+							tip: { fontSize: 14, fontFamily: 'monospace', dx: 20, dy: 20 }
+						})
+					],
 
-			{
-				historicalTrades?.firstChild?.remove();
-				historicalTrades?.append(
-					Plot.plot({
-						grid: true,
-						figure: true,
-						color: { legend: true },
-						title: 'Historical Trade Distribution',
+					width: 1800,
+					height: 500,
+					inset: 10,
+					aspectRatio: 1,
+					x: {
+						padding: 0.4,
+						label: 'Date',
+						labelAnchor: 'center'
+					},
+					y: {
+						label: 'Volume',
+						labelAnchor: 'center'
+					}
+				})
+			);
+		}
+		{
+			weeklyTrades?.firstChild?.remove();
+			weeklyTrades?.append(
+				Plot.plot({
+					grid: true,
+					figure: true,
+					color: { legend: true },
+					title: 'Weekly Trade Distribution',
 
-						marks: [
-							Plot.frame(),
-							Plot.ruleY([0]),
-							Plot.barY(plotData, {
+					marks: [
+						Plot.frame(),
+						Plot.ruleY([0]),
+						Plot.barY(
+							plotData.filter((trade) => trade.timestamp > Date.now() / 1000 - 60 * 60 * 24 * 7),
+							{
 								x: 'date',
 								y: 'totalTrades',
 								fill: 'rgb(38, 128, 217)',
 								tip: { fontSize: 14, fontFamily: 'monospace' }
-							}),
-							Plot.barY(plotData, {
+							}
+						),
+						Plot.barY(
+							plotData.filter((trade) => trade.timestamp > Date.now() / 1000 - 60 * 60 * 24 * 7),
+							{
 								x: 'date',
 								y: 'raindexTrades',
 								fill: 'rgb(11, 38, 65)',
 								tip: { fontSize: 14, fontFamily: 'monospace', dx: 20, dy: 20 }
-							})
-						],
+							}
+						)
+					],
 
-						width: 1800,
-						height: 500,
-						inset: 10,
-						aspectRatio: 1,
-						x: {
-							padding: 0.4,
-							label: 'Date',
-							labelAnchor: 'center'
-						},
-						y: {
-							label: 'Trades',
-							labelAnchor: 'center'
-						}
-					})
-				);
-			}
-			{
-				historicalVolume?.firstChild?.remove();
-				historicalVolume?.append(
-					Plot.plot({
-						grid: true,
-						figure: true,
-						color: { legend: true },
-						title: 'Historical Volume Distribution',
+					width: 900,
+					height: 500,
+					inset: 10,
+					aspectRatio: 1,
+					x: {
+						padding: 0.4,
+						label: 'Date',
+						labelAnchor: 'center'
+					},
+					y: {
+						label: 'Trades',
+						labelAnchor: 'center'
+					}
+				})
+			);
+		}
+		{
+			weeklyVolume?.firstChild?.remove();
+			weeklyVolume?.append(
+				Plot.plot({
+					grid: true,
+					figure: true,
+					color: { legend: true },
+					title: 'Weekly Volume Distribution',
 
-						marks: [
-							Plot.frame(),
-							Plot.ruleY([0]),
-							Plot.barY(plotData, {
+					marks: [
+						Plot.frame(),
+						Plot.ruleY([0]),
+						Plot.barY(
+							plotData.filter((trade) => trade.timestamp > Date.now() / 1000 - 60 * 60 * 24 * 7),
+							{
 								x: 'date',
 								y: 'totalVolume',
 								fill: 'rgb(38, 128, 217)',
 								tip: { fontSize: 14, fontFamily: 'monospace' }
-							}),
-							Plot.barY(plotData, {
+							}
+						),
+						Plot.barY(
+							plotData.filter((trade) => trade.timestamp > Date.now() / 1000 - 60 * 60 * 24 * 7),
+							{
 								x: 'date',
 								y: 'raindexVolume',
 								fill: 'rgb(11, 38, 65)',
 								tip: { fontSize: 14, fontFamily: 'monospace', dx: 20, dy: 20 }
-							})
-						],
+							}
+						)
+					],
 
-						width: 1800,
-						height: 500,
-						inset: 10,
-						aspectRatio: 1,
-						x: {
-							padding: 0.4,
-							label: 'Date',
-							labelAnchor: 'center'
-						},
-						y: {
-							label: 'Volume',
-							labelAnchor: 'center'
-						}
-					})
-				);
-			}
-			{
-				weeklyTrades?.firstChild?.remove();
-				weeklyTrades?.append(
-					Plot.plot({
-						grid: true,
-						figure: true,
-						color: { legend: true },
-						title: 'Weekly Trade Distribution',
-
-						marks: [
-							Plot.frame(),
-							Plot.ruleY([0]),
-							Plot.barY(
-								plotData.filter((trade) => trade.timestamp > Date.now() / 1000 - 60 * 60 * 24 * 7),
-								{
-									x: 'date',
-									y: 'totalTrades',
-									fill: 'rgb(38, 128, 217)',
-									tip: { fontSize: 14, fontFamily: 'monospace' }
-								}
-							),
-							Plot.barY(
-								plotData.filter((trade) => trade.timestamp > Date.now() / 1000 - 60 * 60 * 24 * 7),
-								{
-									x: 'date',
-									y: 'raindexTrades',
-									fill: 'rgb(11, 38, 65)',
-									tip: { fontSize: 14, fontFamily: 'monospace', dx: 20, dy: 20 }
-								}
-							)
-						],
-
-						width: 900,
-						height: 500,
-						inset: 10,
-						aspectRatio: 1,
-						x: {
-							padding: 0.4,
-							label: 'Date',
-							labelAnchor: 'center'
-						},
-						y: {
-							label: 'Trades',
-							labelAnchor: 'center'
-						}
-					})
-				);
-			}
-			{
-				weeklyVolume?.firstChild?.remove();
-				weeklyVolume?.append(
-					Plot.plot({
-						grid: true,
-						figure: true,
-						color: { legend: true },
-						title: 'Weekly Volume Distribution',
-
-						marks: [
-							Plot.frame(),
-							Plot.ruleY([0]),
-							Plot.barY(
-								plotData.filter((trade) => trade.timestamp > Date.now() / 1000 - 60 * 60 * 24 * 7),
-								{
-									x: 'date',
-									y: 'totalVolume',
-									fill: 'rgb(38, 128, 217)',
-									tip: { fontSize: 14, fontFamily: 'monospace' }
-								}
-							),
-							Plot.barY(
-								plotData.filter((trade) => trade.timestamp > Date.now() / 1000 - 60 * 60 * 24 * 7),
-								{
-									x: 'date',
-									y: 'raindexVolume',
-									fill: 'rgb(11, 38, 65)',
-									tip: { fontSize: 14, fontFamily: 'monospace', dx: 20, dy: 20 }
-								}
-							)
-						],
-
-						width: 900,
-						height: 500,
-						inset: 10,
-						aspectRatio: 1,
-						x: {
-							padding: 0.4,
-							label: 'Date',
-							labelAnchor: 'center'
-						},
-						y: {
-							label: 'Volume',
-							labelAnchor: 'center'
-						}
-					})
-				);
-			}
-			{
-				const weeklyTradesByPercentageData = plotData
-					.filter((trade) => trade.timestamp > Date.now() / 1000 - 60 * 60 * 24 * 7)
-					.map((trade) => ({
-						date: trade.date,
-						totalTradesPercentage: (trade.totalTrades / trade.totalTrades) * 100,
-						raindexTradesPercentage: (trade.raindexTrades / trade.totalTrades) * 100
-					}));
-
-				weeklyTradesByPercentage?.firstChild?.remove();
-				weeklyTradesByPercentage?.append(
-					Plot.plot({
-						grid: true,
-						figure: true,
-						color: { legend: true },
-						title: 'Weekly Trade Distribution By Percentage',
-
-						marks: [
-							Plot.frame(),
-							Plot.ruleY([0]),
-							Plot.barY(weeklyTradesByPercentageData, {
-								x: 'date',
-								y: 'totalTradesPercentage',
-								fill: 'rgb(38, 128, 217)',
-								tip: { fontSize: 14, fontFamily: 'monospace' }
-							}),
-							Plot.barY(weeklyTradesByPercentageData, {
-								x: 'date',
-								y: 'raindexTradesPercentage',
-								fill: 'rgb(11, 38, 65)',
-								tip: { fontSize: 14, fontFamily: 'monospace', dx: 20, dy: 20 }
-							})
-						],
-
-						width: 900,
-						height: 500,
-						inset: 10,
-						aspectRatio: 1,
-						x: {
-							padding: 0.4,
-							label: 'Date',
-							labelAnchor: 'center'
-						},
-						y: {
-							label: 'Trades',
-							labelAnchor: 'center'
-						}
-					})
-				);
-			}
-			{
-				const weeklyVolumeByPercentageData = plotData
-					.filter((trade) => trade.timestamp > Date.now() / 1000 - 60 * 60 * 24 * 7)
-					.map((trade) => ({
-						date: trade.date,
-						totalVolumePercentage: (trade.totalVolume / trade.totalVolume) * 100,
-						raindexVolumePercentage: (trade.raindexVolume / trade.totalVolume) * 100
-					}));
-
-				weeklyVolumeByPercentage?.firstChild?.remove();
-				weeklyVolumeByPercentage?.append(
-					Plot.plot({
-						grid: true,
-						figure: true,
-						color: { legend: true },
-						title: 'Weekly Volume Distribution By Percentage',
-
-						marks: [
-							Plot.frame(),
-							Plot.ruleY([0]),
-							Plot.barY(weeklyVolumeByPercentageData, {
-								x: 'date',
-								y: 'totalVolumePercentage',
-								fill: 'rgb(38, 128, 217)',
-								tip: { fontSize: 14, fontFamily: 'monospace' }
-							}),
-							Plot.barY(weeklyVolumeByPercentageData, {
-								x: 'date',
-								y: 'raindexVolumePercentage',
-								fill: 'rgb(11, 38, 65)',
-								tip: { fontSize: 14, fontFamily: 'monospace', dx: 20, dy: 20 }
-							})
-						],
-
-						width: 900,
-						height: 500,
-						inset: 10,
-						aspectRatio: 1,
-						x: {
-							padding: 0.4,
-							label: 'Date',
-							labelAnchor: 'center'
-						},
-						y: {
-							label: 'Volume',
-							labelAnchor: 'center'
-						}
-					})
-				);
-			}
-			
+					width: 900,
+					height: 500,
+					inset: 10,
+					aspectRatio: 1,
+					x: {
+						padding: 0.4,
+						label: 'Date',
+						labelAnchor: 'center'
+					},
+					y: {
+						label: 'Volume',
+						labelAnchor: 'center'
+					}
+				})
+			);
 		}
+		{
+			const weeklyTradesByPercentageData = plotData
+				.filter((trade) => trade.timestamp > Date.now() / 1000 - 60 * 60 * 24 * 7)
+				.map((trade) => ({
+					date: trade.date,
+					totalTradesPercentage: (trade.totalTrades / trade.totalTrades) * 100,
+					raindexTradesPercentage: (trade.raindexTrades / trade.totalTrades) * 100
+				}));
+
+			weeklyTradesByPercentage?.firstChild?.remove();
+			weeklyTradesByPercentage?.append(
+				Plot.plot({
+					grid: true,
+					figure: true,
+					color: { legend: true },
+					title: 'Weekly Trade Distribution By Percentage',
+
+					marks: [
+						Plot.frame(),
+						Plot.ruleY([0]),
+						Plot.barY(weeklyTradesByPercentageData, {
+							x: 'date',
+							y: 'totalTradesPercentage',
+							fill: 'rgb(38, 128, 217)',
+							tip: { fontSize: 14, fontFamily: 'monospace' }
+						}),
+						Plot.barY(weeklyTradesByPercentageData, {
+							x: 'date',
+							y: 'raindexTradesPercentage',
+							fill: 'rgb(11, 38, 65)',
+							tip: { fontSize: 14, fontFamily: 'monospace', dx: 20, dy: 20 }
+						})
+					],
+
+					width: 900,
+					height: 500,
+					inset: 10,
+					aspectRatio: 1,
+					x: {
+						padding: 0.4,
+						label: 'Date',
+						labelAnchor: 'center'
+					},
+					y: {
+						label: 'Trades',
+						labelAnchor: 'center'
+					}
+				})
+			);
+		}
+		{
+			const weeklyVolumeByPercentageData = plotData
+				.filter((trade) => trade.timestamp > Date.now() / 1000 - 60 * 60 * 24 * 7)
+				.map((trade) => ({
+					date: trade.date,
+					totalVolumePercentage: (trade.totalVolume / trade.totalVolume) * 100,
+					raindexVolumePercentage: (trade.raindexVolume / trade.totalVolume) * 100
+				}));
+
+			weeklyVolumeByPercentage?.firstChild?.remove();
+			weeklyVolumeByPercentage?.append(
+				Plot.plot({
+					grid: true,
+					figure: true,
+					color: { legend: true },
+					title: 'Weekly Volume Distribution By Percentage',
+
+					marks: [
+						Plot.frame(),
+						Plot.ruleY([0]),
+						Plot.barY(weeklyVolumeByPercentageData, {
+							x: 'date',
+							y: 'totalVolumePercentage',
+							fill: 'rgb(38, 128, 217)',
+							tip: { fontSize: 14, fontFamily: 'monospace' }
+						}),
+						Plot.barY(weeklyVolumeByPercentageData, {
+							x: 'date',
+							y: 'raindexVolumePercentage',
+							fill: 'rgb(11, 38, 65)',
+							tip: { fontSize: 14, fontFamily: 'monospace', dx: 20, dy: 20 }
+						})
+					],
+
+					width: 900,
+					height: 500,
+					inset: 10,
+					aspectRatio: 1,
+					x: {
+						padding: 0.4,
+						label: 'Date',
+						labelAnchor: 'center'
+					},
+					y: {
+						label: 'Volume',
+						labelAnchor: 'center'
+					}
+				})
+			);
+		}
+	}
+	$: {
 		fetchAndPlotData();
 	}
 
@@ -394,7 +392,7 @@
 	function getTradesByDay(
 		raindexOrdersWithTrades: OrderListOrderWithSubgraphName[],
 		allTrades: TradesByTimeStamp[]
-	) {
+	): MarketAnalytics[] {
 		const allRaindexTrades = raindexOrdersWithTrades.flatMap((order) => order.order.trades);
 		const raindexTradesTransactionHash = new Set(
 			allRaindexTrades.map((trade) => trade.tradeEvent.transaction.id)
@@ -427,7 +425,7 @@
 		const raindexTradesByDay = groupTradesByDay(raindexTrades);
 		const externalTradesByDay = groupTradesByDay(externalTrades);
 
-		const plotData: any[] = [];
+		const plotData: MarketAnalytics[] = [];
 		const allDates = Array.from(
 			new Set([...Object.keys(raindexTradesByDay), ...Object.keys(externalTradesByDay)])
 		).sort();
@@ -467,7 +465,6 @@
 
 <div class="max-w-screen-3xl mx-auto rounded-lg p-2">
 	{#if activeTab === 'Market Analytics'}
-		
 		<div class="wrapper">
 			<div class="flex flex-row">
 				<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyTrades}></div>
