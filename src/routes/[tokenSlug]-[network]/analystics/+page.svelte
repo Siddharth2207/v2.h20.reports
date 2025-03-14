@@ -8,7 +8,8 @@
 		TradesByTimeStamp,
 		OrderListOrderWithSubgraphName,
 		OrderListVault,
-		MarketAnalytics
+		MarketAnalytics,
+		LiquidityAnalysisResult
 	} from '$lib/types';
 	import { tokenConfig, DEFAULT_TRADES_PAGE_SIZE } from '$lib/constants';
 
@@ -29,7 +30,7 @@
 	async function fetchAndPlotData() {
 		const raindexOrdersWithTrades: OrderListOrderWithSubgraphName[] =
 			await fetchAllOrderWithTrades();
-		const allTrades = await analyzeLiquidity(
+		const allTrades: LiquidityAnalysisResult = await analyzeLiquidity(
 			$network,
 			$tokenSlug.toUpperCase(),
 			new Date().getTime() / 1000 - 60 * 60 * 24 * 7,
@@ -323,7 +324,7 @@
 		fetchAndPlotData();
 	}
 
-	async function fetchAllOrderWithTrades() {
+	async function fetchAllOrderWithTrades(): Promise<OrderListOrderWithSubgraphName[]> {
 		let raindexOrders: OrderListOrderWithSubgraphName[] = [];
 		let currentPage = 1;
 		let hasMore = true;
