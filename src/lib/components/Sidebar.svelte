@@ -70,7 +70,7 @@
 		</SidebarGroup>
 
 		<SidebarGroup class="gap-4 p-2">
-			<SidebarItem label="" href="/{tokenSlug}-{network}/analystics">
+			<SidebarItem label="" href="/{tokenSlug}-{network}/analytics">
 				<svelte:fragment slot="icon">
 					<GearSolid class="h-5 w-5" />
 					<span class="px-3 text-base text-gray-600 hover:text-indigo-600 dark:text-white"
