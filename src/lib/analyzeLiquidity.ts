@@ -155,7 +155,6 @@ async function getBlockNumberForTimestampByHyperSync(
 				const blocks = response.data.data.flatMap((item: any) => item.blocks);
 
 				if (blocks.length === 0) {
-					console.warn(`No blocks found for mid=${mid}. Adjusting search range.`);
 					right = mid - 1;
 					continue;
 				}
@@ -178,8 +177,7 @@ async function getBlockNumberForTimestampByHyperSync(
 				} else {
 					right = mid - 1;
 				}
-			} catch (error) {
-				console.error(`Error fetching block data for block ${mid}:`, error);
+			} catch {
 				// Skip this block range and move backward
 				right = mid - 1;
 			}
@@ -307,8 +305,6 @@ async function analyzeHyperSyncData(
 					amountInTokens: parseFloat(tokenAmount),
 					amountInUsd: parseFloat(tokenAmount) * currentTokenPrice
 				});
-			} else {
-				console.error('Hex string is undefined!');
 			}
 		}
 
@@ -388,8 +384,6 @@ async function analyzeHyperSyncData(
 					amountInTokens: parseFloat(tokenAmount),
 					amountInUsd: parseFloat(tokenAmount) * currentTokenPrice
 				});
-			} else {
-				console.error('Hex string is undefined!');
 			}
 		}
 
@@ -469,8 +463,6 @@ async function analyzeHyperSyncData(
 					amountInTokens: parseFloat(tokenAmount),
 					amountInUsd: parseFloat(tokenAmount) * currentTokenPrice
 				});
-			} else {
-				console.error('Hex string is undefined!');
 			}
 		}
 
@@ -561,8 +553,7 @@ async function fetchLogs(
 			if (!currentBlock || currentBlock > endBlock) {
 				break;
 			}
-		} catch (error) {
-			console.error('Error fetching logs:', error);
+		} catch {
 			break; // Exit loop on error
 		}
 	}
