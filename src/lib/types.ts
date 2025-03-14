@@ -4,8 +4,44 @@ import type {
 	SgOrder,
 	SgTrade,
 	SgVault,
-	SgVaultBalanceChangeUnwrapped
+	SgVaultBalanceChangeUnwrapped,
+	NetworkConfigSource,
+	ConfigSource
 } from '@rainlanguage/orderbook/js_api';
+
+export interface MarketAnalytics {
+	date: string;
+	timestamp: number;
+	raindexTrades: number;
+	externalTrades: number;
+	totalTrades: number;
+	raindexVolume: number;
+	externalVolume: number;
+	totalVolume: number;
+}
+
+export interface LiquidityAnalysisResult {
+	tradesAccordingToTimeStamp: TradesByTimeStamp[];
+	totalTokenExternalVolForDurationUsd: number;
+	totalTokenExternalTradesForDuration: number;
+}
+
+export interface TradesByTimeStamp {
+	timestamp: number;
+	transactionHash: string;
+	amountInTokens: number;
+	amountInUsd: number;
+}
+
+// Network Config Source with Block Time
+export interface NetworkConfigSourceWithBlockTime extends NetworkConfigSource {
+	blockTime?: number;
+}
+
+// Config Source with Block Time
+export interface ConfigSourceWithBlockTime extends Omit<ConfigSource, 'networks'> {
+	networks?: Record<string, NetworkConfigSourceWithBlockTime>;
+}
 
 // Order List Types
 export interface OrderListTotalVolume {

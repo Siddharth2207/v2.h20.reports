@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { Sidebar, SidebarGroup, SidebarItem, SidebarWrapper } from 'flowbite-svelte';
-	import { ClipboardListSolid, DesktopPcSolid, BookOpenOutline } from 'flowbite-svelte-icons';
+	import {
+		ClipboardListSolid,
+		DesktopPcSolid,
+		BookOpenOutline,
+		GearSolid
+	} from 'flowbite-svelte-icons';
 
 	export let network: string;
 	export let tokenSlug: string;
@@ -59,6 +64,17 @@
 					<BookOpenOutline class="h-5 w-5" />
 					<span class="px-3 text-base text-gray-600 hover:text-indigo-600 dark:text-white"
 						>Order Book</span
+					>
+				</svelte:fragment>
+			</SidebarItem>
+		</SidebarGroup>
+
+		<SidebarGroup class="gap-4 p-2">
+			<SidebarItem label="" href="/{tokenSlug}-{network}/analystics">
+				<svelte:fragment slot="icon">
+					<GearSolid class="h-5 w-5" />
+					<span class="px-3 text-base text-gray-600 hover:text-indigo-600 dark:text-white"
+						>Analytics</span
 					>
 				</svelte:fragment>
 			</SidebarItem>

@@ -21,18 +21,20 @@
 		"svelte-lint-format-check": "npm run lint && npm run check"
 	},
 	"dependencies": {
+		"@observablehq/plot": "^0.6.13",
+		"@rainlanguage/orderbook": "0.0.1-alpha.7",
+		"axios": "^1.7.9",
 		"flowbite": "^2.2.1",
 		"flowbite-svelte": "^0.44.21",
 		"flowbite-svelte-icons": "^0.4.5",
-		"@rainlanguage/orderbook": "0.0.1-alpha.7",
 		"i": "^0.3.7",
 		"lodash": "^4.17.21",
 		"npm": "^11.1.0",
+		"sushi": "^5.0.5",
 		"svelte-markdown": "^0.4.1",
 		"viem": "^2.21.51",
-		"sushi": "^5.0.5",
-		"zod": "^3.24.1",
-		"wagmi": "^2.14.7"
+		"wagmi": "^2.14.7",
+		"zod": "^3.24.1"
 	},
 	"devDependencies": {
 		"@rollup/plugin-json": "^6.1.0",
@@ -56,10 +58,10 @@
 		"autoprefixer": "^10.4.20",
 		"dayjs": "^1.11.13",
 		"eslint": "^8.56.0",
-		"ethers": "^5.7.0",
 		"eslint-config-prettier": "^9.1.0",
 		"eslint-plugin-prettier": "^5.1.1",
 		"eslint-plugin-svelte": "^2.36.0",
+		"ethers": "^5.7.0",
 		"globals": "^15.0.0",
 		"jsdom": "^24.0.0",
 		"mockttp": "^3.15.1",
