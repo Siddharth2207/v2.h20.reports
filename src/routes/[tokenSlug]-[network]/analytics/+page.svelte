@@ -473,21 +473,20 @@
 		></div>
 		<p class="mt-3 text-lg font-medium text-gray-600">Loading...</p>
 	</div>
-{:else}
-	<div class="max-w-screen-3xl mx-auto rounded-lg p-2">
-		{#if activeTab === 'Market Analytics'}
-			<div class="wrapper">
-				<div class="flex flex-row">
-					<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyTrades}></div>
-					<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyVolume}></div>
-				</div>
-				<div class="flex flex-row">
-					<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyTradesByPercentage}></div>
-					<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyVolumeByPercentage}></div>
-				</div>
-				<div bind:this={historicalTrades}></div>
-				<div bind:this={historicalVolume}></div>
-			</div>
-		{/if}
-	</div>
 {/if}
+<div class="max-w-screen-3xl mx-auto rounded-lg p-2">
+	{#if activeTab === 'Market Analytics'}
+		<div class="wrapper">
+			<div class="flex flex-row">
+				<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyTrades}></div>
+				<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyVolume}></div>
+			</div>
+			<div class="flex flex-row">
+				<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyTradesByPercentage}></div>
+				<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyVolumeByPercentage}></div>
+			</div>
+			<div bind:this={historicalTrades}></div>
+			<div bind:this={historicalVolume}></div>
+		</div>
+	{/if}
+</div>
