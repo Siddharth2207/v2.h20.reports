@@ -19,6 +19,7 @@
 	const tokenAddress = tokenConfig[$tokenSlug.toUpperCase()]?.address;
 
 	let activeTab = 'Market Analytics';
+	let loading = true;
 
 	let historicalTrades: HTMLElement;
 	let historicalVolume: HTMLElement;
@@ -319,6 +320,7 @@
 				})
 			);
 		}
+		loading = false;
 	}
 	$: {
 		fetchAndPlotData();
@@ -464,19 +466,28 @@
 	{/each}
 </div>
 
-<div class="max-w-screen-3xl mx-auto rounded-lg p-2">
-	{#if activeTab === 'Market Analytics'}
-		<div class="wrapper">
-			<div class="flex flex-row">
-				<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyTrades}></div>
-				<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyVolume}></div>
+{#if loading}
+	<div class="mt-10 flex flex-col items-center justify-start">
+		<div
+			class="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-indigo-600"
+		></div>
+		<p class="mt-3 text-lg font-medium text-gray-600">Loading...</p>
+	</div>
+{:else}
+	<div class="max-w-screen-3xl mx-auto rounded-lg p-2">
+		{#if activeTab === 'Market Analytics'}
+			<div class="wrapper">
+				<div class="flex flex-row">
+					<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyTrades}></div>
+					<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyVolume}></div>
+				</div>
+				<div class="flex flex-row">
+					<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyTradesByPercentage}></div>
+					<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyVolumeByPercentage}></div>
+				</div>
+				<div bind:this={historicalTrades}></div>
+				<div bind:this={historicalVolume}></div>
 			</div>
-			<div class="flex flex-row">
-				<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyTradesByPercentage}></div>
-				<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyVolumeByPercentage}></div>
-			</div>
-			<div bind:this={historicalTrades}></div>
-			<div bind:this={historicalVolume}></div>
-		</div>
-	{/if}
-</div>
+		{/if}
+	</div>
+{/if}
