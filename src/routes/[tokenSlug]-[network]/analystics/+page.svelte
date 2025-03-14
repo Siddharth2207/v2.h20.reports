@@ -1,383 +1,484 @@
 <script lang="ts">
-	import type { MarkCfg, PlotCfg as PlotT, TransformCfg } from '@rainlanguage/orderbook/js_api';
+	import type {
+		SgTrade,
+		MultiSubgraphArgs
+	} from '@rainlanguage/orderbook/js_api';
+	import { getOrders, getOrderTradesList } from '@rainlanguage/orderbook/js_api';
 	import * as Plot from '@observablehq/plot';
-	import { onMount } from 'svelte';
 	import { analyzeLiquidity } from '$lib/analyzeLiquidity';
 	import { page } from '$app/stores';
+	import type {
+		TradesByTimeStamp,
+		OrderListOrderWithSubgraphName,
+		OrderListVault
+	} from '$lib/types';
+	import { tokenConfig, DEFAULT_TRADES_PAGE_SIZE } from '$lib/constants';
 
-	const { settings, tokenSlug, network } = $page.data.stores;
+	const { tokenSlug, network, activeSubgraphs } = $page.data.stores;
 
-	let plot: PlotT;
-	// let data: TransformedPlotData[];
-	let div: HTMLElement;
-	let div2: HTMLElement;
+	const tokenSymbol = tokenConfig[$tokenSlug.toUpperCase()]?.symbol;
+	const tokenAddress = tokenConfig[$tokenSlug.toUpperCase()]?.address;
 
-	let data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].map((d) =>
-		Math.sin(d)
-	);
+	let activeTab = 'Market Analytics';
 
-	let olympicAthletes = [
-		{
-			id: 736041664,
-			name: 'A Jesus Garcia',
-			nationality: 'ESP',
-			sex: 'male',
-			date_of_birth: '1969-10-17',
-			height: 1.72,
-			weight: 64,
-			sport: 'athletics',
-			gold: 0,
-			silver: 0,
-			bronze: 0
-		},
-		{
-			id: 532037425,
-			name: 'A Lam Shin',
-			nationality: 'KOR',
-			sex: 'female',
-			date_of_birth: '1986-09-23',
-			height: 1.68,
-			weight: 56,
-			sport: 'fencing',
-			gold: 0,
-			silver: 0,
-			bronze: 0
-		},
-		{
-			id: 435962603,
-			name: 'Aaron Brown',
-			nationality: 'CAN',
-			sex: 'male',
-			date_of_birth: '1992-05-27',
-			height: 1.98,
-			weight: 79,
-			sport: 'athletics',
-			gold: 0,
-			silver: 0,
-			bronze: 1
-		},
-		{
-			id: 521041435,
-			name: 'Aaron Cook',
-			nationality: 'MDA',
-			sex: 'male',
-			date_of_birth: '1991-01-02',
-			height: 1.83,
-			weight: 80,
-			sport: 'taekwondo',
-			gold: 0,
-			silver: 0,
-			bronze: 0
-		},
-		{
-			id: 33922579,
-			name: 'Aaron Gate',
-			nationality: 'NZL',
-			sex: 'male',
-			date_of_birth: '1990-11-26',
-			height: 1.81,
-			weight: 71,
-			sport: 'cycling',
-			gold: 0,
-			silver: 0,
-			bronze: 0
-		},
-		{
-			id: 173071782,
-			name: 'Aaron Royle',
-			nationality: 'AUS',
-			sex: 'male',
-			date_of_birth: '1990-01-26',
-			height: 1.8,
-			weight: 67,
-			sport: 'triathlon',
-			gold: 0,
-			silver: 0,
-			bronze: 0
-		},
-		{
-			id: 266237702,
-			name: 'Aaron Russell',
-			nationality: 'USA',
-			sex: 'male',
-			date_of_birth: '1993-06-04',
-			height: 2.05,
-			weight: 98,
-			sport: 'volleyball',
-			gold: 0,
-			silver: 0,
-			bronze: 1
-		},
-		{
-			id: 382571888,
-			name: 'Aaron Younger',
-			nationality: 'AUS',
-			sex: 'male',
-			date_of_birth: '1991-09-25',
-			height: 1.93,
-			weight: 100,
-			sport: 'aquatics',
-			gold: 0,
-			silver: 0,
-			bronze: 0
-		},
-		{
-			id: 87689776,
-			name: 'Aauri Lorena Bokesa',
-			nationality: 'ESP',
-			sex: 'female',
-			date_of_birth: '1988-12-14',
-			height: 1.8,
-			weight: 62,
-			sport: 'athletics',
-			gold: 0,
-			silver: 0,
-			bronze: 0
-		},
-		{
-			id: 997877719,
-			name: 'Ababel Yeshaneh',
-			nationality: 'ETH',
-			sex: 'female',
-			date_of_birth: '1991-07-22',
-			height: 1.65,
-			weight: 54,
-			sport: 'athletics',
-			gold: 0,
-			silver: 0,
-			bronze: 0
-		},
-		{
-			id: 343694681,
-			name: 'Abadi Hadis',
-			nationality: 'ETH',
-			sex: 'male',
-			date_of_birth: '1997-11-06',
-			height: 1.7,
-			weight: 63,
-			sport: 'athletics',
-			gold: 0,
-			silver: 0,
-			bronze: 0
-		},
-		{
-			id: 591319906,
-			name: 'Abbas Abubakar Abbas',
-			nationality: 'BRN',
-			sex: 'male',
-			date_of_birth: '1996-05-17',
-			height: 1.75,
-			weight: 66,
-			sport: 'athletics',
-			gold: 0,
-			silver: 0,
-			bronze: 0
-		},
-		{
-			id: 258556239,
-			name: 'Abbas Qali',
-			nationality: 'IOA',
-			sex: 'male',
-			date_of_birth: '1992-10-11',
-			height: null,
-			weight: null,
-			sport: 'aquatics',
-			gold: 0,
-			silver: 0,
-			bronze: 0
-		},
-		{
-			id: 376068084,
-			name: "Abbey D'Agostino",
-			nationality: 'USA',
-			sex: 'female',
-			date_of_birth: '1992-05-25',
-			height: 1.61,
-			weight: 49,
-			sport: 'athletics',
-			gold: 0,
-			silver: 0,
-			bronze: 0
-		},
-		{
-			id: 162792594,
-			name: 'Abbey Weitzeil',
-			nationality: 'USA',
-			sex: 'female',
-			date_of_birth: '1996-12-03',
-			height: 1.78,
-			weight: 68,
-			sport: 'aquatics',
-			gold: 1,
-			silver: 1,
-			bronze: 0
-		},
-		{
-			id: 521036704,
-			name: 'Abbie Brown',
-			nationality: 'GBR',
-			sex: 'female',
-			date_of_birth: '1996-04-10',
-			height: 1.76,
-			weight: 71,
-			sport: 'rugby sevens',
-			gold: 0,
-			silver: 0,
-			bronze: 0
-		}
-	];
-	let aapl = [
-		{
-			Date: new Date('2013-05-13'),
-			Open: 64.501427,
-			High: 65.414284,
-			Low: 64.5,
-			Close: 64.96286,
-			Volume: 79237200
-		},
-		{
-			Date: new Date('2013-05-14'),
-			Open: 64.835716,
-			High: 65.028572,
-			Low: 63.164288,
-			Close: 63.408573,
-			Volume: 111779500
-		},
-		{
-			Date: new Date('2013-05-15'),
-			Open: 62.737144,
-			High: 63.0,
-			Low: 60.337143,
-			Close: 61.264286,
-			Volume: 185403400
-		},
-		{
-			Date: new Date('2013-05-16'),
-			Open: 60.462856,
-			High: 62.549999,
-			Low: 59.842857,
-			Close: 62.082859,
-			Volume: 150801000
-		},
-		{
-			Date: new Date('2013-05-17'),
-			Open: 62.721428,
-			High: 62.869999,
-			Low: 61.572857,
-			Close: 61.894287,
-			Volume: 106976100
-		}
-	];
-
-	let google = [
-		{
-			Date: new Date('2013-05-13'),
-			Open: 64.501427,
-			High: 65.414284,
-			Low: 64.5,
-			Close: 54.96286,
-			Volume: 79237200
-		},
-		{
-			Date: new Date('2013-05-14'),
-			Open: 64.835716,
-			High: 65.028572,
-			Low: 63.164288,
-			Close: 53.408573,
-			Volume: 111779500
-		},
-		{
-			Date: new Date('2013-05-15'),
-			Open: 62.737144,
-			High: 63.0,
-			Low: 60.337143,
-			Close: 51.264286,
-			Volume: 185403400
-		},
-		{
-			Date: new Date('2013-05-16'),
-			Open: 60.462856,
-			High: 62.549999,
-			Low: 59.842857,
-			Close: 52.082859,
-			Volume: 150801000
-		},
-		{
-			Date: new Date('2013-05-17'),
-			Open: 62.721428,
-			High: 62.869999,
-			Low: 61.572857,
-			Close: 51.894287,
-			Volume: 106976100
-		}
-	];
-
-	let trades = [
-		{ Date: new Date('2013-05-13').getDate(), Raindex: 10, External: 10, Total: 20 },
-		{ Date: new Date('2013-05-14').getDate(), Raindex: 20, External: 21, Total: 41 },
-		{ Date: new Date('2013-05-15').getDate(), Raindex: 30, External: 33, Total: 63 },
-		{ Date: new Date('2013-05-16').getDate(), Raindex: 40, External: 35, Total: 75 },
-		{ Date: new Date('2013-05-17').getDate(), Raindex: 50, External: 55, Total: 105 }
-	];
+	let historicalTrades: HTMLElement;
+	let historicalVolume: HTMLElement;
+	let weeklyTrades: HTMLElement;
+	let weeklyVolume: HTMLElement;
+	let weeklyTradesByPercentage: HTMLElement;
+	let weeklyVolumeByPercentage: HTMLElement;
 
 	$: {
-
-		async function fetchData() {
-			const result = await analyzeLiquidity(
+		async function fetchAndPlotData() {
+			const raindexOrdersWithTrades: OrderListOrderWithSubgraphName[] = await fetchAllOrderWithTrades();
+			const allTrades = await analyzeLiquidity(
 				$network,
 				$tokenSlug.toUpperCase(),
-				new Date().getTime() / 1000 - 1000 * 60 * 60 * 24 * 1,
+				(new Date().getTime() / 1000) -  60 * 60 * 24 * 7,
 				new Date().getTime() / 1000
 			);
-			console.log(JSON.stringify(result.tradesAccordingToTimeStamp));
+
+			const plotData = getTradesByDay(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp);
+
+			{
+				historicalTrades?.firstChild?.remove();
+				historicalTrades?.append(
+					Plot.plot({
+						grid: true,
+						figure: true,
+						color: { legend: true },
+						title: 'Historical Trade Distribution',
+
+						marks: [
+							Plot.frame(),
+							Plot.ruleY([0]),
+							Plot.barY(plotData, {
+								x: 'date',
+								y: 'totalTrades',
+								fill: 'rgb(38, 128, 217)',
+								tip: { fontSize: 14, fontFamily: 'monospace' }
+							}),
+							Plot.barY(plotData, {
+								x: 'date',
+								y: 'raindexTrades',
+								fill: 'rgb(11, 38, 65)',
+								tip: { fontSize: 14, fontFamily: 'monospace', dx: 20, dy: 20 }
+							})
+						],
+
+						width: 1800,
+						height: 500,
+						inset: 10,
+						aspectRatio: 1,
+						x: {
+							padding: 0.4,
+							label: 'Date',
+							labelAnchor: 'center'
+						},
+						y: {
+							label: 'Trades',
+							labelAnchor: 'center'
+						}
+					})
+				);
+			}
+			{
+				historicalVolume?.firstChild?.remove();
+				historicalVolume?.append(
+					Plot.plot({
+						grid: true,
+						figure: true,
+						color: { legend: true },
+						title: 'Historical Volume Distribution',
+
+						marks: [
+							Plot.frame(),
+							Plot.ruleY([0]),
+							Plot.barY(plotData, {
+								x: 'date',
+								y: 'totalVolume',
+								fill: 'rgb(38, 128, 217)',
+								tip: { fontSize: 14, fontFamily: 'monospace' }
+							}),
+							Plot.barY(plotData, {
+								x: 'date',
+								y: 'raindexVolume',
+								fill: 'rgb(11, 38, 65)',
+								tip: { fontSize: 14, fontFamily: 'monospace', dx: 20, dy: 20 }
+							})
+						],
+
+						width: 1800,
+						height: 500,
+						inset: 10,
+						aspectRatio: 1,
+						x: {
+							padding: 0.4,
+							label: 'Date',
+							labelAnchor: 'center'
+						},
+						y: {
+							label: 'Volume',
+							labelAnchor: 'center'
+						}
+					})
+				);
+			}
+			{
+				weeklyTrades?.firstChild?.remove();
+				weeklyTrades?.append(
+					Plot.plot({
+						grid: true,
+						figure: true,
+						color: { legend: true },
+						title: 'Weekly Trade Distribution',
+
+						marks: [
+							Plot.frame(),
+							Plot.ruleY([0]),
+							Plot.barY(
+								plotData.filter((trade) => trade.timestamp > Date.now() / 1000 - 60 * 60 * 24 * 7),
+								{
+									x: 'date',
+									y: 'totalTrades',
+									fill: 'rgb(38, 128, 217)',
+									tip: { fontSize: 14, fontFamily: 'monospace' }
+								}
+							),
+							Plot.barY(
+								plotData.filter((trade) => trade.timestamp > Date.now() / 1000 - 60 * 60 * 24 * 7),
+								{
+									x: 'date',
+									y: 'raindexTrades',
+									fill: 'rgb(11, 38, 65)',
+									tip: { fontSize: 14, fontFamily: 'monospace', dx: 20, dy: 20 }
+								}
+							)
+						],
+
+						width: 900,
+						height: 500,
+						inset: 10,
+						aspectRatio: 1,
+						x: {
+							padding: 0.4,
+							label: 'Date',
+							labelAnchor: 'center'
+						},
+						y: {
+							label: 'Trades',
+							labelAnchor: 'center'
+						}
+					})
+				);
+			}
+			{
+				weeklyVolume?.firstChild?.remove();
+				weeklyVolume?.append(
+					Plot.plot({
+						grid: true,
+						figure: true,
+						color: { legend: true },
+						title: 'Weekly Volume Distribution',
+
+						marks: [
+							Plot.frame(),
+							Plot.ruleY([0]),
+							Plot.barY(
+								plotData.filter((trade) => trade.timestamp > Date.now() / 1000 - 60 * 60 * 24 * 7),
+								{
+									x: 'date',
+									y: 'totalVolume',
+									fill: 'rgb(38, 128, 217)',
+									tip: { fontSize: 14, fontFamily: 'monospace' }
+								}
+							),
+							Plot.barY(
+								plotData.filter((trade) => trade.timestamp > Date.now() / 1000 - 60 * 60 * 24 * 7),
+								{
+									x: 'date',
+									y: 'raindexVolume',
+									fill: 'rgb(11, 38, 65)',
+									tip: { fontSize: 14, fontFamily: 'monospace', dx: 20, dy: 20 }
+								}
+							)
+						],
+
+						width: 900,
+						height: 500,
+						inset: 10,
+						aspectRatio: 1,
+						x: {
+							padding: 0.4,
+							label: 'Date',
+							labelAnchor: 'center'
+						},
+						y: {
+							label: 'Volume',
+							labelAnchor: 'center'
+						}
+					})
+				);
+			}
+			{
+				const weeklyTradesByPercentageData = plotData
+					.filter((trade) => trade.timestamp > Date.now() / 1000 - 60 * 60 * 24 * 7)
+					.map((trade) => ({
+						date: trade.date,
+						totalTradesPercentage: (trade.totalTrades / trade.totalTrades) * 100,
+						raindexTradesPercentage: (trade.raindexTrades / trade.totalTrades) * 100
+					}));
+
+				weeklyTradesByPercentage?.firstChild?.remove();
+				weeklyTradesByPercentage?.append(
+					Plot.plot({
+						grid: true,
+						figure: true,
+						color: { legend: true },
+						title: 'Weekly Trade Distribution By Percentage',
+
+						marks: [
+							Plot.frame(),
+							Plot.ruleY([0]),
+							Plot.barY(weeklyTradesByPercentageData, {
+								x: 'date',
+								y: 'totalTradesPercentage',
+								fill: 'rgb(38, 128, 217)',
+								tip: { fontSize: 14, fontFamily: 'monospace' }
+							}),
+							Plot.barY(weeklyTradesByPercentageData, {
+								x: 'date',
+								y: 'raindexTradesPercentage',
+								fill: 'rgb(11, 38, 65)',
+								tip: { fontSize: 14, fontFamily: 'monospace', dx: 20, dy: 20 }
+							})
+						],
+
+						width: 900,
+						height: 500,
+						inset: 10,
+						aspectRatio: 1,
+						x: {
+							padding: 0.4,
+							label: 'Date',
+							labelAnchor: 'center'
+						},
+						y: {
+							label: 'Trades',
+							labelAnchor: 'center'
+						}
+					})
+				);
+			}
+			{
+				const weeklyVolumeByPercentageData = plotData
+					.filter((trade) => trade.timestamp > Date.now() / 1000 - 60 * 60 * 24 * 7)
+					.map((trade) => ({
+						date: trade.date,
+						totalVolumePercentage: (trade.totalVolume / trade.totalVolume) * 100,
+						raindexVolumePercentage: (trade.raindexVolume / trade.totalVolume) * 100
+					}));
+
+				weeklyVolumeByPercentage?.firstChild?.remove();
+				weeklyVolumeByPercentage?.append(
+					Plot.plot({
+						grid: true,
+						figure: true,
+						color: { legend: true },
+						title: 'Weekly Volume Distribution By Percentage',
+
+						marks: [
+							Plot.frame(),
+							Plot.ruleY([0]),
+							Plot.barY(weeklyVolumeByPercentageData, {
+								x: 'date',
+								y: 'totalVolumePercentage',
+								fill: 'rgb(38, 128, 217)',
+								tip: { fontSize: 14, fontFamily: 'monospace' }
+							}),
+							Plot.barY(weeklyVolumeByPercentageData, {
+								x: 'date',
+								y: 'raindexVolumePercentage',
+								fill: 'rgb(11, 38, 65)',
+								tip: { fontSize: 14, fontFamily: 'monospace', dx: 20, dy: 20 }
+							})
+						],
+
+						width: 900,
+						height: 500,
+						inset: 10,
+						aspectRatio: 1,
+						x: {
+							padding: 0.4,
+							label: 'Date',
+							labelAnchor: 'center'
+						},
+						y: {
+							label: 'Volume',
+							labelAnchor: 'center'
+						}
+					})
+				);
+			}
+			
+		}
+		fetchAndPlotData();
+	}
+
+	async function fetchAllOrderWithTrades() {
+		let raindexOrders: OrderListOrderWithSubgraphName[] = [];
+		let currentPage = 1;
+		let hasMore = true;
+
+		while (hasMore) {
+			const orders = await getOrders(
+				$activeSubgraphs,
+				{
+					active: undefined,
+					orderHash: undefined,
+					owners: []
+				},
+				{ page: currentPage, pageSize: 1000 }
+			);
+
+			raindexOrders = [...raindexOrders, ...orders];
+			hasMore = orders.length === 1000;
+			currentPage++;
 		}
 
-		fetchData();
-
-		div?.firstChild?.remove(); // remove old chart, if any
-		div?.append(
-			Plot.plot({
-				grid: true,
-				figure: true,
-				color: { legend: true },
-				title: 'Historical Trade Distirbution',
-
-				marks: [
-					Plot.frame(),
-					Plot.ruleY([0]),
-					Plot.barY(trades, {
-						x: 'Date',
-						y: 'Total',
-						fill: 'rgb(38, 128, 217)',
-						tip: { fontSize: 14, fontFamily: 'monospace' }
-					}),
-					Plot.barY(trades, {
-						x: 'Date',
-						y: 'Raindex',
-						fill: 'rgb(11, 38, 65)',
-						tip: { fontSize: 14, fontFamily: 'monospace' }
-					})
-				],
-
-				width: 800,
-				height: 400,
-				inset: 10,
-				aspectRatio: 1,
-				x: {
-					padding: 0.4,
-					label: 'Date',
-					labelAnchor: 'center'
-				},
-				y: {
-					label: 'Total and Raindex',
-					labelAnchor: 'center'
-				}
-			})
+		raindexOrders = raindexOrders.filter(
+			(order: OrderListOrderWithSubgraphName) =>
+				order.order.inputs.some(
+					(input: OrderListVault) =>
+						input.token.symbol === tokenSymbol &&
+						input.token.address.toLowerCase() === tokenAddress.toLowerCase()
+				) ||
+				order.order.outputs.some(
+					(output: OrderListVault) =>
+						output.token.symbol === tokenSymbol &&
+						output.token.address.toLowerCase() === tokenAddress.toLowerCase()
+				)
 		);
+
+		for (const order of raindexOrders) {
+			let allTrades: SgTrade[] = [];
+			let currentPage = 1;
+			let hasMore = true;
+
+			while (hasMore) {
+				const trades = await getOrderTradesList(
+					$activeSubgraphs.find((subgraph: MultiSubgraphArgs) => subgraph.name === $network)?.url ||
+						'',
+					order.order.id,
+					{
+						page: currentPage,
+						pageSize: DEFAULT_TRADES_PAGE_SIZE
+					}
+				);
+
+				allTrades = [...allTrades, ...trades];
+				hasMore = trades.length === DEFAULT_TRADES_PAGE_SIZE;
+				currentPage++;
+			}
+
+			order.order['trades'] = allTrades.sort(
+				(a: SgTrade, b: SgTrade) =>
+					parseFloat(b.tradeEvent.transaction.timestamp) -
+					parseFloat(a.tradeEvent.transaction.timestamp)
+			);
+		}
+
+		return raindexOrders;
+	}
+
+	function getTradesByDay(
+		raindexOrdersWithTrades: OrderListOrderWithSubgraphName[],
+		allTrades: TradesByTimeStamp[]
+	) {
+		const allRaindexTrades = raindexOrdersWithTrades.flatMap((order) => order.order.trades);
+		const raindexTradesTransactionHash = new Set(
+			allRaindexTrades.map((trade) => trade.tradeEvent.transaction.id)
+		);
+
+		const raindexTrades: TradesByTimeStamp[] = [];
+		const externalTrades: TradesByTimeStamp[] = [];
+
+		for (const trade of allTrades) {
+			if (raindexTradesTransactionHash.has(trade.transactionHash)) {
+				raindexTrades.push(trade);
+			} else {
+				externalTrades.push(trade);
+			}
+		}
+
+		const groupTradesByDay = (trades: TradesByTimeStamp[]) => {
+			const grouped: { [key: string]: { date: string; count: number; volume: number } } = {};
+			trades.forEach((trade) => {
+				const dateKey = new Date(trade.timestamp * 1000).toISOString().split('T')[0];
+				if (!grouped[dateKey]) {
+					grouped[dateKey] = { date: dateKey, count: 0, volume: 0 };
+				}
+				grouped[dateKey].count += 1;
+				grouped[dateKey].volume += trade.amountInUsd || 0;
+			});
+			return grouped;
+		};
+
+		const raindexTradesByDay = groupTradesByDay(raindexTrades);
+		const externalTradesByDay = groupTradesByDay(externalTrades);
+
+		const plotData: any[] = [];
+		const allDates = Array.from(
+			new Set([...Object.keys(raindexTradesByDay), ...Object.keys(externalTradesByDay)])
+		).sort();
+
+		allDates.forEach((date) => {
+			const raindexStats = raindexTradesByDay[date] || { count: 0, volume: 0 };
+			const externalStats = externalTradesByDay[date] || { count: 0, volume: 0 };
+			plotData.push({
+				date: new Date(date).toLocaleDateString('en-US', { day: '2-digit', month: 'short' }),
+				timestamp: new Date(date).getTime() / 1000,
+				raindexTrades: raindexStats.count,
+				externalTrades: externalStats.count,
+				totalTrades: raindexStats.count + externalStats.count,
+				raindexVolume: raindexStats.volume,
+				externalVolume: externalStats.volume,
+				totalVolume: raindexStats.volume + externalStats.volume
+			});
+		});
+
+		return plotData;
 	}
 </script>
 
-<div class="w-full" bind:this={div}></div>
-<!-- <div class="flex flex-row gap-4 p-2">
-<div class="w-1/2" bind:this={div2}></div>
-</div> -->
+<div class="flex rounded-t-lg border-b border-gray-300 bg-gray-100">
+	{#each ['Market Analytics', 'Order Analytics', 'Vault Analytics'] as tab}
+		<button
+			class="rounded-t-lg border-b-2 border-gray-300 px-6 py-3 text-sm font-medium transition-all {activeTab ===
+			tab
+				? 'border-indigo-500 bg-white font-semibold text-indigo-600'
+				: 'border-transparent hover:border-gray-400 hover:text-gray-600'}"
+			on:click={() => (activeTab = tab)}
+		>
+			{tab}
+		</button>
+	{/each}
+</div>
+
+<div class="max-w-screen-3xl mx-auto rounded-lg p-2">
+	{#if activeTab === 'Market Analytics'}
+		
+		<div class="wrapper">
+			<div class="flex flex-row">
+				<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyTrades}></div>
+				<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyVolume}></div>
+			</div>
+			<div class="flex flex-row">
+				<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyTradesByPercentage}></div>
+				<div class="m-2 w-1/2 rounded-lg shadow-lg" bind:this={weeklyVolumeByPercentage}></div>
+			</div>
+			<div bind:this={historicalTrades}></div>
+			<div bind:this={historicalVolume}></div>
+		</div>
+	{/if}
+</div>

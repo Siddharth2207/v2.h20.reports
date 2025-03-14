@@ -551,7 +551,6 @@ async function fetchLogs(
 				queryResponse.data.data.length > 0 &&
 				currentBlock != queryResponse.data.next_block
 			) {
-				console.log('queryResponse.data.data', JSON.stringify(queryResponse.data.data));
 				logs = logs.concat(queryResponse.data.data);
 			}
 
