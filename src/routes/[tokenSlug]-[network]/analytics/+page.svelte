@@ -418,50 +418,45 @@
 			}
 		}
 
-		// Create and append the plot
-		try {
-			const plot = Plot.plot({
-				grid: true,
-				figure: true,
-				color: {
-					legend: true,
-					domain: colorDomain,
-					range: colorRange
-				},
-				title: title,
-				style: {
-					padding: '10px',
-					marginTop: '5px',
-					marginBottom: '10px',
-					borderRadius: '8px',
-					fontSize: '14px'
-				},
-				marks: marks,
-				width: width,
-				height: height,
-				inset: 20,
-				aspectRatio: 1,
-				x: {
-					padding: 0.4,
-					label: xLabel,
-					labelAnchor: 'center',
-					tickPadding: 5
-				},
-				y: {
-					padding: 0.4,
-					labelOffset: chartType === 'bar' ? 70 : undefined,
-					label: yLabel,
-					labelAnchor: 'center',
-					tickFormat: formatTickValue,
-					tickPadding: 5
-				},
-				marginLeft: 70,
-				marginBottom: chartType === 'weekly' ? 60 : undefined
-			});
-			element.appendChild(plot);
-		} catch (error) {
-			console.error('Error creating chart:', error);
-		}
+		const plot = Plot.plot({
+			grid: true,
+			figure: true,
+			color: {
+				legend: true,
+				domain: colorDomain,
+				range: colorRange
+			},
+			title: title,
+			style: {
+				padding: '10px',
+				marginTop: '5px',
+				marginBottom: '10px',
+				borderRadius: '8px',
+				fontSize: '14px'
+			},
+			marks: marks,
+			width: width,
+			height: height,
+			inset: 20,
+			aspectRatio: 1,
+			x: {
+				padding: 0.4,
+				label: xLabel,
+				labelAnchor: 'center',
+				tickPadding: 5
+			},
+			y: {
+				padding: 0.4,
+				labelOffset: chartType === 'bar' ? 70 : undefined,
+				label: yLabel,
+				labelAnchor: 'center',
+				tickFormat: formatTickValue,
+				tickPadding: 5
+			},
+			marginLeft: 70,
+			marginBottom: chartType === 'weekly' ? 60 : undefined
+		});
+		element.appendChild(plot);
 	}
 </script>
 
