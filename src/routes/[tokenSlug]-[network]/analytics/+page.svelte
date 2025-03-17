@@ -48,7 +48,7 @@
 			currentTimeInSeconds - monthInSeconds,
 			currentTimeInSeconds
 		);
-		
+
 		const data = getTradesByDay(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp);
 
 		marketData = data;
