@@ -9,7 +9,8 @@
 		OrderListOrderWithSubgraphName,
 		OrderListVault,
 		MarketAnalytics,
-		LiquidityAnalysisResult
+		LiquidityAnalysisResult,
+		MarketAnalyticsData
 	} from '$lib/types';
 	import { tokenConfig, DEFAULT_TRADES_PAGE_SIZE } from '$lib/constants';
 
@@ -24,7 +25,7 @@
 	let activeTab = 'Market Analytics';
 	let loading = true;
 	let marketDataLoaded = false;
-	let marketData: any = null; // Store the data for reuse
+	let marketData: MarketAnalyticsData;
 
 	let historicalTrades: HTMLElement;
 	let historicalVolume: HTMLElement;
@@ -50,9 +51,7 @@
 		
 		const data = getTradesByDay(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp);
 
-		// Store the data for reuse
 		marketData = data;
-
 		// Render the charts
 		renderCharts(data);
 
@@ -65,11 +64,8 @@
 
 	$: if (activeTab === 'Market Analytics') {
 		if (!marketDataLoaded) {
-			console.log('fetching market data');
 			fetchAndPlotData();
 		} else if (marketData) {
-			// Recreate charts when switching back to this tab
-			console.log('recreating charts');
 			renderCharts(marketData);
 		}
 	}
@@ -143,13 +139,7 @@
 	function getTradesByDay(
 		raindexOrdersWithTrades: OrderListOrderWithSubgraphName[],
 		allTrades: TradesByTimeStamp[]
-	): {
-		plotData: MarketAnalytics[];
-		totalRaindexTrades: number;
-		totalExternalTrades: number;
-		totalRaindexVolume: number;
-		totalExternalVolume: number;
-	} {
+	): MarketAnalyticsData {
 		const allRaindexTrades = raindexOrdersWithTrades.flatMap((order) => order.order.trades);
 		const raindexTradesTransactionHash = new Set(
 			allRaindexTrades.map((trade) => trade.tradeEvent.transaction.id)
@@ -220,7 +210,7 @@
 		};
 	}
 
-	function renderCharts(data: any) {
+	function renderCharts(data: MarketAnalyticsData) {
 		const {
 			plotData,
 			totalRaindexTrades,
@@ -336,6 +326,7 @@
 
 	function createChart(
 		element: HTMLElement,
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		data: any[],
 		options: {
 			title: string;
@@ -349,6 +340,7 @@
 			height?: number;
 			colorDomain?: string[];
 			colorRange?: string[];
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			filterFn?: (item: any) => boolean;
 			formatYTicks?: boolean;
 		}
@@ -505,12 +497,24 @@
 		{#if activeTab === 'Market Analytics'}
 			<div class="wrapper">
 				<div class="flex flex-col md:flex-row">
-					<div class="m-2 w-full rounded-lg shadow-lg md:w-1/2 md:p-2" bind:this={totalTradesByType}></div>
-					<div class="m-2 w-full rounded-lg shadow-lg md:w-1/2 md:p-2" bind:this={totalVolumeByType}></div>
+					<div
+						class="m-2 w-full rounded-lg shadow-lg md:w-1/2 md:p-2"
+						bind:this={totalTradesByType}
+					></div>
+					<div
+						class="m-2 w-full rounded-lg shadow-lg md:w-1/2 md:p-2"
+						bind:this={totalVolumeByType}
+					></div>
 				</div>
 				<div class="flex flex-col md:flex-row">
-					<div class="m-2 w-full rounded-lg shadow-lg md:w-1/2 md:p-2" bind:this={weeklyTrades}></div>
-					<div class="m-2 w-full rounded-lg shadow-lg md:w-1/2 md:p-2" bind:this={weeklyVolume}></div>
+					<div
+						class="m-2 w-full rounded-lg shadow-lg md:w-1/2 md:p-2"
+						bind:this={weeklyTrades}
+					></div>
+					<div
+						class="m-2 w-full rounded-lg shadow-lg md:w-1/2 md:p-2"
+						bind:this={weeklyVolume}
+					></div>
 				</div>
 				<div class="flex flex-col md:flex-row">
 					<div
