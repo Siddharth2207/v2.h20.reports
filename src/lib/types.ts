@@ -9,6 +9,14 @@ import type {
 	ConfigSource
 } from '@rainlanguage/orderbook/js_api';
 
+export interface MarketAnalyticsData {
+	plotData: MarketAnalytics[];
+	totalRaindexTrades: number;
+	totalExternalTrades: number;
+	totalRaindexVolume: number;
+	totalExternalVolume: number;
+}
+
 export interface MarketAnalytics {
 	date: string;
 	timestamp: number;
