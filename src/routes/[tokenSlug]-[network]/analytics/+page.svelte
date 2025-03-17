@@ -52,7 +52,6 @@
 		const data = getTradesByDay(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp);
 
 		marketData = data;
-		// Render the charts
 		renderCharts(data);
 
 		marketDataLoaded = true;
@@ -219,7 +218,6 @@
 			totalExternalVolume
 		} = data;
 
-		// Create all charts
 		createChart(historicalTrades, plotData, {
 			title: 'Historical Trade Distribution',
 			chartType: 'weekly',
@@ -228,7 +226,8 @@
 			yLabel: 'Trades',
 			width: 1800,
 			height: 500,
-			filterFn: () => true
+			filterFn: () => true,
+			tickPrefix: ''
 		});
 
 		createChart(historicalVolume, plotData, {
@@ -240,7 +239,8 @@
 			width: 1800,
 			height: 500,
 			filterFn: () => true,
-			formatYTicks: true
+			formatYTicks: true,
+			tickPrefix: '$'
 		});
 
 		createChart(weeklyTrades, plotData, {
@@ -248,7 +248,8 @@
 			chartType: 'weekly',
 			yField: 'totalTrades',
 			secondaryYField: 'raindexTrades',
-			yLabel: 'Trades'
+			yLabel: 'Trades',
+			tickPrefix: ''
 		});
 
 		createChart(weeklyVolume, plotData, {
@@ -257,7 +258,8 @@
 			yField: 'totalVolume',
 			secondaryYField: 'raindexVolume',
 			yLabel: 'Volume',
-			formatYTicks: true
+			formatYTicks: true,
+			tickPrefix: '$'
 		});
 
 		const weeklyTradesByPercentageData = plotData
@@ -274,7 +276,8 @@
 			yField: 'totalTradesPercentage',
 			secondaryYField: 'raindexTradesPercentage',
 			yLabel: 'Trades',
-			filterFn: () => true
+			filterFn: () => true,
+			tickSuffix: '%'
 		});
 
 		const weeklyVolumeByPercentageData = plotData
@@ -291,20 +294,22 @@
 			yField: 'totalVolumePercentage',
 			secondaryYField: 'raindexVolumePercentage',
 			yLabel: 'Volume',
-			filterFn: () => true
+			filterFn: () => true,
+			tickSuffix: '%'
 		});
 
 		createChart(
 			totalTradesByType,
 			[
 				{ type: 'Raindex', value: totalRaindexTrades },
-				{ type: 'External', value: totalExternalTrades }
+				{ type: 'Total', value: totalExternalTrades + totalRaindexTrades }
 			],
 			{
 				title: 'Total Trades by Type',
 				chartType: 'bar',
 				yField: 'value',
-				yLabel: 'Trades'
+				yLabel: 'Trades',
+				tickPrefix: ''
 			}
 		);
 
@@ -312,14 +317,15 @@
 			totalVolumeByType,
 			[
 				{ type: 'Raindex', value: totalRaindexVolume },
-				{ type: 'External', value: totalExternalVolume }
+				{ type: 'Total', value: totalExternalVolume + totalRaindexVolume }
 			],
 			{
 				title: 'Total Volume by Type',
 				chartType: 'bar',
 				yField: 'value',
 				yLabel: 'Volume',
-				formatYTicks: true
+				formatYTicks: true,
+				tickPrefix: '$'
 			}
 		);
 	}
@@ -343,6 +349,8 @@
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			filterFn?: (item: any) => boolean;
 			formatYTicks?: boolean;
+			tickPrefix?: string;
+			tickSuffix?: string;
 		}
 	) {
 		if (!element) return; // Skip if element doesn't exist
@@ -357,25 +365,27 @@
 			yLabel = 'Value',
 			width = 900,
 			height = 500,
-			colorDomain = ['External', 'Raindex'],
+			colorDomain = ['Total', 'Raindex'],
 			colorRange = ['rgb(38, 128, 217)', 'rgb(11, 38, 65)'],
 			filterFn = chartType === 'weekly'
 				? (item) => item.timestamp > Date.now() / 1000 - weekInSeconds
 				: () => true,
-			formatYTicks = chartType === 'bar'
+			formatYTicks = chartType === 'bar',
+			tickPrefix = '',
+			tickSuffix = ''
 		} = options;
 
 		// Filter data if needed (for weekly charts)
 		const filteredData = filterFn ? data.filter(filterFn) : data;
 
 		// Format function for y-axis ticks
-		const formatTickValue = (d: number) => {
-			if (!formatYTicks) return d.toString();
+		const formatTickValue = (d: number, prefix = '', suffix = '') => {
+			if (!formatYTicks) return prefix + d.toString() + suffix;
 			const absD = Math.abs(d);
-			if (absD >= 1e9) return (d / 1e9).toFixed(1) + 'B';
-			if (absD >= 1e6) return (d / 1e6).toFixed(1) + 'M';
-			if (absD >= 1e3) return (d / 1e3).toFixed(1) + 'K';
-			return d.toString();
+			if (absD >= 1e9) return prefix + (d / 1e9).toFixed(1) + 'B' + suffix;
+			if (absD >= 1e6) return prefix + (d / 1e6).toFixed(1) + 'M' + suffix;
+			if (absD >= 1e3) return prefix + (d / 1e3).toFixed(1) + 'K' + suffix;
+			return prefix + d.toString() + suffix;
 		};
 
 		// Remove any existing chart
@@ -446,11 +456,11 @@
 				tickPadding: 5
 			},
 			y: {
-				padding: 0.4,
+				padding: 0.5,
 				labelOffset: chartType === 'bar' ? 70 : undefined,
 				label: yLabel,
-				labelAnchor: 'center',
-				tickFormat: formatTickValue,
+				labelAnchor: 'top',
+				tickFormat: (d: number) => formatTickValue(d, tickPrefix, tickSuffix),
 				tickPadding: 5
 			},
 			marginLeft: 70,
