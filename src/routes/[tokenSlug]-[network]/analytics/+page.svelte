@@ -78,10 +78,7 @@
 		if (!analyticsDataLoaded) {
 			fetchAndPlotData();
 		} else if (marketData) {
-			setTimeout(
-				() => renderMarketDataCharts(marketData),
-				0
-			);
+			setTimeout(() => renderMarketDataCharts(marketData), 0);
 		}
 	} else if (activeTab === 'Order Analytics') {
 		if (!analyticsDataLoaded) {
