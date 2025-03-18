@@ -83,6 +83,7 @@
 			);
 		}
 	} else if (activeTab === 'Vault Analytics') {
+		// TODO: Implement vault analytics
 	}
 
 	function setDefaultHtml(element: HTMLElement): HTMLElement {
@@ -209,7 +210,7 @@
 				}
 
 				return top5Orders;
-			} catch (error) {
+			} catch {
 				return [];
 			}
 		}
@@ -998,6 +999,7 @@
 
 	function createAreaChart(
 		element: HTMLElement,
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		data: any[],
 		options: {
 			title: string;
@@ -1018,13 +1020,12 @@
 			legend?: boolean;
 		}
 	) {
-		if (!element) return; // Skip if element doesn't exist
+		if (!element) return;
 
 		const {
 			title,
 			subtitle,
 			xField = 'date',
-			yField = 'value',
 			stackFields = ['active', 'inactive'],
 			xLabel = 'Date',
 			yLabel = 'Orders Count',
