@@ -67,23 +67,30 @@
 		}
 	}
 
-	$: if (activeTab === 'Market Analytics') {
-		if (!analyticsDataLoaded) {
+	$: {
+		// Only fetch data once if not already loaded
+		if (
+			!analyticsDataLoaded &&
+			(activeTab === 'Market Analytics' || activeTab === 'Order Analytics')
+		) {
 			fetchAndPlotData();
-		} else if (marketData) {
-			renderMarketDataCharts(marketData);
 		}
-	} else if (activeTab === 'Order Analytics') {
-		if (!analyticsDataLoaded) {
-			fetchAndPlotData();
-		} else {
-			setTimeout(
-				() => renderOrderDataCharts(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp),
-				0
-			);
+		// Render appropriate charts based on active tab if data is loaded
+		else if (analyticsDataLoaded) {
+			if (activeTab === 'Market Analytics' && marketData) {
+				renderMarketDataCharts(marketData);
+			} else if (activeTab === 'Order Analytics') {
+				setTimeout(
+					() =>
+						renderOrderDataCharts(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp),
+					0
+				);
+			}
 		}
-	} else if (activeTab === 'Vault Analytics') {
-		// TODO: Implement vault analytics
+		// Future implementation for Vault Analytics
+		else if (activeTab === 'Vault Analytics') {
+			// TODO: Implement vault analytics
+		}
 	}
 
 	function setDefaultHtml(element: HTMLElement): HTMLElement {
