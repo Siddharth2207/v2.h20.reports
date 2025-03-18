@@ -417,7 +417,6 @@
 		}
 
 		const ordersAdderPerDayData = prepareOrdersAdderPerDay(raindexOrdersWithTrades);
-		// console.log('ordersAdderPerDayData', JSON.stringify(ordersAdderPerDayData, null, 2));
 		if (ordersAdderPerDayData.length > 0) {
 			createLineChart(ordersAdderPerDay, ordersAdderPerDayData, {
 				title: 'Orders Added Per Day',
@@ -445,7 +444,6 @@
 		}
 
 		const uniqueOrderOwnersData = prepareUniqueOrderOwners(raindexOrdersWithTrades);
-		// console.log('uniqueOrderOwnersData', JSON.stringify(uniqueOrderOwnersData, null, 2));
 		if (uniqueOrderOwnersData.length > 0) {
 			createLineChart(uniqueOrderOwners, uniqueOrderOwnersData, {
 				title: 'Unique Order Owners',
@@ -462,7 +460,6 @@
 			uniqueOrderOwners = setDefaultHtml(uniqueOrderOwners);
 		}
 		const cummulativeOrdersData = prepareCummulativeOrdersData(raindexOrdersWithTrades);
-		console.log('cummulativeOrdersData', JSON.stringify(cummulativeOrdersData));
 
 		if (cummulativeOrdersData.length > 0) {
 			createAreaChart(cumulativeOrders, cummulativeOrdersData, {
