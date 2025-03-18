@@ -25,6 +25,7 @@
 	let activeTab = 'Market Analytics';
 	let loading = true;
 	let analyticsDataLoaded = false;
+	let dataFetchInProgress = false;
 	let marketData: MarketAnalyticsData;
 
 	let raindexOrdersWithTrades: OrderListOrderWithSubgraphName[];
@@ -46,50 +47,47 @@
 	let cumulativeOrders: HTMLElement;
 
 	async function fetchAndPlotData() {
-		loading = true;
-		raindexOrdersWithTrades = await fetchAllOrderWithTrades();
-		allTrades = await analyzeLiquidity(
-			$network,
-			$tokenSlug.toUpperCase(),
-			currentTimeInSeconds - monthInSeconds,
-			currentTimeInSeconds
-		);
+		if (dataFetchInProgress) return;
 
-		const data = getTradesByDay(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp);
-		analyticsDataLoaded = true;
-		if (activeTab == 'Market Analytics') {
-			marketData = data;
-			renderMarketDataCharts(data);
-			loading = false;
-		} else if (activeTab === 'Order Analytics') {
-			renderOrderDataCharts(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp);
-			loading = false;
+		try {
+			dataFetchInProgress = true;
+			loading = true;
+			raindexOrdersWithTrades = await fetchAllOrderWithTrades();
+			allTrades = await analyzeLiquidity(
+				$network,
+				$tokenSlug.toUpperCase(),
+				currentTimeInSeconds - monthInSeconds,
+				currentTimeInSeconds
+			);
+
+			marketData = getTradesByDay(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp);
+			analyticsDataLoaded = true;
+			if (activeTab == 'Market Analytics') {
+				renderMarketDataCharts(marketData);
+				loading = false;
+			} else if (activeTab === 'Order Analytics') {
+				renderOrderDataCharts(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp);
+				loading = false;
+			}
+		} finally {
+			dataFetchInProgress = false;
 		}
 	}
 
-	$: {
-		// Only fetch data once if not already loaded
-		if (
-			!analyticsDataLoaded &&
-			(activeTab === 'Market Analytics' || activeTab === 'Order Analytics')
-		) {
+	$: if (activeTab === 'Market Analytics') {
+		if (!analyticsDataLoaded) {
 			fetchAndPlotData();
+		} else if (marketData) {
+			setTimeout(() => renderMarketDataCharts(marketData), 0);
 		}
-		// Render appropriate charts based on active tab if data is loaded
-		else if (analyticsDataLoaded) {
-			if (activeTab === 'Market Analytics' && marketData) {
-				renderMarketDataCharts(marketData);
-			} else if (activeTab === 'Order Analytics') {
-				setTimeout(
-					() =>
-						renderOrderDataCharts(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp),
-					0
-				);
-			}
-		}
-		// Future implementation for Vault Analytics
-		else if (activeTab === 'Vault Analytics') {
-			// TODO: Implement vault analytics
+	} else if (activeTab === 'Order Analytics') {
+		if (!analyticsDataLoaded) {
+			fetchAndPlotData();
+		} else {
+			setTimeout(
+				() => renderOrderDataCharts(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp),
+				0
+			);
 		}
 	}
 
