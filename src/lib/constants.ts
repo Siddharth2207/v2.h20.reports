@@ -602,6 +602,7 @@ export function generateColorPalette(numColors: number): string[] {
 	return colors;
 }
 
+// Returns a hex color from an hsl color
 function hslToHex(h: number, s: number, l: number): string {
 	s /= 100;
 	l /= 100;
