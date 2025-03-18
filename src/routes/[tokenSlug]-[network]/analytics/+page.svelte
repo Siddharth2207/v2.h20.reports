@@ -12,7 +12,7 @@
 		LiquidityAnalysisResult,
 		MarketAnalyticsData
 	} from '$lib/types';
-	import { tokenConfig, DEFAULT_TRADES_PAGE_SIZE } from '$lib/constants';
+	import { tokenConfig, DEFAULT_TRADES_PAGE_SIZE, generateColorPalette } from '$lib/constants';
 
 	const { tokenSlug, network, activeSubgraphs } = $page.data.stores;
 
@@ -24,8 +24,11 @@
 
 	let activeTab = 'Market Analytics';
 	let loading = true;
-	let marketDataLoaded = false;
+	let analyticsDataLoaded = false;
 	let marketData: MarketAnalyticsData;
+
+	let raindexOrdersWithTrades: OrderListOrderWithSubgraphName[];
+	let allTrades: LiquidityAnalysisResult;
 
 	let historicalTrades: HTMLElement;
 	let historicalVolume: HTMLElement;
@@ -35,14 +38,17 @@
 	let weeklyVolumeByPercentage: HTMLElement;
 	let totalTradesByType: HTMLElement;
 	let totalVolumeByType: HTMLElement;
+	let topOrdersByTradesCount: HTMLElement;
+	let topOrdersByVolume: HTMLElement;
+	let ordersAdderPerDay: HTMLElement;
+	let tradesPerDay: HTMLElement;
+	let uniqueOrderOwners: HTMLElement;
+	let cumulativeOrders: HTMLElement;
 
 	async function fetchAndPlotData() {
-		if (activeTab !== 'Market Analytics') return;
-
 		loading = true;
-		const raindexOrdersWithTrades: OrderListOrderWithSubgraphName[] =
-			await fetchAllOrderWithTrades();
-		const allTrades: LiquidityAnalysisResult = await analyzeLiquidity(
+		raindexOrdersWithTrades = await fetchAllOrderWithTrades();
+		allTrades = await analyzeLiquidity(
 			$network,
 			$tokenSlug.toUpperCase(),
 			currentTimeInSeconds - monthInSeconds,
@@ -50,22 +56,426 @@
 		);
 
 		const data = getTradesByDay(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp);
-
-		marketData = data;
-		renderCharts(data);
-
-		marketDataLoaded = true;
-		loading = false;
-	}
-	$: {
-		fetchAndPlotData();
+		analyticsDataLoaded = true;
+		if (activeTab == 'Market Analytics') {
+			marketData = data;
+			renderMarketDataCharts(data);
+			loading = false;
+		} else if (activeTab === 'Order Analytics') {
+			renderOrderDataCharts(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp);
+			loading = false;
+		}
 	}
 
 	$: if (activeTab === 'Market Analytics') {
-		if (!marketDataLoaded) {
+		if (!analyticsDataLoaded) {
 			fetchAndPlotData();
 		} else if (marketData) {
-			renderCharts(marketData);
+			renderMarketDataCharts(marketData);
+		}
+	} else if (activeTab === 'Order Analytics') {
+		if (!analyticsDataLoaded) {
+			fetchAndPlotData();
+		} else {
+			setTimeout(
+				() => renderOrderDataCharts(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp),
+				0
+			);
+		}
+	} else if (activeTab === 'Vault Analytics') {
+	}
+
+	function setDefaultHtml(element: HTMLElement): HTMLElement {
+		element.innerHTML = `
+			<div class="flex flex-col items-center justify-center h-64 bg-gray-50 rounded-lg border border-gray-200">
+				<p class="text-lg font-medium text-gray-600">No data available</p>
+			</div>
+		`;
+		return element;
+	}
+
+	function renderOrderDataCharts(
+		raindexOrdersWithTrades: OrderListOrderWithSubgraphName[],
+		allTrades: TradesByTimeStamp[]
+	) {
+		function prepareTopOrdersByTradeCount(
+			raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]
+		): { orderHash: string; tradeCount: number; percentage: string }[] {
+			try {
+				const tradeCounts: { [key: string]: number } = {};
+				let totalTrades = 0;
+
+				for (const order of raindexOrdersWithTrades) {
+					const { orderHash } = order.order;
+					if (!tradeCounts[orderHash]) {
+						tradeCounts[orderHash] = 0;
+					}
+					tradeCounts[orderHash] += order.order.trades.length;
+					totalTrades += order.order.trades.length;
+				}
+
+				const groupedTrades: { orderHash: string; tradeCount: number; percentage: string }[] =
+					Object.entries(tradeCounts).map(([orderHash, tradeCount]) => ({
+						orderHash: `${orderHash.slice(0, 5)}...${orderHash.slice(-5)}`,
+						tradeCount,
+						percentage: ((tradeCount / totalTrades) * 100).toFixed(2)
+					}));
+
+				const sortedEntries = groupedTrades.sort((a, b) => b.tradeCount - a.tradeCount);
+
+				const top5Orders = sortedEntries.slice(0, 5);
+				const othersTradeCount = sortedEntries
+					.slice(5)
+					.reduce((sum, entry) => sum + entry.tradeCount, 0);
+
+				top5Orders.push({
+					orderHash: 'Others',
+					tradeCount: othersTradeCount,
+					percentage: ((othersTradeCount / totalTrades) * 100).toFixed(2)
+				});
+
+				return top5Orders;
+			} catch {
+				return [];
+			}
+		}
+
+		function prepareTopOrdersByVolume(
+			raindexOrdersWithTrades: OrderListOrderWithSubgraphName[],
+			allTrades: TradesByTimeStamp[]
+		) {
+			try {
+				const tradeMap = allTrades.reduce(
+					(map: { [key: string]: { amountInTokens: number; amountInUsd: number } }, trade) => {
+						map[trade.transactionHash] = {
+							amountInTokens: trade.amountInTokens || 0,
+							amountInUsd: trade.amountInUsd || 0
+						};
+						return map;
+					},
+					{}
+				);
+
+				const allRaindexTrades = raindexOrdersWithTrades.flatMap((order) => order.order.trades);
+
+				const orderVolumes: { [orderHash: string]: { totalTokens: number; totalUsd: number } } = {};
+
+				for (const raindexTrade of allRaindexTrades) {
+					const orderHash = raindexTrade.order.orderHash;
+					const tradeDetails = tradeMap[raindexTrade.tradeEvent.transaction.id];
+
+					if (!tradeDetails) continue;
+
+					if (!orderVolumes[orderHash]) {
+						orderVolumes[orderHash] = { totalTokens: 0, totalUsd: 0 };
+					}
+
+					orderVolumes[orderHash].totalTokens += tradeDetails.amountInTokens;
+					orderVolumes[orderHash].totalUsd += tradeDetails.amountInUsd;
+				}
+
+				const totalVolumeUsd = Object.values(orderVolumes).reduce(
+					(sum, { totalUsd }) => sum + totalUsd,
+					0
+				);
+
+				if (totalVolumeUsd === 0) return []; // Avoid division by zero
+
+				const sortedOrders = Object.entries(orderVolumes)
+					.map(([orderHash, { totalUsd }]) => ({
+						orderHash,
+						volume: totalUsd,
+						percentage: (totalUsd / totalVolumeUsd) * 100
+					}))
+					.sort((a, b) => b.volume - a.volume);
+
+				const top5Orders = sortedOrders.slice(0, 5).map((order) => ({
+					orderHash: `${order.orderHash.slice(0, 5)}...${order.orderHash.slice(-5)}`,
+					volume: order.volume,
+					percentage: order.percentage
+				}));
+
+				if (sortedOrders.length > 5) {
+					const othersVolume = sortedOrders.slice(5).reduce((sum, order) => sum + order.volume, 0);
+					const othersPercentage = (othersVolume / totalVolumeUsd) * 100;
+
+					if (othersVolume > 0) {
+						top5Orders.push({
+							orderHash: 'Others',
+							volume: othersVolume,
+							percentage: othersPercentage
+						});
+					}
+				}
+
+				return top5Orders;
+			} catch (error) {
+				return [];
+			}
+		}
+
+		function prepareOrdersAdderPerDay(raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]) {
+			try {
+				const fromTimestamp = currentTimeInSeconds - monthInSeconds;
+				const toTimestamp = currentTimeInSeconds;
+
+				const ordersPerDay: { [key: string]: { ordersCount: number; tradesCount: number } } = {};
+
+				// Initialize dates with 0 orders for the entire range
+				for (
+					let d = new Date(fromTimestamp * 1000);
+					d <= new Date(toTimestamp * 1000);
+					d.setDate(d.getDate() + 1)
+				) {
+					const dateStr = new Date(d).toISOString().split('T')[0];
+					ordersPerDay[dateStr] = {
+						ordersCount: 0,
+						tradesCount: 0
+					};
+				}
+
+				// Filter orders within the date range and count them
+				raindexOrdersWithTrades
+					.filter(
+						(order) =>
+							parseFloat(order.order.timestampAdded) >= fromTimestamp &&
+							parseFloat(order.order.timestampAdded) <= toTimestamp
+					)
+					.forEach((order) => {
+						const date = new Date(parseFloat(order.order.timestampAdded) * 1000)
+							.toISOString()
+							.split('T')[0];
+						ordersPerDay[date].ordersCount += 1;
+					});
+
+				raindexOrdersWithTrades
+					.flatMap((order) => order.order.trades)
+					.filter(
+						(trade) =>
+							parseFloat(trade.tradeEvent.transaction.timestamp) >= fromTimestamp &&
+							parseFloat(trade.tradeEvent.transaction.timestamp) <= toTimestamp
+					)
+					.forEach((trade) => {
+						const date = new Date(parseFloat(trade.tradeEvent.transaction.timestamp) * 1000)
+							.toISOString()
+							.split('T')[0];
+						ordersPerDay[date].tradesCount += 1;
+					});
+
+				return Object.entries(ordersPerDay).map(([date, count]) => ({
+					date,
+					ordersCount: count.ordersCount,
+					tradesCount: count.tradesCount
+				}));
+			} catch {
+				return [];
+			}
+		}
+
+		function prepareUniqueOrderOwners(raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]) {
+			try {
+				const fromTimestamp = currentTimeInSeconds - monthInSeconds;
+				const toTimestamp = currentTimeInSeconds;
+				const dailyOwners: { [key: string]: Set<string> } = {};
+
+				// Initialize dates with 0 orders for the entire range
+				for (
+					let d = new Date(fromTimestamp * 1000);
+					d <= new Date(toTimestamp * 1000);
+					d.setDate(d.getDate() + 1)
+				) {
+					const dateStr = new Date(d).toISOString().split('T')[0];
+					dailyOwners[dateStr] = new Set();
+				}
+
+				for (const order of raindexOrdersWithTrades) {
+					const orderAddedDate = new Date(parseFloat(order.order.timestampAdded) * 1000)
+						.toISOString()
+						.split('T')[0];
+					const orderRemovedDate =
+						order.order.removeEvents.length > 0
+							? new Date(parseFloat(order.order.removeEvents[0].transaction.timestamp) * 1000)
+									.toISOString()
+									.split('T')[0]
+							: null;
+
+					if (
+						parseFloat(order.order.timestampAdded) >= fromTimestamp &&
+						parseFloat(order.order.timestampAdded) <= toTimestamp
+					) {
+						for (
+							let d = new Date(orderAddedDate);
+							d <= new Date(toTimestamp * 1000);
+							d.setDate(d.getDate() + 1)
+						) {
+							const dateStr = new Date(d).toISOString().split('T')[0];
+							if (orderRemovedDate && dateStr > orderRemovedDate) break;
+							dailyOwners[dateStr].add(order.order.owner);
+						}
+					}
+				}
+
+				return Object.entries(dailyOwners).map(([date, owners]) => ({
+					date,
+					uniqueOrderOwners: owners.size
+				}));
+			} catch {
+				return [];
+			}
+		}
+
+		function prepareCummulativeOrdersData(
+			raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]
+		) {
+			try {
+				const timeline = [];
+				for (const order of raindexOrdersWithTrades) {
+					const addedDate = new Date(parseFloat(order.order.timestampAdded) * 1000)
+						.toISOString()
+						.split('T')[0];
+					timeline.push({ date: addedDate, activeChange: 1, inactiveChange: 0 });
+					if (order.order.removeEvents.length > 0) {
+						const removedDate = new Date(
+							parseFloat(order.order.removeEvents[0].transaction.timestamp) * 1000
+						)
+							.toISOString()
+							.split('T')[0];
+						timeline.push({ date: removedDate, activeChange: -1, inactiveChange: 1 });
+					}
+				}
+
+				const aggregated = timeline.reduce(
+					(acc: { [key: string]: { date: string; active: number; inactive: number } }, curr) => {
+						if (!acc[curr.date]) {
+							acc[curr.date] = { date: curr.date, active: 0, inactive: 0 };
+						}
+						acc[curr.date].active += curr.activeChange;
+						acc[curr.date].inactive += curr.inactiveChange;
+						return acc;
+					},
+					{}
+				);
+
+				const sortedDates = Object.keys(aggregated).sort();
+				let cumulativeActive = 0;
+				let cumulativeInactive = 0;
+
+				return sortedDates.map((date) => {
+					cumulativeActive += aggregated[date].active;
+					cumulativeInactive += aggregated[date].inactive;
+
+					return {
+						date,
+						active: cumulativeActive,
+						inactive: cumulativeInactive
+					};
+				});
+			} catch {
+				return [];
+			}
+		}
+
+		if (!topOrdersByTradesCount) return;
+		const top5OrdersByTrades = prepareTopOrdersByTradeCount(raindexOrdersWithTrades);
+
+		// Render top orders by trades
+		if (top5OrdersByTrades.length > 0) {
+			createBarChart(topOrdersByTradesCount, top5OrdersByTrades, {
+				title: 'Trade Count by Order',
+				chartType: 'bar',
+				xField: 'orderHash',
+				yField: 'tradeCount',
+				xLabel: 'Order Hash',
+				yLabel: 'Number of Trades',
+				width: 900,
+				height: 500,
+				colorDomain: top5OrdersByTrades.map((order) => order.orderHash),
+				colorRange: generateColorPalette(top5OrdersByTrades.length)
+			});
+		} else {
+			topOrdersByTradesCount = setDefaultHtml(topOrdersByTradesCount);
+		}
+
+		const top5OrdersByVolume = prepareTopOrdersByVolume(raindexOrdersWithTrades, allTrades);
+		if (top5OrdersByVolume.length > 0) {
+			createBarChart(topOrdersByVolume, top5OrdersByVolume, {
+				title: 'Volume by Order',
+				chartType: 'bar',
+				xField: 'orderHash',
+				yField: 'volume',
+				xLabel: 'Order Hash',
+				yLabel: 'Volume',
+				width: 900,
+				height: 500,
+				colorDomain: top5OrdersByVolume.map((order) => order.orderHash),
+				colorRange: generateColorPalette(top5OrdersByVolume.length),
+				tickPrefix: '$'
+			});
+		} else {
+			topOrdersByVolume = setDefaultHtml(topOrdersByVolume);
+		}
+
+		const ordersAdderPerDayData = prepareOrdersAdderPerDay(raindexOrdersWithTrades);
+		// console.log('ordersAdderPerDayData', JSON.stringify(ordersAdderPerDayData, null, 2));
+		if (ordersAdderPerDayData.length > 0) {
+			createLineChart(ordersAdderPerDay, ordersAdderPerDayData, {
+				title: 'Orders Added Per Day',
+				xField: 'date',
+				yField: 'ordersCount',
+				xLabel: 'Date',
+				xLabelRotate: 45,
+				yLabel: 'Orders Added',
+				lineColor: 'rgb(38, 128, 217)',
+				formatYTicks: false
+			});
+			createLineChart(tradesPerDay, ordersAdderPerDayData, {
+				title: 'Trades Per Day',
+				xField: 'date',
+				yField: 'tradesCount',
+				xLabel: 'Date',
+				xLabelRotate: 45,
+				yLabel: 'Trades',
+				lineColor: 'rgb(38, 128, 217)',
+				formatYTicks: false
+			});
+		} else {
+			ordersAdderPerDay = setDefaultHtml(ordersAdderPerDay);
+			tradesPerDay = setDefaultHtml(tradesPerDay);
+		}
+
+		const uniqueOrderOwnersData = prepareUniqueOrderOwners(raindexOrdersWithTrades);
+		// console.log('uniqueOrderOwnersData', JSON.stringify(uniqueOrderOwnersData, null, 2));
+		if (uniqueOrderOwnersData.length > 0) {
+			createLineChart(uniqueOrderOwners, uniqueOrderOwnersData, {
+				title: 'Unique Order Owners',
+				xField: 'date',
+				yField: 'uniqueOrderOwners',
+				xLabel: 'Date',
+				xLabelRotate: 45,
+				yLabel: 'Unique Order Owners',
+				lineColor: 'rgb(38, 128, 217)',
+				formatYTicks: false,
+				integerTicks: true
+			});
+		} else {
+			uniqueOrderOwners = setDefaultHtml(uniqueOrderOwners);
+		}
+		const cummulativeOrdersData = prepareCummulativeOrdersData(raindexOrdersWithTrades);
+		console.log('cummulativeOrdersData', JSON.stringify(cummulativeOrdersData));
+
+		if (cummulativeOrdersData.length > 0) {
+			createAreaChart(cumulativeOrders, cummulativeOrdersData, {
+				title: 'Cummulative Orders',
+				xField: 'date',
+				stackFields: ['inactive', 'active'],
+				yLabel: 'Orders Count',
+				colors: ['rgb(86, 97, 111)', 'rgb(38, 128, 217)'],
+				width: 900,
+				height: 500,
+				integerTicks: true
+			});
+		} else {
+			cumulativeOrders = setDefaultHtml(cumulativeOrders);
 		}
 	}
 
@@ -209,7 +619,7 @@
 		};
 	}
 
-	function renderCharts(data: MarketAnalyticsData) {
+	function renderMarketDataCharts(data: MarketAnalyticsData) {
 		const {
 			plotData,
 			totalRaindexTrades,
@@ -218,7 +628,7 @@
 			totalExternalVolume
 		} = data;
 
-		createChart(historicalTrades, plotData, {
+		createBarChart(historicalTrades, plotData, {
 			title: 'Historical Trade Distribution',
 			chartType: 'weekly',
 			yField: 'totalTrades',
@@ -230,7 +640,7 @@
 			tickPrefix: ''
 		});
 
-		createChart(historicalVolume, plotData, {
+		createBarChart(historicalVolume, plotData, {
 			title: 'Historical Volume Distribution',
 			chartType: 'weekly',
 			yField: 'totalVolume',
@@ -243,7 +653,7 @@
 			tickPrefix: '$'
 		});
 
-		createChart(weeklyTrades, plotData, {
+		createBarChart(weeklyTrades, plotData, {
 			title: 'Weekly Trade Distribution',
 			chartType: 'weekly',
 			yField: 'totalTrades',
@@ -252,7 +662,7 @@
 			tickPrefix: ''
 		});
 
-		createChart(weeklyVolume, plotData, {
+		createBarChart(weeklyVolume, plotData, {
 			title: 'Weekly Volume Distribution',
 			chartType: 'weekly',
 			yField: 'totalVolume',
@@ -270,7 +680,7 @@
 				raindexTradesPercentage: (trade.raindexTrades / trade.totalTrades) * 100
 			}));
 
-		createChart(weeklyTradesByPercentage, weeklyTradesByPercentageData, {
+		createBarChart(weeklyTradesByPercentage, weeklyTradesByPercentageData, {
 			title: 'Weekly Trade Distribution By Percentage',
 			chartType: 'weekly',
 			yField: 'totalTradesPercentage',
@@ -288,7 +698,7 @@
 				raindexVolumePercentage: (trade.raindexVolume / trade.totalVolume) * 100
 			}));
 
-		createChart(weeklyVolumeByPercentage, weeklyVolumeByPercentageData, {
+		createBarChart(weeklyVolumeByPercentage, weeklyVolumeByPercentageData, {
 			title: 'Weekly Volume Distribution By Percentage',
 			chartType: 'weekly',
 			yField: 'totalVolumePercentage',
@@ -298,7 +708,7 @@
 			tickSuffix: '%'
 		});
 
-		createChart(
+		createBarChart(
 			totalTradesByType,
 			[
 				{ type: 'Raindex', value: totalRaindexTrades },
@@ -313,7 +723,7 @@
 			}
 		);
 
-		createChart(
+		createBarChart(
 			totalVolumeByType,
 			[
 				{ type: 'Raindex', value: totalRaindexVolume },
@@ -330,7 +740,7 @@
 		);
 	}
 
-	function createChart(
+	function createBarChart(
 		element: HTMLElement,
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		data: any[],
@@ -452,7 +862,8 @@
 			x: {
 				padding: 0.4,
 				label: xLabel,
-				labelAnchor: 'center',
+				labelAnchor: 'right',
+				labelArrow: true,
 				tickPadding: 5
 			},
 			y: {
@@ -468,6 +879,253 @@
 		});
 		element.appendChild(plot);
 	}
+
+	function createLineChart(
+		element: HTMLElement,
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		data: any[],
+		options: {
+			title: string;
+			xField?: string;
+			yField?: string;
+			xLabel?: string;
+			yLabel?: string;
+			xLabelRotate?: number;
+			yLabelRotate?: number;
+			width?: number;
+			height?: number;
+			lineColor?: string;
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			filterFn?: (item: any) => boolean;
+			formatYTicks?: boolean;
+			tickPrefix?: string;
+			tickSuffix?: string;
+			domainMin?: number;
+			integerTicks?: boolean;
+		}
+	) {
+		if (!element) return; // Skip if element doesn't exist
+
+		const {
+			title,
+			xField = 'date',
+			yField = 'ordersCount',
+			xLabel = 'Date',
+			yLabel = 'Value',
+			xLabelRotate = 0,
+			yLabelRotate = 0,
+			width = 900,
+			height = 500,
+			lineColor = 'rgb(38, 128, 217)',
+			filterFn = () => true,
+			formatYTicks = false,
+			tickPrefix = '',
+			tickSuffix = '',
+			domainMin = 0,
+			integerTicks = false
+		} = options;
+
+		// Filter data if needed
+		const filteredData = filterFn ? data.filter(filterFn) : data;
+
+		// Format function for y-axis ticks
+		const formatTickValue = (d: number, prefix = '', suffix = '') => {
+			if (!formatYTicks) return prefix + d.toString() + suffix;
+			const absD = Math.abs(d);
+			if (absD >= 1e9) return prefix + (d / 1e9).toFixed(1) + 'B' + suffix;
+			if (absD >= 1e6) return prefix + (d / 1e6).toFixed(1) + 'M' + suffix;
+			if (absD >= 1e3) return prefix + (d / 1e3).toFixed(1) + 'K' + suffix;
+			return prefix + d.toString() + suffix;
+		};
+
+		// Remove any existing chart
+		while (element.firstChild) {
+			element.removeChild(element.firstChild);
+		}
+
+		const plot = Plot.plot({
+			grid: true,
+			figure: true,
+			title: title,
+			style: {
+				padding: '10px',
+				marginTop: '5px',
+				marginBottom: '10px',
+				borderRadius: '8px',
+				fontSize: '14px'
+			},
+			marks: [
+				Plot.lineY(filteredData, { x: xField, y: yField, stroke: lineColor, strokeWidth: 2 }),
+				Plot.dot(filteredData, { x: xField, y: yField, fill: lineColor, r: 3, tip: true }),
+				Plot.frame(),
+				Plot.ruleY([0])
+			],
+			width: width,
+			height: height,
+			inset: 20,
+			x: {
+				type: 'time',
+				padding: 0.4,
+				label: xLabel,
+				tickRotate: xLabelRotate,
+				labelAnchor: 'right',
+				labelArrow: true,
+				tickPadding: 5,
+				tickFormat: (d: string) =>
+					new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+			},
+			y: {
+				padding: 0.5,
+				labelOffset: 70,
+				label: yLabel,
+				labelAnchor: 'top',
+				domain: [domainMin, Math.max(...filteredData.map((d) => d[yField]), domainMin + 1)],
+				tickRotate: yLabelRotate,
+				interval: integerTicks ? 1 : undefined,
+				tickFormat: (d: number) => {
+					if (integerTicks) {
+						return tickPrefix + Math.round(d).toString() + tickSuffix;
+					}
+					return formatTickValue(d, tickPrefix, tickSuffix);
+				},
+				tickPadding: 5
+			},
+			marginLeft: 70,
+			marginBottom: 60
+		});
+		element.appendChild(plot);
+	}
+
+	function createAreaChart(
+		element: HTMLElement,
+		data: any[],
+		options: {
+			title: string;
+			subtitle?: string;
+			xField?: string;
+			yField?: string;
+			stackFields?: string[];
+			xLabel?: string;
+			yLabel?: string;
+			width?: number;
+			height?: number;
+			colors?: string[];
+			formatYTicks?: boolean;
+			tickPrefix?: string;
+			tickSuffix?: string;
+			domainMin?: number;
+			integerTicks?: boolean;
+			legend?: boolean;
+		}
+	) {
+		if (!element) return; // Skip if element doesn't exist
+
+		const {
+			title,
+			subtitle,
+			xField = 'date',
+			yField = 'value',
+			stackFields = ['active', 'inactive'],
+			xLabel = 'Date',
+			yLabel = 'Orders Count',
+			width = 900,
+			height = 500,
+			colors = ['rgb(38, 128, 217)', 'rgb(86, 97, 111)'],
+			formatYTicks = false,
+			tickPrefix = '',
+			tickSuffix = '',
+			domainMin = 0,
+			integerTicks = true,
+			legend = true
+		} = options;
+
+		// Format function for y-axis ticks
+		const formatTickValue = (d: number, prefix = '', suffix = '') => {
+			if (!formatYTicks) return prefix + d.toString() + suffix;
+			const absD = Math.abs(d);
+			if (absD >= 1e9) return prefix + (d / 1e9).toFixed(1) + 'B' + suffix;
+			if (absD >= 1e6) return prefix + (d / 1e6).toFixed(1) + 'M' + suffix;
+			if (absD >= 1e3) return prefix + (d / 1e3).toFixed(1) + 'K' + suffix;
+			return prefix + d.toString() + suffix;
+		};
+
+		// Remove any existing chart
+		while (element.firstChild) {
+			element.removeChild(element.firstChild);
+		}
+
+		// Create the plot
+		const marks = [Plot.frame()];
+
+		// Add areas for each stack field in reverse order (to ensure proper stacking)
+		for (let i = stackFields.length - 1; i >= 0; i--) {
+			const field = stackFields[i];
+			marks.push(
+				Plot.areaY(data, {
+					x: xField,
+					y: field,
+					fill: colors[i],
+					fillOpacity: 0.7,
+					stroke: colors[i],
+					strokeWidth: 1.5,
+					curve: 'monotone-x',
+					tip: true
+				})
+			);
+		}
+
+		// Add grid lines
+		marks.push(Plot.ruleY([0]));
+
+		const plot = Plot.plot({
+			title,
+			subtitle,
+			grid: true,
+			style: {
+				background: 'white',
+				fontSize: '14px',
+				overflow: 'visible'
+			},
+			marks,
+			width,
+			height,
+			marginLeft: 60,
+			marginRight: 40,
+			marginBottom: 60,
+			marginTop: 20,
+			x: {
+				type: 'time',
+				tickFormat: (d: string) =>
+					new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+				label: xLabel,
+				labelOffset: 40
+			},
+			y: {
+				domain: [
+					domainMin,
+					Math.max(...data.map((d) => stackFields.reduce((sum, field) => sum + d[field], 0)), 10)
+				],
+				label: yLabel,
+				labelOffset: 45,
+				interval: integerTicks ? 1 : undefined,
+				tickFormat: (d: number) => {
+					if (integerTicks) {
+						return tickPrefix + Math.round(d).toString() + tickSuffix;
+					}
+					return formatTickValue(d, tickPrefix, tickSuffix);
+				}
+			},
+			color: legend
+				? {
+						domain: stackFields.map((field) => field.charAt(0).toUpperCase() + field.slice(1)),
+						range: colors,
+						legend: true
+					}
+				: undefined
+		});
+
+		element.appendChild(plot);
+	}
 </script>
 
 <div class="flex rounded-t-lg border-b border-gray-300 bg-gray-100">
@@ -481,7 +1139,7 @@
 				activeTab = tab;
 				if (tab === 'Market Analytics' && marketData) {
 					// Force chart recreation on tab switch
-					setTimeout(() => renderCharts(marketData), 0);
+					setTimeout(() => renderMarketDataCharts(marketData), 0);
 				}
 			}}
 		>
@@ -539,7 +1197,38 @@
 				</div>
 			</div>
 		{:else if activeTab === 'Order Analytics'}
-			<p>Order Analytics</p>
+			<div class="wrapper">
+				<div class="flex flex-col md:flex-row">
+					<div
+						class="m-2 w-full rounded-lg shadow-lg md:w-1/2 md:p-2"
+						bind:this={topOrdersByTradesCount}
+					></div>
+					<div
+						class="m-2 w-full rounded-lg shadow-lg md:w-1/2 md:p-2"
+						bind:this={topOrdersByVolume}
+					></div>
+				</div>
+				<div class="flex flex-col md:flex-row">
+					<div
+						class="m-2 w-full rounded-lg shadow-lg md:w-1/2 md:p-2"
+						bind:this={ordersAdderPerDay}
+					></div>
+					<div
+						class="m-2 w-full rounded-lg shadow-lg md:w-1/2 md:p-2"
+						bind:this={tradesPerDay}
+					></div>
+				</div>
+				<div class="flex flex-col md:flex-row">
+					<div
+						class="m-2 w-full rounded-lg shadow-lg md:w-1/2 md:p-2"
+						bind:this={uniqueOrderOwners}
+					></div>
+					<div
+						class="m-2 w-full rounded-lg shadow-lg md:w-1/2 md:p-2"
+						bind:this={cumulativeOrders}
+					></div>
+				</div>
+			</div>
 		{:else if activeTab === 'Vault Analytics'}
 			<p>Vault Analytics</p>
 		{/if}
