@@ -1,9 +1,7 @@
 import { tokenSlug, network, activeSubgraphs, settings } from '$lib/stores/report';
-import { networkBlockTime } from '$lib/constants';
-import { type NetworkConfigSourceWithBlockTime } from '$lib/types';
 import { get } from 'svelte/store';
 import { ConfigSource } from '@rainlanguage/orderbook/js_api';
-export const load = async ({ fetch, params }) => {
+export const load = async ({ params }) => {
 	const settingsJson: ConfigSource | undefined = get(settings);
 
 	if (settingsJson && settingsJson.subgraphs) {
