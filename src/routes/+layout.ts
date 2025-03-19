@@ -1,4 +1,3 @@
-import { ConfigSource } from '@rainlanguage/orderbook/js_api';
 import { settings } from '$lib/stores/report';
 export const load = async ({ fetch }) => {
 	const response = await fetch(
