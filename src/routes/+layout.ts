@@ -8,7 +8,7 @@ export const load = async ({ fetch }) => {
 	settings.set(settingsJson);
 	return {
 		stores: {
-			settings
+			settings :  settingsJson
 		}
 	};
 };
