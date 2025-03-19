@@ -4,7 +4,7 @@ export const DEFAULT_ORDERS_PAGE_SIZE = 50;
 export const DEFAULT_VAULTS_PAGE_SIZE = 1000;
 export const DEFAULT_TRADES_PAGE_SIZE = 1000;
 
-export const supportedNetworks = ['polygon', 'mainnet', 'arbitrum', 'base', 'flare', 'bsc'];
+export const supportedNetworks = ['polygon', 'ethereum', 'arbitrum', 'base', 'flare', 'bsc'];
 
 export const supportedTokens = [
 	'PAI',
@@ -279,7 +279,7 @@ export const tokenConfig: Config = {
 	},
 	PAI: {
 		symbol: 'PAI',
-		network: 'mainnet',
+		network: 'ethereum',
 		decimals: 18,
 		address: '0x13e4b8cffe704d3de6f19e52b201d92c21ec18bd',
 		poolsV2: ['0x24b8c320a4505057cb1e4808d200535ec5320817'],
@@ -288,7 +288,7 @@ export const tokenConfig: Config = {
 	},
 	LOCK: {
 		symbol: 'LOCK',
-		network: 'mainnet',
+		network: 'ethereum',
 		decimals: 18,
 		address: '0x922d8563631b03c2c4cf817f4d18f6883aba0109',
 		poolsV2: [],
@@ -420,7 +420,7 @@ export const networkConfig: NetworkConfigurations = {
 	},
 	bsc: {
 		chainId: 56,
-		rpc: 'https://rpc.ankr.com/bsc',
+		rpc: 'https://bsc-dataseed.bnbchain.org',
 		blockTime: 3,
 		subgraphUrl:
 			'https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-bsc/2024-12-13-2244/gn',
@@ -469,7 +469,7 @@ export const networkConfig: NetworkConfigurations = {
 			'https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-flare/2024-12-13-9dc7/gn',
 		stables: []
 	},
-	mainnet: {
+	ethereum: {
 		chainId: 1,
 		blockTime: 12,
 		rpc: 'https://rpc.ankr.com/eth',
