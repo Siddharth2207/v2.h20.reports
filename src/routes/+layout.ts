@@ -1,12 +1,10 @@
-import { ConfigSource } from '@rainlanguage/orderbook/js_api';
-import { writable } from 'svelte/store';
-
+import { settings } from '$lib/stores/report';
 export const load = async ({ fetch }) => {
 	const response = await fetch(
-		'https://raw.githubusercontent.com/rainlanguage/rain.strategies/refs/heads/main/settings.json'
+		'https://raw.githubusercontent.com/rainlanguage/rain.strategies/refs/heads/2025-03-19-update-bsc-rpc-url/settings.json'
 	);
 	const settingsJson = await response.json();
-	const settings = writable<ConfigSource | undefined>(settingsJson);
+	settings.set(settingsJson);
 	return {
 		stores: {
 			settings
