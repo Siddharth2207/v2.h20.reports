@@ -16,7 +16,6 @@
 
 	const { tokenSlug, network, activeSubgraphs } = $page.data.stores;
 
-	const tokenSymbol = tokenConfig[$tokenSlug.toUpperCase()]?.symbol;
 	const tokenAddress = tokenConfig[$tokenSlug.toUpperCase()]?.address;
 	const weekInSeconds = 60 * 60 * 24 * 7;
 	const monthInSeconds = 60 * 60 * 24 * 30;
