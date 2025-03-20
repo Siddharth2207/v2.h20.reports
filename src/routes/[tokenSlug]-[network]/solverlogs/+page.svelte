@@ -53,14 +53,10 @@
 			let filteredOrders = allOrders.filter(
 				(order: SgOrderWithSubgraphName) =>
 					order.order.inputs.some(
-						(input: SgVault) =>
-							input.token.symbol === tokenSymbol &&
-							input.token.address.toLowerCase() === tokenAddress.toLowerCase()
+						(input: SgVault) => input.token.address.toLowerCase() === tokenAddress.toLowerCase()
 					) ||
 					order.order.outputs.some(
-						(output: SgVault) =>
-							output.token.symbol === tokenSymbol &&
-							output.token.address.toLowerCase() === tokenAddress.toLowerCase()
+						(output: SgVault) => output.token.address.toLowerCase() === tokenAddress.toLowerCase()
 					)
 			);
 
