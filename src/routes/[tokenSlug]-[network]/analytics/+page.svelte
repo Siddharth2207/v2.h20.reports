@@ -1,14 +1,9 @@
 <script lang="ts">
-	import type {
-		SgTrade,
-		MultiSubgraphArgs,
-		SgVaultBalanceChangeUnwrapped
-	} from '@rainlanguage/orderbook/js_api';
+	import type { SgTrade, MultiSubgraphArgs } from '@rainlanguage/orderbook/js_api';
 	import {
 		getOrders,
 		getOrderTradesList,
-		getOrderVaultsVolume,
-		getVaultBalanceChanges
+		getOrderVaultsVolume
 	} from '@rainlanguage/orderbook/js_api';
 	import * as Plot from '@observablehq/plot';
 	import { analyzeLiquidity } from '$lib/analyzeLiquidity';
@@ -21,12 +16,7 @@
 		LiquidityAnalysisResult,
 		MarketAnalyticsData
 	} from '$lib/types';
-	import {
-		tokenConfig,
-		DEFAULT_TRADES_PAGE_SIZE,
-		generateColorPalette,
-		DEFAULT_VAULTS_PAGE_SIZE
-	} from '$lib/constants';
+	import { tokenConfig, DEFAULT_TRADES_PAGE_SIZE, generateColorPalette } from '$lib/constants';
 	import { ethers } from 'ethers';
 	import { getTokenPriceUsd } from '$lib/price';
 
