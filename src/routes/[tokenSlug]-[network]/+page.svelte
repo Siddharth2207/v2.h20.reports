@@ -64,12 +64,10 @@
 				(order: SgOrderWithSubgraphName) =>
 					order.order.inputs.some(
 						(input: SgVault) =>
-							input.token.symbol === tokenSymbol &&
 							input.token.address.toLowerCase() === tokenAddress.toLowerCase()
 					) ||
 					order.order.outputs.some(
 						(output: SgVault) =>
-							output.token.symbol === tokenSymbol &&
 							output.token.address.toLowerCase() === tokenAddress.toLowerCase()
 					)
 			);

@@ -34,6 +34,15 @@ export const networkBlockTime: Record<number, number> = {
 	59144: 2
 };
 export const tokenConfig: Config = {
+	FLOCO: {
+		symbol: 'FLOCO',
+		decimals: 18,
+		network: 'base',
+		address: '0xdcd88cfead789f8cf6e3505ded2d9dff6f40b3dc',
+		poolsV2: [],
+		poolsV3: ['0x6df98c35b438edaae702afc6046f440b845313fe'],
+		poolsPancakSwapV3: []
+	},
 	IOEN: {
 		symbol: 'IOEN',
 		decimals: 18,

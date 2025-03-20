@@ -507,12 +507,10 @@
 			(order: OrderListOrderWithSubgraphName) =>
 				order.order.inputs.some(
 					(input: OrderListVault) =>
-						input.token.symbol === tokenSymbol &&
 						input.token.address.toLowerCase() === tokenAddress.toLowerCase()
 				) ||
 				order.order.outputs.some(
 					(output: OrderListVault) =>
-						output.token.symbol === tokenSymbol &&
 						output.token.address.toLowerCase() === tokenAddress.toLowerCase()
 				)
 		);
