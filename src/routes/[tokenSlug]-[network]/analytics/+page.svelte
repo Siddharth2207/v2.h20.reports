@@ -16,9 +16,7 @@
 		LiquidityAnalysisResult,
 		MarketAnalyticsData,
 		VaultAnalyticsData,
-
 		VaultAnalyticsToken
-
 	} from '$lib/types';
 	import { tokenConfig, DEFAULT_TRADES_PAGE_SIZE, generateColorPalette } from '$lib/constants';
 	import { ethers } from 'ethers';
@@ -945,7 +943,9 @@
 			}
 		}
 
-		function prepareTokenVaultBalances(raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]): VaultAnalyticsToken[] {
+		function prepareTokenVaultBalances(
+			raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]
+		): VaultAnalyticsToken[] {
 			try {
 				const allTokens = raindexOrdersWithTrades.flatMap((order) =>
 					[...order.order.outputs, ...order.order.inputs].map((item) => item.token)
@@ -993,7 +993,10 @@
 						}
 						return sum; // Skip duplicates
 					}, ethers.BigNumber.from(0));
-					const totalTokens = ethers.utils.formatUnits(totalInputs.add(totalOutputs), tokenDecimals);
+					const totalTokens = ethers.utils.formatUnits(
+						totalInputs.add(totalOutputs),
+						tokenDecimals
+					);
 					const totalVaults = uniqueEntries.size;
 					const totalValueUsd = parseFloat(totalTokens) * currentTokenPrice;
 
@@ -1015,8 +1018,10 @@
 
 		const allVaults: VaultAnalyticsData[] = prepareVaultBalanceData(raindexOrdersWithTrades);
 		const topVaultsWithOthers: VaultAnalyticsData[] = prepareTopVaultBalancesWithOthers(allVaults);
-		const topVaultsByVolumeData: VaultAnalyticsData[] = prepareTopVaultsByVolumeWithOthers(vaultVolumeData);
-		const tokenVaultBalancesArray: VaultAnalyticsToken[] = prepareTokenVaultBalances(raindexOrdersWithTrades);
+		const topVaultsByVolumeData: VaultAnalyticsData[] =
+			prepareTopVaultsByVolumeWithOthers(vaultVolumeData);
+		const tokenVaultBalancesArray: VaultAnalyticsToken[] =
+			prepareTokenVaultBalances(raindexOrdersWithTrades);
 
 		const totalVolume = topVaultsByVolumeData.reduce((acc, vault) => acc + vault.volume, 0);
 		const totalBalance = topVaultsWithOthers.reduce((acc, vault) => acc + vault.balance, 0);
@@ -1056,8 +1061,8 @@
 		} else {
 			topVaultsByVolume = setDefaultHtml(topVaultsByVolume);
 		}
-		
-		if(tokenVaultBalancesArray.length > 0){
+
+		if (tokenVaultBalancesArray.length > 0) {
 			createBarChart(tokenVaultBalances, tokenVaultBalancesArray, {
 				title: 'Top Tokens by Balance',
 				chartType: 'bar',
@@ -1090,12 +1095,16 @@
 
 		createVaultHealthMetrics(vaultHealthMetrics, {
 			totalOrders: raindexOrdersWithTrades.length > 0 ? raindexOrdersWithTrades.length : 0,
-			totalTokenBalance: tokenVaultBalancesArray.length > 0 ? tokenVaultBalancesArray.filter(
-				(vault) => vault.address === tokenAddress
-			)[0].totalTokenBalance : 0,
-			totalTokenBalanceUsd: tokenVaultBalancesArray.length > 0 ? tokenVaultBalancesArray.filter(
-				(vault) => vault.address === tokenAddress
-			)[0].totalTokenBalanceUsd : 0,
+			totalTokenBalance:
+				tokenVaultBalancesArray.length > 0
+					? tokenVaultBalancesArray.filter((vault) => vault.address === tokenAddress)[0]
+							.totalTokenBalance
+					: 0,
+			totalTokenBalanceUsd:
+				tokenVaultBalancesArray.length > 0
+					? tokenVaultBalancesArray.filter((vault) => vault.address === tokenAddress)[0]
+							.totalTokenBalanceUsd
+					: 0,
 			activeRatio: activeRatio
 		});
 	}
