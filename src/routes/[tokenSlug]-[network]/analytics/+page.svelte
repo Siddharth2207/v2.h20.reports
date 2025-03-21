@@ -37,7 +37,7 @@
 	let raindexOrdersWithTrades: OrderListOrderWithSubgraphName[];
 	let allTrades: LiquidityAnalysisResult;
 	let vaultVolume: any;
-	let currentTokenPrice: number
+	let currentTokenPrice: number;
 
 	let historicalTrades: HTMLElement;
 	let historicalVolume: HTMLElement;
@@ -86,7 +86,7 @@
 				renderOrderDataCharts(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp);
 				loading = false;
 			} else if (activeTab === 'Vault Analytics') {
-				renderVaultsAnalytics(raindexOrdersWithTrades,vaultVolume,currentTokenPrice);
+				renderVaultsAnalytics(raindexOrdersWithTrades, vaultVolume, currentTokenPrice);
 				loading = false;
 			}
 		} finally {
@@ -113,7 +113,10 @@
 		if (!analyticsDataLoaded) {
 			fetchAndPlotData();
 		} else {
-			setTimeout(() => renderVaultsAnalytics(raindexOrdersWithTrades,vaultVolume,currentTokenPrice), 0);
+			setTimeout(
+				() => renderVaultsAnalytics(raindexOrdersWithTrades, vaultVolume, currentTokenPrice),
+				0
+			);
 		}
 	}
 
@@ -572,51 +575,57 @@
 		return raindexOrders;
 	}
 
-	async function prepareVaultVolumeData(
-		raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]
-	) {
-		const vaultVolumes = [];
-		for (const order of raindexOrdersWithTrades) {
-			const orderVaultsVolume = await getOrderVaultsVolume(
+	async function prepareVaultVolumeData(raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]) {
+		if (!raindexOrdersWithTrades?.length) return [];
+
+		try {
+			const subgraphUrl =
 				$activeSubgraphs.find((subgraph: MultiSubgraphArgs) => subgraph.name === $network)?.url ||
-					'',
-				order.order.id
+				'';
+
+			if (!subgraphUrl) return [];
+
+			// Use Promise.all to fetch vault volumes in parallel
+			const orderIds = raindexOrdersWithTrades.map((order) => order.order.id);
+			const vaultVolumePromises = orderIds.map(
+				(orderId) => getOrderVaultsVolume(subgraphUrl, orderId).catch(() => []) // Handle individual request failures gracefully
 			);
-			for (const vaultVolume of orderVaultsVolume.filter(
-				(vaultVolume: any) => vaultVolume.token.address === tokenAddress
-			)) {
-				vaultVolumes.push({
-					orderId: order.order.id,
-					vaultId: ethers.BigNumber.from(vaultVolume.id).toHexString(),
-					volume: parseFloat(
-						ethers.utils.formatUnits(vaultVolume.volDetails.totalVol, vaultVolume.token.decimals)
+
+			const allVaultVolumes = await Promise.all(vaultVolumePromises);
+
+			// Process all vault volumes at once
+			const vaultVolumeMap: Record<string, { vaultId: string; name: string; volume: number }> = {};
+
+			allVaultVolumes.forEach((orderVaultsVolume) => {
+				orderVaultsVolume
+					.filter(
+						(vaultVolume: any) =>
+							vaultVolume.token.address.toLowerCase() === tokenAddress.toLowerCase()
 					)
-				});
-			}
+					.forEach((vaultVolume: any) => {
+						const vaultId = ethers.BigNumber.from(vaultVolume.id).toHexString();
+						const volume = parseFloat(
+							ethers.utils.formatUnits(vaultVolume.volDetails.totalVol, vaultVolume.token.decimals)
+						);
+
+						if (!vaultVolumeMap[vaultId]) {
+							vaultVolumeMap[vaultId] = {
+								vaultId,
+								name: `Vault ${vaultId.slice(0, 6)}...`,
+								volume: 0
+							};
+						}
+
+						vaultVolumeMap[vaultId].volume += volume;
+					});
+			});
+
+			// Convert to array and sort by volume
+			return Object.values(vaultVolumeMap).sort((a, b) => b.volume - a.volume);
+		} catch (error) {
+			console.error('Error preparing vault volume data:', error);
+			return [];
 		}
-
-		// Aggregate volumes by vault ID
-		const vaultVolumeMap = vaultVolumes.reduce(
-			(
-				acc: { [vaultId: string]: { vaultId: string; name: string; volume: number } },
-				curr: { orderId: string; vaultId: string; volume: number }
-			) => {
-				const vaultId = curr.vaultId;
-				if (!acc[vaultId]) {
-					acc[vaultId] = {
-						vaultId: vaultId,
-						name: `Vault ${vaultId.slice(0, 6)}...`,
-						volume: Number(curr.volume)
-					};
-				}
-				acc[vaultId].volume += Number(curr.volume);
-				return acc;
-			},
-			{}
-		);
-
-		// Convert to array and sort by volume
-		return Object.values(vaultVolumeMap).sort((a: any, b: any) => b.volume - a.volume);
 	}
 
 	function getTradesByDay(
@@ -814,8 +823,11 @@
 		);
 	}
 
-	function renderVaultsAnalytics(raindexOrdersWithTrades: OrderListOrderWithSubgraphName[],vaultVolumeData: any[],currentTokenPrice: number) {
-		
+	function renderVaultsAnalytics(
+		raindexOrdersWithTrades: OrderListOrderWithSubgraphName[],
+		vaultVolumeData: any[],
+		currentTokenPrice: number
+	) {
 		function prepareVaultBalanceData(raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]) {
 			// Create a more comprehensive data structure for vault analysis
 			const vaultData: {
@@ -956,9 +968,7 @@
 			return top5;
 		}
 
-		function prepareTokenVaultBalances(
-			raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]
-		) {
+		function prepareTokenVaultBalances(raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]) {
 			const allTokens = raindexOrdersWithTrades.flatMap((order) =>
 				[...order.order.outputs, ...order.order.inputs].map((item) => item.token)
 			);
@@ -989,7 +999,7 @@
 
 			for (const uniqueToken of Array.from(uniqueTokensMap.values())) {
 				const { decimals: tokenDecimals, address: tokenAddress } = uniqueToken;
-				
+
 				const uniqueEntries = new Set<string>();
 
 				const totalInputsVaults = raindexOrdersWithTrades
@@ -1031,7 +1041,7 @@
 				(a, b) => b.totalTokenBalanceUsd - a.totalTokenBalanceUsd
 			);
 		}
-		
+
 		function getVaultType(isInput: boolean, isOutput: boolean): string {
 			if (isInput && isOutput) return 'Both';
 			if (isInput) return 'Input';
