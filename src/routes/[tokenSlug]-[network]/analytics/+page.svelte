@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { SgTrade, MultiSubgraphArgs } from '@rainlanguage/orderbook/js_api';
+	import type { SgTrade, MultiSubgraphArgs, VaultVolume } from '@rainlanguage/orderbook/js_api';
 	import {
 		getOrders,
 		getOrderTradesList,
@@ -14,7 +14,11 @@
 		OrderListVault,
 		MarketAnalytics,
 		LiquidityAnalysisResult,
-		MarketAnalyticsData
+		MarketAnalyticsData,
+		VaultAnalyticsData,
+
+		VaultAnalyticsToken
+
 	} from '$lib/types';
 	import { tokenConfig, DEFAULT_TRADES_PAGE_SIZE, generateColorPalette } from '$lib/constants';
 	import { ethers } from 'ethers';
@@ -36,7 +40,7 @@
 
 	let raindexOrdersWithTrades: OrderListOrderWithSubgraphName[];
 	let allTrades: LiquidityAnalysisResult;
-	let vaultVolume: any;
+	let vaultVolume: VaultAnalyticsData[];
 	let currentTokenPrice: number;
 
 	let historicalTrades: HTMLElement;
@@ -67,6 +71,7 @@
 			dataFetchInProgress = true;
 			loading = true;
 			raindexOrdersWithTrades = await fetchAllOrderWithTrades();
+
 			allTrades = await analyzeLiquidity(
 				$network,
 				$tokenSlug.toUpperCase(),
@@ -575,57 +580,60 @@
 		return raindexOrders;
 	}
 
-	async function prepareVaultVolumeData(raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]) {
-		if (!raindexOrdersWithTrades?.length) return [];
-
-		try {
-			const subgraphUrl =
+	async function prepareVaultVolumeData(
+		raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]
+	): Promise<VaultAnalyticsData[]> {
+		const vaultVolumes: VaultAnalyticsData[] = [];
+		for (const order of raindexOrdersWithTrades) {
+			const orderVaultsVolume: VaultVolume[] = await getOrderVaultsVolume(
 				$activeSubgraphs.find((subgraph: MultiSubgraphArgs) => subgraph.name === $network)?.url ||
-				'';
-
-			if (!subgraphUrl) return [];
-
-			// Use Promise.all to fetch vault volumes in parallel
-			const orderIds = raindexOrdersWithTrades.map((order) => order.order.id);
-			const vaultVolumePromises = orderIds.map(
-				(orderId) => getOrderVaultsVolume(subgraphUrl, orderId).catch(() => []) // Handle individual request failures gracefully
+					'',
+				order.order.id
 			);
-
-			const allVaultVolumes = await Promise.all(vaultVolumePromises);
-
-			// Process all vault volumes at once
-			const vaultVolumeMap: Record<string, { vaultId: string; name: string; volume: number }> = {};
-
-			allVaultVolumes.forEach((orderVaultsVolume) => {
-				orderVaultsVolume
-					.filter(
-						(vaultVolume: any) =>
-							vaultVolume.token.address.toLowerCase() === tokenAddress.toLowerCase()
+			for (const vaultVolume of orderVaultsVolume.filter(
+				(vaultVolume: VaultVolume) => vaultVolume.token.address === tokenAddress
+			)) {
+				vaultVolumes.push({
+					vaultId: ethers.BigNumber.from(vaultVolume.id).toHexString(),
+					name: `Vault ${vaultVolume.id.slice(0, 6)}...`,
+					volume: parseFloat(
+						ethers.utils.formatUnits(vaultVolume.volDetails.totalVol, vaultVolume.token.decimals)
+					),
+					tokenSymbol: vaultVolume.token.symbol || '',
+					tokenAddress: vaultVolume.token.address,
+					tokenDecimals: Number(vaultVolume.token.decimals) || 0,
+					balance: parseFloat(
+						ethers.utils.formatUnits(vaultVolume.volDetails.totalVol, vaultVolume.token.decimals)
 					)
-					.forEach((vaultVolume: any) => {
-						const vaultId = ethers.BigNumber.from(vaultVolume.id).toHexString();
-						const volume = parseFloat(
-							ethers.utils.formatUnits(vaultVolume.volDetails.totalVol, vaultVolume.token.decimals)
-						);
-
-						if (!vaultVolumeMap[vaultId]) {
-							vaultVolumeMap[vaultId] = {
-								vaultId,
-								name: `Vault ${vaultId.slice(0, 6)}...`,
-								volume: 0
-							};
-						}
-
-						vaultVolumeMap[vaultId].volume += volume;
-					});
-			});
-
-			// Convert to array and sort by volume
-			return Object.values(vaultVolumeMap).sort((a, b) => b.volume - a.volume);
-		} catch (error) {
-			console.error('Error preparing vault volume data:', error);
-			return [];
+				});
+			}
 		}
+
+		// Aggregate volumes by vault ID
+		const vaultVolumeMap = vaultVolumes.reduce(
+			(acc: { [vaultId: string]: VaultAnalyticsData }, curr: VaultAnalyticsData) => {
+				const vaultId = curr.vaultId;
+				if (!acc[vaultId]) {
+					acc[vaultId] = {
+						vaultId: vaultId,
+						name: `Vault ${vaultId.slice(0, 6)}...`,
+						volume: Number(curr.volume),
+						tokenSymbol: curr.tokenSymbol,
+						tokenAddress: curr.tokenAddress,
+						tokenDecimals: curr.tokenDecimals,
+						balance: Number(curr.balance)
+					};
+				}
+				acc[vaultId].volume += Number(curr.volume);
+				return acc;
+			},
+			{}
+		);
+
+		// Convert to array and sort by volume
+		return Object.values(vaultVolumeMap).sort(
+			(a: VaultAnalyticsData, b: VaultAnalyticsData) => b.volume - a.volume
+		);
 	}
 
 	function getTradesByDay(
@@ -825,313 +833,271 @@
 
 	function renderVaultsAnalytics(
 		raindexOrdersWithTrades: OrderListOrderWithSubgraphName[],
-		vaultVolumeData: any[],
+		vaultVolumeData: VaultAnalyticsData[],
 		currentTokenPrice: number
 	) {
-		function prepareVaultBalanceData(raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]) {
+		function prepareVaultBalanceData(
+			raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]
+		): VaultAnalyticsData[] {
 			// Create a more comprehensive data structure for vault analysis
 			const vaultData: {
-				[vaultId: string]: {
-					name: string;
-					tokenSymbol: string;
-					tokenAddress: string;
-					tokenDecimals: number;
-					balance: number;
-					orderCount: number;
-					lastUpdated: number;
-					isInput: boolean;
-					isOutput: boolean;
-				};
+				[vaultId: string]: VaultAnalyticsData;
 			} = {};
 
 			// Process all orders to collect vault data
 			raindexOrdersWithTrades.forEach((order) => {
 				// Process input vaults
 				order.order.inputs.forEach((entry) => {
-					processVaultEntry(entry, true, false, order.order.timestampAdded);
+					processVaultEntry(entry);
 				});
 
 				// Process output vaults
 				order.order.outputs.forEach((entry) => {
-					processVaultEntry(entry, false, true, order.order.timestampAdded);
+					processVaultEntry(entry);
 				});
 			});
 
-			function processVaultEntry(
-				entry: OrderListVault,
-				isInput: boolean,
-				isOutput: boolean,
-				timestamp: string
-			) {
+			function processVaultEntry(entry: OrderListVault) {
 				const vaultId = entry.id;
 				const balance = parseFloat(ethers.utils.formatUnits(entry.balance, entry.token.decimals));
 
 				if (!vaultData[vaultId]) {
 					vaultData[vaultId] = {
 						name: `Vault ${entry.vaultId.slice(0, 6)}...`,
+						vaultId: entry.vaultId,
 						tokenSymbol: entry.token.symbol || '',
 						tokenAddress: entry.token.address,
-						tokenDecimals: Number(entry.token.decimals),
+						tokenDecimals: Number(entry.token.decimals) || 0,
 						balance: 0,
-						orderCount: 0,
-						lastUpdated: 0,
-						isInput: false,
-						isOutput: false
+						volume: 0
 					};
 				}
 
 				// Update vault data
 				vaultData[vaultId].balance = balance; // Use the most recent balance
-				vaultData[vaultId].orderCount += 1;
-				vaultData[vaultId].isInput = vaultData[vaultId].isInput || isInput;
-				vaultData[vaultId].isOutput = vaultData[vaultId].isOutput || isOutput;
-
-				// Track the most recent update
-				const entryTimestamp = parseFloat(timestamp);
-				if (entryTimestamp > vaultData[vaultId].lastUpdated) {
-					vaultData[vaultId].lastUpdated = entryTimestamp;
-				}
 			}
 
 			// Convert to array and add additional metrics
-			const vaultsArray = Object.values(vaultData).map((vault) => ({
-				...vault,
-				vaultType: getVaultType(vault.isInput, vault.isOutput),
-				lastUpdatedDate: new Date(vault.lastUpdated * 1000).toISOString().split('T')[0],
-				formattedBalance: formatBalance(vault.balance)
-			}));
+			const vaultsArray: VaultAnalyticsData[] = Object.values(vaultData);
 
-			// Sort by balance in descending order
-			const sortedVaults = vaultsArray.sort((a, b) => b.balance - a.balance);
-
-			return {
-				allVaults: sortedVaults
-			};
+			return vaultsArray.sort((a, b) => b.balance - a.balance);
 		}
 
-		function prepareTopVaultBalancesWithOthers(vaults: any[]) {
-			if (!vaults || vaults.length === 0) return [];
+		function prepareTopVaultBalancesWithOthers(vaults: VaultAnalyticsData[]) {
+			try {
+				if (!vaults || vaults.length === 0) return [];
+				// Get top 5 vaults
+				const top5: VaultAnalyticsData[] = vaults.slice(0, 5).map((vault) => ({
+					...vault
+				}));
 
-			// Calculate total balance for all vaults
-			const totalBalance = vaults.reduce((sum, vault) => sum + vault.balance, 0);
+				// Calculate "Others" if there are more than 5 vaults
+				if (vaults.length > 5) {
+					const othersBalance = vaults.slice(5).reduce((sum, vault) => sum + vault.balance, 0);
 
-			// Get top 5 vaults
-			const top5 = vaults.slice(0, 5).map((vault) => ({
-				...vault,
-				percentage: ((vault.balance / totalBalance) * 100).toFixed(2)
-			}));
+					if (othersBalance > 0) {
+						top5.push({
+							name: 'Others',
+							balance: othersBalance,
+							vaultId: 'Others',
+							tokenSymbol: '',
+							tokenAddress: '',
+							tokenDecimals: 0,
+							volume: 0
+						});
+					}
+				}
 
-			// Calculate "Others" if there are more than 5 vaults
-			if (vaults.length > 5) {
-				const othersBalance = vaults.slice(5).reduce((sum, vault) => sum + vault.balance, 0);
+				return top5;
+			} catch {
+				return [];
+			}
+		}
 
-				if (othersBalance > 0) {
+		function prepareTopVaultsByVolumeWithOthers(vaults: VaultAnalyticsData[]) {
+			try {
+				if (!vaults || vaults.length === 0) return [];
+
+				// Get top 5 vaults
+				const top5: VaultAnalyticsData[] = vaults.slice(0, 5).map((vault) => ({
+					...vault
+				}));
+
+				// Calculate "Others" if there are more than 5 vaults
+				if (vaults.length > 5) {
+					const othersVolume = vaults.slice(5).reduce((sum, vault) => sum + vault.volume, 0);
+
+					// Always add the "Others" category, even if volume is 0
 					top5.push({
 						name: 'Others',
-						balance: othersBalance,
-						orderCount: vaults.slice(5).reduce((sum, vault) => sum + vault.orderCount, 0),
-						formattedBalance: formatBalance(othersBalance),
-						percentage: ((othersBalance / totalBalance) * 100).toFixed(2)
+						volume: othersVolume,
+						vaultId: 'Others',
+						tokenSymbol: '',
+						tokenAddress: '',
+						tokenDecimals: 0,
+						balance: 0
 					});
 				}
-			}
 
-			return top5;
+				return top5;
+			} catch {
+				return [];
+			}
 		}
 
-		function prepareTopVaultsByVolumeWithOthers(vaults: any[]) {
-			if (!vaults || vaults.length === 0) return [];
+		function prepareTokenVaultBalances(raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]): VaultAnalyticsToken[] {
+			try {
+				const allTokens = raindexOrdersWithTrades.flatMap((order) =>
+					[...order.order.outputs, ...order.order.inputs].map((item) => item.token)
+				);
+				const uniqueTokensMap = new Map<string, VaultAnalyticsToken>();
 
-			// Calculate total volume for all vaults
-			const totalVolume = vaults.reduce((sum, vault) => sum + vault.volume, 0);
-
-			// Get top 5 vaults
-			const top5 = vaults.slice(0, 5).map((vault) => ({
-				...vault,
-				formattedVolume: formatBalance(vault.volume),
-				percentage: ((vault.volume / totalVolume) * 100).toFixed(2)
-			}));
-
-			// Calculate "Others" if there are more than 5 vaults
-			if (vaults.length > 5) {
-				const othersVolume = vaults.slice(5).reduce((sum, vault) => sum + vault.volume, 0);
-
-				// Always add the "Others" category, even if volume is 0
-				top5.push({
-					name: 'Others',
-					volume: othersVolume,
-					formattedVolume: formatBalance(othersVolume),
-					percentage: ((othersVolume / totalVolume) * 100).toFixed(2)
-				});
-			}
-
-			return top5;
-		}
-
-		function prepareTokenVaultBalances(raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]) {
-			const allTokens = raindexOrdersWithTrades.flatMap((order) =>
-				[...order.order.outputs, ...order.order.inputs].map((item) => item.token)
-			);
-			const uniqueTokensMap = new Map<
-				string,
-				{
-					address: string;
-					symbol: string;
-					decimals: number;
-					totalVaults: number;
-					totalTokenBalance: number;
-					totalTokenBalanceUsd: number;
-				}
-			>();
-
-			allTokens.forEach((token) => {
-				if (!uniqueTokensMap.has(token.address)) {
-					uniqueTokensMap.set(token.address, {
-						address: token.address,
-						symbol: token.symbol || '',
-						decimals: Number(token.decimals),
-						totalVaults: 0,
-						totalTokenBalance: 0,
-						totalTokenBalanceUsd: 0
-					});
-				}
-			});
-
-			for (const uniqueToken of Array.from(uniqueTokensMap.values())) {
-				const { decimals: tokenDecimals, address: tokenAddress } = uniqueToken;
-
-				const uniqueEntries = new Set<string>();
-
-				const totalInputsVaults = raindexOrdersWithTrades
-					.flatMap((order) => order.order.inputs)
-					.filter((input) => input.token.address === tokenAddress);
-
-				const totalOutputsVaults = raindexOrdersWithTrades
-					.flatMap((order) => order.order.outputs)
-					.filter((output) => output.token.address === tokenAddress);
-
-				const totalInputs = totalInputsVaults.reduce((sum, input) => {
-					const uniqueKey = input.id;
-					uniqueEntries.add(uniqueKey); // Track all inputs
-					return sum.add(ethers.BigNumber.from(input.balance));
-				}, ethers.BigNumber.from(0));
-
-				const totalOutputs = totalOutputsVaults.reduce((sum, output) => {
-					const uniqueKey = output.id;
-					if (!uniqueEntries.has(uniqueKey)) {
-						// Only add if it's not already counted in inputs
-						uniqueEntries.add(uniqueKey);
-						return sum.add(ethers.BigNumber.from(output.balance));
+				allTokens.forEach((token) => {
+					if (!uniqueTokensMap.has(token.address)) {
+						uniqueTokensMap.set(token.address, {
+							address: token.address,
+							symbol: token.symbol || '',
+							decimals: Number(token.decimals),
+							totalVaults: 0,
+							totalTokenBalance: 0,
+							totalTokenBalanceUsd: 0
+						});
 					}
-					return sum; // Skip duplicates
-				}, ethers.BigNumber.from(0));
-				const totalTokens = ethers.utils.formatUnits(totalInputs.add(totalOutputs), tokenDecimals);
-				const totalVaults = uniqueEntries.size;
-				const totalValueUsd = parseFloat(totalTokens) * currentTokenPrice;
+				});
 
-				if (uniqueTokensMap.has(tokenAddress)) {
-					const tokenData = uniqueTokensMap.get(tokenAddress)!;
-					tokenData.totalVaults = totalVaults;
-					tokenData.totalTokenBalance = parseFloat(totalTokens);
-					tokenData.totalTokenBalanceUsd = totalValueUsd;
+				for (const uniqueToken of Array.from(uniqueTokensMap.values())) {
+					const { decimals: tokenDecimals, address: tokenAddress } = uniqueToken;
+
+					const uniqueEntries = new Set<string>();
+
+					const totalInputsVaults = raindexOrdersWithTrades
+						.flatMap((order) => order.order.inputs)
+						.filter((input) => input.token.address === tokenAddress);
+
+					const totalOutputsVaults = raindexOrdersWithTrades
+						.flatMap((order) => order.order.outputs)
+						.filter((output) => output.token.address === tokenAddress);
+
+					const totalInputs = totalInputsVaults.reduce((sum, input) => {
+						const uniqueKey = input.id;
+						uniqueEntries.add(uniqueKey); // Track all inputs
+						return sum.add(ethers.BigNumber.from(input.balance));
+					}, ethers.BigNumber.from(0));
+
+					const totalOutputs = totalOutputsVaults.reduce((sum, output) => {
+						const uniqueKey = output.id;
+						if (!uniqueEntries.has(uniqueKey)) {
+							// Only add if it's not already counted in inputs
+							uniqueEntries.add(uniqueKey);
+							return sum.add(ethers.BigNumber.from(output.balance));
+						}
+						return sum; // Skip duplicates
+					}, ethers.BigNumber.from(0));
+					const totalTokens = ethers.utils.formatUnits(totalInputs.add(totalOutputs), tokenDecimals);
+					const totalVaults = uniqueEntries.size;
+					const totalValueUsd = parseFloat(totalTokens) * currentTokenPrice;
+
+					if (uniqueTokensMap.has(tokenAddress)) {
+						const tokenData = uniqueTokensMap.get(tokenAddress)!;
+						tokenData.totalVaults = totalVaults;
+						tokenData.totalTokenBalance = parseFloat(totalTokens);
+						tokenData.totalTokenBalanceUsd = totalValueUsd;
+					}
 				}
+
+				return Array.from(uniqueTokensMap.values()).sort(
+					(a, b) => b.totalTokenBalanceUsd - a.totalTokenBalanceUsd
+				);
+			} catch {
+				return [];
 			}
-
-			return Array.from(uniqueTokensMap.values()).sort(
-				(a, b) => b.totalTokenBalanceUsd - a.totalTokenBalanceUsd
-			);
 		}
 
-		function getVaultType(isInput: boolean, isOutput: boolean): string {
-			if (isInput && isOutput) return 'Both';
-			if (isInput) return 'Input';
-			if (isOutput) return 'Output';
-			return 'Unknown';
+		const allVaults: VaultAnalyticsData[] = prepareVaultBalanceData(raindexOrdersWithTrades);
+		const topVaultsWithOthers: VaultAnalyticsData[] = prepareTopVaultBalancesWithOthers(allVaults);
+		const topVaultsByVolumeData: VaultAnalyticsData[] = prepareTopVaultsByVolumeWithOthers(vaultVolumeData);
+		const tokenVaultBalancesArray: VaultAnalyticsToken[] = prepareTokenVaultBalances(raindexOrdersWithTrades);
+
+		const totalVolume = topVaultsByVolumeData.reduce((acc, vault) => acc + vault.volume, 0);
+		const totalBalance = topVaultsWithOthers.reduce((acc, vault) => acc + vault.balance, 0);
+		const activeRatio = totalVolume > 0 ? (totalBalance / totalVolume) * 100 : 0;
+
+		if (topVaultsWithOthers.length > 0) {
+			createBarChart(topVaultsByBalance, topVaultsWithOthers, {
+				title: 'Top Vaults by Balance',
+				chartType: 'bar',
+				yField: 'balance',
+				xField: 'name',
+				yLabel: 'Balance',
+				width: 900,
+				height: 500,
+				filterFn: () => true,
+				colorDomain: topVaultsWithOthers.map((vault) => vault.name),
+				colorRange: generateColorPalette(topVaultsWithOthers.length)
+			});
+		} else {
+			topVaultsByBalance = setDefaultHtml(topVaultsByBalance);
 		}
 
-		const allVaults = prepareVaultBalanceData(raindexOrdersWithTrades).allVaults;
-		const topVaultsWithOthers = prepareTopVaultBalancesWithOthers(allVaults);
-		const topVaultsByVolumeData = prepareTopVaultsByVolumeWithOthers(vaultVolumeData);
-		const tokenVaultBalancesArray = prepareTokenVaultBalances(raindexOrdersWithTrades);
+		if (topVaultsByVolumeData.length > 0) {
+			createBarChart(topVaultsByVolume, topVaultsByVolumeData, {
+				title: 'Top Vaults by Volume',
+				chartType: 'bar',
+				yField: 'volume',
+				xField: 'name',
+				yLabel: 'Volume',
+				width: 900,
+				height: 500,
+				filterFn: () => true,
 
-		const activeRatio = (
-			(topVaultsWithOthers.reduce((acc, vault) => {
-				return acc + vault.balance;
-			}, 0) /
-				topVaultsByVolumeData.reduce((acc, vault) => acc + vault.volume, 0)) *
-			100
-		).toFixed(2);
-
-		createBarChart(topVaultsByBalance, topVaultsWithOthers, {
-			title: 'Top Vaults by Balance',
-			chartType: 'bar',
-			yField: 'balance',
-			xField: 'name',
-			yLabel: 'Balance',
-			width: 900,
-			height: 500,
-			filterFn: () => true,
-			colorDomain: topVaultsWithOthers.map((vault) => vault.name),
-			colorRange: generateColorPalette(topVaultsWithOthers.length)
-		});
-
-		createBarChart(topVaultsByVolume, topVaultsByVolumeData, {
-			title: 'Top Vaults by Volume',
-			chartType: 'bar',
-			yField: 'volume',
-			xField: 'name',
-			yLabel: 'Volume',
-			width: 900,
-			height: 500,
-			filterFn: () => true,
-
-			colorDomain: topVaultsByVolumeData.map((vault) => vault.name),
-			colorRange: generateColorPalette(topVaultsByVolumeData.length)
-		});
-
-		createBarChart(tokenVaultBalances, tokenVaultBalancesArray, {
-			title: 'Top Tokens by Balance',
-			chartType: 'bar',
-			yField: 'totalTokenBalance',
-			xField: 'symbol',
-			yLabel: 'Balance',
-			width: 900,
-			height: 500,
-			filterFn: () => true,
-			colorDomain: tokenVaultBalancesArray.map((vault) => vault.symbol),
-			colorRange: generateColorPalette(tokenVaultBalancesArray.length)
-		});
-
-		createBarChart(tokenVaultBalancesUsd, tokenVaultBalancesArray, {
-			title: 'Top Tokens by Balance in USD',
-			chartType: 'bar',
-			yField: 'totalTokenBalanceUsd',
-			xField: 'symbol',
-			yLabel: 'Balance in USD',
-			width: 900,
-			height: 500,
-			filterFn: () => true,
-			tickPrefix: '$',
-			colorDomain: tokenVaultBalancesArray.map((vault) => vault.symbol),
-			colorRange: generateColorPalette(tokenVaultBalancesArray.length)
-		});
+				colorDomain: topVaultsByVolumeData.map((vault) => vault.name),
+				colorRange: generateColorPalette(topVaultsByVolumeData.length)
+			});
+		} else {
+			topVaultsByVolume = setDefaultHtml(topVaultsByVolume);
+		}
+		
+		if(tokenVaultBalancesArray.length > 0){
+			createBarChart(tokenVaultBalances, tokenVaultBalancesArray, {
+				title: 'Top Tokens by Balance',
+				chartType: 'bar',
+				yField: 'totalTokenBalance',
+				xField: 'symbol',
+				yLabel: 'Balance',
+				width: 900,
+				height: 500,
+				filterFn: () => true,
+				colorDomain: tokenVaultBalancesArray.map((vault) => vault.symbol),
+				colorRange: generateColorPalette(tokenVaultBalancesArray.length)
+			});
+			createBarChart(tokenVaultBalancesUsd, tokenVaultBalancesArray, {
+				title: 'Top Tokens by Balance in USD',
+				chartType: 'bar',
+				yField: 'totalTokenBalanceUsd',
+				xField: 'symbol',
+				yLabel: 'Balance in USD',
+				width: 900,
+				height: 500,
+				filterFn: () => true,
+				tickPrefix: '$',
+				colorDomain: tokenVaultBalancesArray.map((vault) => vault.symbol),
+				colorRange: generateColorPalette(tokenVaultBalancesArray.length)
+			});
+		} else {
+			tokenVaultBalances = setDefaultHtml(tokenVaultBalances);
+			tokenVaultBalancesUsd = setDefaultHtml(tokenVaultBalancesUsd);
+		}
 
 		createVaultHealthMetrics(vaultHealthMetrics, {
-			totalOrders: raindexOrdersWithTrades.length,
-			totalTokenBalance: tokenVaultBalancesArray.filter(
+			totalOrders: raindexOrdersWithTrades.length > 0 ? raindexOrdersWithTrades.length : 0,
+			totalTokenBalance: tokenVaultBalancesArray.length > 0 ? tokenVaultBalancesArray.filter(
 				(vault) => vault.address === tokenAddress
-			)[0].totalTokenBalance,
-			totalTokenBalanceUsd: tokenVaultBalancesArray.filter(
+			)[0].totalTokenBalance : 0,
+			totalTokenBalanceUsd: tokenVaultBalancesArray.length > 0 ? tokenVaultBalancesArray.filter(
 				(vault) => vault.address === tokenAddress
-			)[0].totalTokenBalanceUsd,
-			activeRatio: parseFloat(activeRatio)
+			)[0].totalTokenBalanceUsd : 0,
+			activeRatio: activeRatio
 		});
-	}
-
-	function formatBalance(balance: number): string {
-		if (balance >= 1_000_000) return `${(balance / 1_000_000).toFixed(2)}M`;
-		if (balance >= 1_000) return `${(balance / 1_000).toFixed(2)}K`;
-		return balance.toFixed(2);
 	}
 
 	function createBarChart(

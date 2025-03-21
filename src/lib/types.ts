@@ -9,6 +9,24 @@ import type {
 	ConfigSource
 } from '@rainlanguage/orderbook/js_api';
 
+export interface VaultAnalyticsToken {
+	address: string;
+	symbol: string;
+	decimals: number;
+	totalVaults: number;
+	totalTokenBalance: number;
+	totalTokenBalanceUsd: number;
+}
+
+export interface VaultAnalyticsData {
+	vaultId: string;
+	name: string;
+	tokenSymbol: string;
+	tokenAddress: string;
+	tokenDecimals: number;
+	balance: number;
+	volume: number;
+}
 export interface MarketAnalyticsData {
 	plotData: MarketAnalytics[];
 	totalRaindexTrades: number;
