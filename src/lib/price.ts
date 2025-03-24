@@ -104,7 +104,7 @@ export const fetchDexTokenPrice = async (
 				ethers.utils.formatUnits(data.assumedAmountOut, quoteTokenDecimals)
 			);
 			const price = amountOutFormatted / amountInFormatted;
-			return parseFloat(price.toFixed(4));
+			return parseFloat(price.toFixed(18));
 		}
 
 		return 0;
