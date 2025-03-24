@@ -15,6 +15,8 @@
 		InfiniteData<{ orders: MarketDepthOrder[] }, unknown>,
 		Error
 	>;
+	export let baseTokenSymbol: string;
+	export let quoteTokenSymbol: string;
 </script>
 
 <div>
@@ -24,9 +26,12 @@
 			<Table class="w-full border-collapse text-left">
 				<TableHead>
 					<TableHeadCell class="px-4 py-2 text-center">#</TableHeadCell>
-					<TableHeadCell class="px-4 py-2 text-center">Max Output</TableHeadCell>
-					<TableHeadCell class="px-4 py-2 text-center">Input Amount</TableHeadCell>
-					<TableHeadCell class="px-4 py-2 text-center">Ratio</TableHeadCell>
+					<TableHeadCell class="px-4 py-2 text-center">Max Output {quoteTokenSymbol}</TableHeadCell>
+					<TableHeadCell class="px-4 py-2 text-center">Input Amount {baseTokenSymbol}</TableHeadCell
+					>
+					<TableHeadCell class="px-4 py-2 text-center"
+						>Ratio {baseTokenSymbol}/{quoteTokenSymbol}</TableHeadCell
+					>
 					<TableHeadCell class="px-4 py-2 text-center">Price</TableHeadCell>
 					<TableHeadCell class="px-4 py-2 text-center">Price Distance</TableHeadCell>
 					<TableHeadCell class="px-4 py-2 text-center">Order Hash</TableHeadCell>
@@ -64,7 +69,8 @@
 										>{parseFloat(order.ratio).toFixed(18)}</TableBodyCell
 									>
 									<TableBodyCell class="px-4 py-2 text-center">{order.price}</TableBodyCell>
-									<TableBodyCell class="px-4 py-2 text-center">{order.priceDistance}%</TableBodyCell
+									<TableBodyCell class="px-4 py-2 text-center"
+										>{parseFloat(order.priceDistance).toFixed(2)}%</TableBodyCell
 									>
 									<TableBodyCell class="px-4 py-2 text-center text-blue-500 underline">
 										<a
@@ -87,9 +93,13 @@
 			<Table class="w-full border-collapse text-left">
 				<TableHead>
 					<TableHeadCell class="px-4 py-2 text-center">#</TableHeadCell>
-					<TableHeadCell class="px-4 py-2 text-center">Max Output</TableHeadCell>
-					<TableHeadCell class="px-4 py-2 text-center">Input Amount</TableHeadCell>
-					<TableHeadCell class="px-4 py-2 text-center">Ratio</TableHeadCell>
+					<TableHeadCell class="px-4 py-2 text-center">Max Output {baseTokenSymbol}</TableHeadCell>
+					<TableHeadCell class="px-4 py-2 text-center"
+						>Input Amount {quoteTokenSymbol}</TableHeadCell
+					>
+					<TableHeadCell class="px-4 py-2 text-center"
+						>Ratio {baseTokenSymbol}/{quoteTokenSymbol}</TableHeadCell
+					>
 					<TableHeadCell class="px-4 py-2 text-center">Price</TableHeadCell>
 					<TableHeadCell class="px-4 py-2 text-center">Price Distance</TableHeadCell>
 					<TableHeadCell class="px-4 py-2 text-center">Order Hash</TableHeadCell>
@@ -127,7 +137,8 @@
 										>{parseFloat(order.ratio).toFixed(18)}</TableBodyCell
 									>
 									<TableBodyCell class="px-4 py-2 text-center">{order.price}</TableBodyCell>
-									<TableBodyCell class="px-4 py-2 text-center">{order.priceDistance}%</TableBodyCell
+									<TableBodyCell class="px-4 py-2 text-center"
+										>{parseFloat(order.priceDistance).toFixed(2)}%</TableBodyCell
 									>
 									<TableBodyCell class="px-4 py-2 text-center text-blue-500 underline">
 										<a
