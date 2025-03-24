@@ -26,10 +26,8 @@
 
 	const tokenSymbol = tokenConfig[$tokenSlug.toUpperCase()]?.symbol;
 	const tokenAddress = tokenConfig[$tokenSlug.toUpperCase()]?.address;
-	const weekInSeconds = 60 * 60 * 24 * 7;
-	const monthInSeconds = 60 * 60 * 24 * 30;
-	const currentTimeInSeconds = new Date().getTime() / 1000;
-
+	
+	let initFlag = false;
 	let activeTab = 'Market Analytics';
 	let loading = true;
 	let analyticsDataLoaded = false;
@@ -43,10 +41,10 @@
 
 	let historicalTrades: HTMLElement;
 	let historicalVolume: HTMLElement;
-	let weeklyTrades: HTMLElement;
-	let weeklyVolume: HTMLElement;
-	let weeklyTradesByPercentage: HTMLElement;
-	let weeklyVolumeByPercentage: HTMLElement;
+	let periodicTrades: HTMLElement;
+	let periodicVolume: HTMLElement;
+	let periodicTradesByPercentage: HTMLElement;
+	let periodicVolumeByPercentage: HTMLElement;
 	let totalTradesByType: HTMLElement;
 	let totalVolumeByType: HTMLElement;
 	let topOrdersByTradesCount: HTMLElement;
@@ -62,6 +60,12 @@
 	let tokenVaultBalancesUsd: HTMLElement;
 	let vaultHealthMetrics: HTMLElement;
 
+	// Default date range is 7 days
+	let fromTimestamp: string;
+
+	// Default date range is current date
+	let toTimestamp: string;
+	
 	async function fetchAndPlotData() {
 		if (dataFetchInProgress) return;
 
@@ -69,14 +73,15 @@
 			dataFetchInProgress = true;
 			loading = true;
 			raindexOrdersWithTrades = await fetchAllOrderWithTrades();
-
 			allTrades = await analyzeLiquidity(
 				$network,
 				$tokenSlug.toUpperCase(),
-				currentTimeInSeconds - monthInSeconds,
-				currentTimeInSeconds
+				new Date(fromTimestamp).getTime() / 1000,
+				new Date(toTimestamp).getTime() / 1000
 			);
+
 			vaultVolume = await prepareVaultVolumeData(raindexOrdersWithTrades);
+		
 			const { currentPrice } = await getTokenPriceUsd(tokenAddress, tokenSymbol);
 			currentTokenPrice = currentPrice;
 
@@ -254,15 +259,15 @@
 
 		function prepareOrdersAdderPerDay(raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]) {
 			try {
-				const fromTimestamp = currentTimeInSeconds - monthInSeconds;
-				const toTimestamp = currentTimeInSeconds;
+				const fromUnixTimestamp = new Date(fromTimestamp).getTime() / 1000;
+				const toUnixTimestamp = new Date(toTimestamp).getTime() / 1000;
 
 				const ordersPerDay: { [key: string]: { ordersCount: number; tradesCount: number } } = {};
 
 				// Initialize dates with 0 orders for the entire range
 				for (
-					let d = new Date(fromTimestamp * 1000);
-					d <= new Date(toTimestamp * 1000);
+					let d = new Date(fromUnixTimestamp * 1000);
+					d <= new Date(toUnixTimestamp * 1000);
 					d.setDate(d.getDate() + 1)
 				) {
 					const dateStr = new Date(d).toISOString().split('T')[0];
@@ -276,8 +281,8 @@
 				raindexOrdersWithTrades
 					.filter(
 						(order) =>
-							parseFloat(order.order.timestampAdded) >= fromTimestamp &&
-							parseFloat(order.order.timestampAdded) <= toTimestamp
+							parseFloat(order.order.timestampAdded) >= fromUnixTimestamp &&
+							parseFloat(order.order.timestampAdded) <= toUnixTimestamp
 					)
 					.forEach((order) => {
 						const date = new Date(parseFloat(order.order.timestampAdded) * 1000)
@@ -290,8 +295,8 @@
 					.flatMap((order) => order.order.trades)
 					.filter(
 						(trade) =>
-							parseFloat(trade.tradeEvent.transaction.timestamp) >= fromTimestamp &&
-							parseFloat(trade.tradeEvent.transaction.timestamp) <= toTimestamp
+							parseFloat(trade.tradeEvent.transaction.timestamp) >= fromUnixTimestamp &&
+							parseFloat(trade.tradeEvent.transaction.timestamp) <= toUnixTimestamp
 					)
 					.forEach((trade) => {
 						const date = new Date(parseFloat(trade.tradeEvent.transaction.timestamp) * 1000)
@@ -312,14 +317,14 @@
 
 		function prepareUniqueOrderOwners(raindexOrdersWithTrades: OrderListOrderWithSubgraphName[]) {
 			try {
-				const fromTimestamp = currentTimeInSeconds - monthInSeconds;
-				const toTimestamp = currentTimeInSeconds;
+				const fromUnixTimestamp = new Date(fromTimestamp).getTime() / 1000;
+				const toUnixTimestamp = new Date(toTimestamp).getTime() / 1000;
 				const dailyOwners: { [key: string]: Set<string> } = {};
 
 				// Initialize dates with 0 orders for the entire range
 				for (
-					let d = new Date(fromTimestamp * 1000);
-					d <= new Date(toTimestamp * 1000);
+					let d = new Date(fromUnixTimestamp * 1000);
+					d <= new Date(toUnixTimestamp * 1000);
 					d.setDate(d.getDate() + 1)
 				) {
 					const dateStr = new Date(d).toISOString().split('T')[0];
@@ -338,12 +343,12 @@
 							: null;
 
 					if (
-						parseFloat(order.order.timestampAdded) >= fromTimestamp &&
-						parseFloat(order.order.timestampAdded) <= toTimestamp
+						parseFloat(order.order.timestampAdded) >= fromUnixTimestamp &&
+						parseFloat(order.order.timestampAdded) <= toUnixTimestamp
 					) {
 						for (
 							let d = new Date(orderAddedDate);
-							d <= new Date(toTimestamp * 1000);
+							d <= new Date(toUnixTimestamp * 1000);
 							d.setDate(d.getDate() + 1)
 						) {
 							const dateStr = new Date(d).toISOString().split('T')[0];
@@ -719,7 +724,7 @@
 
 		createBarChart(historicalTrades, plotData, {
 			title: 'Historical Trade Distribution',
-			chartType: 'weekly',
+			chartType: 'periodic',
 			yField: 'totalTrades',
 			secondaryYField: 'raindexTrades',
 			yLabel: 'Trades',
@@ -731,7 +736,7 @@
 
 		createBarChart(historicalVolume, plotData, {
 			title: 'Historical Volume Distribution',
-			chartType: 'weekly',
+			chartType: 'periodic',
 			yField: 'totalVolume',
 			secondaryYField: 'raindexVolume',
 			yLabel: 'Volume',
@@ -742,18 +747,18 @@
 			tickPrefix: '$'
 		});
 
-		createBarChart(weeklyTrades, plotData, {
-			title: 'Weekly Trade Distribution',
-			chartType: 'weekly',
+		createBarChart(periodicTrades, plotData, {
+			title: 'Trade Distribution',
+			chartType: 'periodic',
 			yField: 'totalTrades',
 			secondaryYField: 'raindexTrades',
 			yLabel: 'Trades',
 			tickPrefix: ''
 		});
 
-		createBarChart(weeklyVolume, plotData, {
-			title: 'Weekly Volume Distribution',
-			chartType: 'weekly',
+		createBarChart(periodicVolume, plotData, {
+			title: 'Volume Distribution',
+			chartType: 'periodic',
 			yField: 'totalVolume',
 			secondaryYField: 'raindexVolume',
 			yLabel: 'Volume',
@@ -761,17 +766,17 @@
 			tickPrefix: '$'
 		});
 
-		const weeklyTradesByPercentageData = plotData
-			.filter((trade: MarketAnalytics) => trade.timestamp > Date.now() / 1000 - weekInSeconds)
+		const periodicTradesByPercentageData = plotData
+			.filter((trade: MarketAnalytics) => trade.timestamp > new Date(fromTimestamp).getTime() / 1000)
 			.map((trade: MarketAnalytics) => ({
 				date: trade.date,
 				totalTradesPercentage: (trade.totalTrades / trade.totalTrades) * 100,
 				raindexTradesPercentage: (trade.raindexTrades / trade.totalTrades) * 100
 			}));
 
-		createBarChart(weeklyTradesByPercentage, weeklyTradesByPercentageData, {
-			title: 'Weekly Trade Distribution By Percentage',
-			chartType: 'weekly',
+		createBarChart(periodicTradesByPercentage, periodicTradesByPercentageData, {
+			title: 'Trade Distribution By Percentage',
+			chartType: 'periodic',
 			yField: 'totalTradesPercentage',
 			secondaryYField: 'raindexTradesPercentage',
 			yLabel: 'Trades',
@@ -779,17 +784,17 @@
 			tickSuffix: '%'
 		});
 
-		const weeklyVolumeByPercentageData = plotData
-			.filter((trade: MarketAnalytics) => trade.timestamp > Date.now() / 1000 - weekInSeconds)
+		const periodicVolumeByPercentageData = plotData
+			.filter((trade: MarketAnalytics) => trade.timestamp > new Date(fromTimestamp).getTime() / 1000)
 			.map((trade: MarketAnalytics) => ({
 				date: trade.date,
 				totalVolumePercentage: (trade.totalVolume / trade.totalVolume) * 100,
 				raindexVolumePercentage: (trade.raindexVolume / trade.totalVolume) * 100
 			}));
 
-		createBarChart(weeklyVolumeByPercentage, weeklyVolumeByPercentageData, {
-			title: 'Weekly Volume Distribution By Percentage',
-			chartType: 'weekly',
+		createBarChart(periodicVolumeByPercentage, periodicVolumeByPercentageData, {
+			title: 'Volume Distribution By Percentage',
+			chartType: 'periodic',
 			yField: 'totalVolumePercentage',
 			secondaryYField: 'raindexVolumePercentage',
 			yLabel: 'Volume',
@@ -1115,7 +1120,7 @@
 		data: any[],
 		options: {
 			title: string;
-			chartType: 'bar' | 'weekly';
+			chartType: 'bar' | 'periodic';
 			xField?: string;
 			yField: string;
 			secondaryYField?: string;
@@ -1146,15 +1151,15 @@
 			height = 500,
 			colorDomain = ['Total', 'Raindex'],
 			colorRange = ['rgb(38, 128, 217)', 'rgb(11, 38, 65)'],
-			filterFn = chartType === 'weekly'
-				? (item) => item.timestamp > Date.now() / 1000 - weekInSeconds
+			filterFn = chartType === 'periodic'
+				? (item) => item.timestamp > new Date(fromTimestamp).getTime() / 1000
 				: () => true,
 			formatYTicks = chartType === 'bar',
 			tickPrefix = '',
 			tickSuffix = ''
 		} = options;
 
-		// Filter data if needed (for weekly charts)
+		// Filter data if needed (for periodic charts)
 		const filteredData = filterFn ? data.filter(filterFn) : data;
 
 		// Format function for y-axis ticks
@@ -1185,7 +1190,7 @@
 				})
 			);
 		} else {
-			// weekly chart
+			// periodic chart
 			marks.push(
 				Plot.barY(filteredData, {
 					x: xField,
@@ -1244,7 +1249,7 @@
 				tickPadding: 5
 			},
 			marginLeft: 70,
-			marginBottom: chartType === 'weekly' ? 60 : undefined
+			marginBottom: chartType === 'periodic' ? 60 : undefined
 		});
 		element.appendChild(plot);
 	}
@@ -1585,29 +1590,67 @@
 
 		element.appendChild(plot);
 	}
+
+	function applyDateFilter() {
+		initFlag = true;
+		fetchAndPlotData();
+	}
 </script>
 
-<div class="flex rounded-t-lg border-b border-gray-300 bg-gray-100">
-	{#each ['Market Analytics', 'Order Analytics', 'Vault Analytics'] as tab}
-		<button
-			class="rounded-t-lg border-b-2 border-gray-300 px-6 py-3 text-sm font-medium transition-all {activeTab ===
-			tab
-				? 'border-indigo-500 bg-white font-semibold text-indigo-600'
-				: 'border-transparent hover:border-gray-400 hover:text-gray-600'}"
-			on:click={() => {
-				activeTab = tab;
-				if (tab === 'Market Analytics' && marketData) {
-					// Force chart recreation on tab switch
-					setTimeout(() => renderMarketDataCharts(marketData), 0);
-				}
-			}}
-		>
-			{tab}
-		</button>
-	{/each}
+<div class="border-b border-gray-200 bg-white">
+	<div class="flex items-center justify-between">
+		<div class="flex">
+			{#each ['Market Analytics', 'Order Analytics', 'Vault Analytics'] as tab}
+				<button
+					class="border-b-2 px-6 py-4 font-medium {activeTab === tab
+						? 'border-indigo-600 text-indigo-600'
+						: 'border-transparent text-gray-600 hover:text-gray-900'}"
+					on:click={() => {
+						activeTab = tab;
+						if (tab === 'Market Analytics' && marketData) {
+							setTimeout(() => renderMarketDataCharts(marketData), 0);
+						}
+					}}
+				>
+					{tab}
+				</button>
+			{/each}
+		</div>
+
+		<div class="mr-4 flex items-center space-x-4">
+			<div class="flex items-center">
+				<span class="mr-2 text-sm">From:</span>
+				<input
+					type="datetime-local"
+					id="from-timestamp"
+					bind:value={fromTimestamp}
+					class="rounded border px-2 py-1"
+				/>
+			</div>
+			<div class="flex items-center">
+				<span class="mr-2 text-sm">To:</span>
+				<input
+					type="datetime-local"
+					id="to-timestamp"
+					bind:value={toTimestamp}
+					class="rounded border px-2 py-1"
+				/>
+			</div>
+			<button
+				on:click={applyDateFilter}
+				class="rounded bg-blue-500 px-4 py-1 text-white hover:bg-blue-600"
+			>
+				Apply
+			</button>
+		</div>
+	</div>
 </div>
 
-{#if loading}
+{#if !fromTimestamp || !toTimestamp || !initFlag}
+	<div class="mt-10 flex flex-col items-center justify-start">
+		<p class="mt-3 text-lg font-medium text-gray-600">Please select a date range</p>
+	</div>
+{:else if loading}
 	<div class="mt-10 flex flex-col items-center justify-start">
 		<div
 			class="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-indigo-600"
@@ -1631,21 +1674,21 @@
 				<div class="flex flex-col md:flex-row">
 					<div
 						class="m-2 w-full rounded-lg shadow-lg md:w-1/2 md:p-2"
-						bind:this={weeklyTrades}
+						bind:this={periodicTrades}
 					></div>
 					<div
 						class="m-2 w-full rounded-lg shadow-lg md:w-1/2 md:p-2"
-						bind:this={weeklyVolume}
+						bind:this={periodicVolume}
 					></div>
 				</div>
 				<div class="flex flex-col md:flex-row">
 					<div
 						class="m-2 w-full rounded-lg shadow-lg md:w-1/2 md:p-2"
-						bind:this={weeklyTradesByPercentage}
+						bind:this={periodicTradesByPercentage}
 					></div>
 					<div
 						class="m-2 w-full rounded-lg shadow-lg md:w-1/2 md:p-2"
-						bind:this={weeklyVolumeByPercentage}
+						bind:this={periodicVolumeByPercentage}
 					></div>
 				</div>
 				<div class="flex flex-row">
