@@ -20,8 +20,11 @@
 
 	const { settings, tokenSlug, network } = $page.data.stores;
 
+	let orderBookAddress = $settings.orderbooks[$network].address;
 	let baseTokenAddress = tokenConfig[$tokenSlug].address;
 	let quoteTokenAddress = '';
+	let baseTokenSymbol = tokenConfig[$tokenSlug].symbol;
+	let quoteTokenSymbol = '';
 	let baseTokenDecimals = 18;
 	let quoteTokenDecimals = 18;
 	let networkRpc: string = '';
@@ -189,15 +192,15 @@
 					orders[i].ratio = ethers.utils.formatEther(quoteSpecs[i].ratio).toString();
 					if (orders[i].type === 'buy') {
 						const price = parseFloat(ethers.utils.formatEther(quoteSpecs[i].ratio));
-						orders[i]['price'] = (1 / price).toFixed(18);
+						orders[i]['price'] = (1 / price).toFixed(quoteTokenDecimals);
 						orders[i]['priceDistance'] = (((quoteTokenPrice - price) / price) * 100)
-							.toFixed(18)
+							.toFixed(2)
 							.toString();
 					} else {
 						const price = parseFloat(ethers.utils.formatEther(quoteSpecs[i].ratio).toString());
-						orders[i]['price'] = price.toFixed(18);
+						orders[i]['price'] = price.toFixed(baseTokenDecimals);
 						orders[i]['priceDistance'] = (((baseTokenPrice - price) / price) * 100)
-							.toFixed(18)
+							.toFixed(2)
 							.toString();
 					}
 				} else {
@@ -304,6 +307,14 @@
 		);
 
 		try {
+			quoteTokenSymbol = await new ethers.Contract(
+				quoteTokenAddress,
+				[
+					'function decimals() external view returns (uint8)',
+					'function symbol() external view returns (string)'
+				],
+				networkProvider
+			).symbol();
 			await interpreterContract.eval3(
 				currentDecodedOrder.evaluable.store,
 				ethers.BigNumber.from(
@@ -356,11 +367,25 @@
 				bind:value={networkRpc}
 			/>
 		</div>
+		<div>
+			<label for="orderbook-address-select" class="block font-semibold">Orderbook Address:</label>
+			<input
+				type="text"
+				placeholder="Optional: Orderbook Address"
+				class="mt-2 w-full rounded border border-gray-300 p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+				bind:value={orderBookAddress}
+			/>
+		</div>
 	</div>
 
 	{#if $network && baseTokenAddress && quoteTokenAddress}
 		<div class="rounded-md border border-gray-300 bg-white p-5 shadow-md">
-			<MarketDepthTable {marketDepthQuery} network={$network} />
+			<MarketDepthTable
+				{marketDepthQuery}
+				network={$network}
+				{baseTokenSymbol}
+				{quoteTokenSymbol}
+			/>
 		</div>
 	{:else if !$network || !baseTokenAddress || !quoteTokenAddress}
 		<div class="rounded-md border border-gray-300 bg-white p-5 shadow-md">
