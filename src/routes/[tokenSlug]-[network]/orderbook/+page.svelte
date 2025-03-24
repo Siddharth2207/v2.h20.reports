@@ -61,7 +61,6 @@
 				quoteTokenDecimals,
 				baseTokenDecimals
 			);
-			console.log('quoteTokenPrice', quoteTokenPrice);
 			const orderQuotes = await getOrderQuotes(filteredBuySellOrders);
 
 			const filteredValidOrders: MarketDepthOrder[] = [];
