@@ -26,7 +26,7 @@
 
 	const tokenSymbol = tokenConfig[$tokenSlug.toUpperCase()]?.symbol;
 	const tokenAddress = tokenConfig[$tokenSlug.toUpperCase()]?.address;
-	
+
 	let initFlag = false;
 	let activeTab = 'Market Analytics';
 	let loading = true;
@@ -65,7 +65,7 @@
 
 	// Default date range is current date
 	let toTimestamp: string;
-	
+
 	async function fetchAndPlotData() {
 		if (dataFetchInProgress) return;
 
@@ -81,7 +81,7 @@
 			);
 
 			vaultVolume = await prepareVaultVolumeData(raindexOrdersWithTrades);
-		
+
 			const { currentPrice } = await getTokenPriceUsd(tokenAddress, tokenSymbol);
 			currentTokenPrice = currentPrice;
 
@@ -767,7 +767,9 @@
 		});
 
 		const periodicTradesByPercentageData = plotData
-			.filter((trade: MarketAnalytics) => trade.timestamp > new Date(fromTimestamp).getTime() / 1000)
+			.filter(
+				(trade: MarketAnalytics) => trade.timestamp > new Date(fromTimestamp).getTime() / 1000
+			)
 			.map((trade: MarketAnalytics) => ({
 				date: trade.date,
 				totalTradesPercentage: (trade.totalTrades / trade.totalTrades) * 100,
@@ -785,7 +787,9 @@
 		});
 
 		const periodicVolumeByPercentageData = plotData
-			.filter((trade: MarketAnalytics) => trade.timestamp > new Date(fromTimestamp).getTime() / 1000)
+			.filter(
+				(trade: MarketAnalytics) => trade.timestamp > new Date(fromTimestamp).getTime() / 1000
+			)
 			.map((trade: MarketAnalytics) => ({
 				date: trade.date,
 				totalVolumePercentage: (trade.totalVolume / trade.totalVolume) * 100,
