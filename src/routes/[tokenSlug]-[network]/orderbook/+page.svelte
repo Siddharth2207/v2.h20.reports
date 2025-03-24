@@ -61,7 +61,7 @@
 				quoteTokenDecimals,
 				baseTokenDecimals
 			);
-
+			console.log('quoteTokenPrice', quoteTokenPrice);
 			const orderQuotes = await getOrderQuotes(filteredBuySellOrders);
 
 			const filteredValidOrders: MarketDepthOrder[] = [];
@@ -190,15 +190,15 @@
 					orders[i].ratio = ethers.utils.formatEther(quoteSpecs[i].ratio).toString();
 					if (orders[i].type === 'buy') {
 						const price = parseFloat(ethers.utils.formatEther(quoteSpecs[i].ratio));
-						orders[i]['price'] = (1 / price).toFixed(4);
+						orders[i]['price'] = (1 / price).toFixed(18);
 						orders[i]['priceDistance'] = (((quoteTokenPrice - price) / price) * 100)
-							.toFixed(2)
+							.toFixed(18)
 							.toString();
 					} else {
 						const price = parseFloat(ethers.utils.formatEther(quoteSpecs[i].ratio).toString());
-						orders[i]['price'] = price.toFixed(4);
+						orders[i]['price'] = price.toFixed(18);
 						orders[i]['priceDistance'] = (((baseTokenPrice - price) / price) * 100)
-							.toFixed(2)
+							.toFixed(18)
 							.toString();
 					}
 				} else {
@@ -206,7 +206,9 @@
 					orders[i].ratio = '0';
 				}
 			}
-			return orders.filter((order) => order.maxOutput !== '0' && order.ratio !== '0');
+			return orders
+				.filter((order) => order.maxOutput !== '0' && order.ratio !== '0')
+				.sort((a, b) => parseFloat(b.priceDistance) - parseFloat(a.priceDistance));
 		} catch {
 			return [];
 		}

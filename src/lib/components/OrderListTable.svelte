@@ -635,19 +635,19 @@
 							{/if}
 
 							{#if lastTradeFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{order.order.trades.length > 0
-										? formatTimestamp(
-												parseFloat(order.order.trades[order.order.trades.length - 1].timestamp)
-											)
+								<TableBodyCell class="px-4 py-3 text-center text-sm"
+									>{order.order.trades.length > 0
+										? formatTimestamp(parseFloat(order.order.trades[0].timestamp))
 										: 'N/A'}</TableBodyCell
 								>
 							{/if}
 
 							{#if firstTradeFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm"
-									>{order.order.trades.length > 0
-										? formatTimestamp(parseFloat(order.order.trades[0].timestamp))
+								<TableBodyCell class="px-4 py-3 text-center text-sm">
+									{order.order.trades.length > 0
+										? formatTimestamp(
+												parseFloat(order.order.trades[order.order.trades.length - 1].timestamp)
+											)
 										: 'N/A'}</TableBodyCell
 								>
 							{/if}

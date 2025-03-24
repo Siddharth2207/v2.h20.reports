@@ -53,15 +53,15 @@
 								<TableBodyRow>
 									<TableBodyCell class="px-4 py-2 text-center">{index + 1}</TableBodyCell>
 									<TableBodyCell class="px-4 py-2 text-center"
-										>{parseFloat(order.maxOutput).toFixed(4)}</TableBodyCell
+										>{parseFloat(order.maxOutput).toFixed(18)}</TableBodyCell
 									>
 									<TableBodyCell class="px-4 py-2 text-center"
 										>{(parseFloat(order.maxOutput) * parseFloat(order.ratio)).toFixed(
-											4
+											18
 										)}</TableBodyCell
 									>
 									<TableBodyCell class="px-4 py-2 text-center"
-										>{parseFloat(order.ratio).toFixed(4)}</TableBodyCell
+										>{parseFloat(order.ratio).toFixed(18)}</TableBodyCell
 									>
 									<TableBodyCell class="px-4 py-2 text-center">{order.price}</TableBodyCell>
 									<TableBodyCell class="px-4 py-2 text-center">{order.priceDistance}%</TableBodyCell
@@ -116,15 +116,15 @@
 								<TableBodyRow>
 									<TableBodyCell class="px-4 py-2 text-center">{index + 1}</TableBodyCell>
 									<TableBodyCell class="px-4 py-2 text-center"
-										>{parseFloat(order.maxOutput).toFixed(4)}</TableBodyCell
+										>{parseFloat(order.maxOutput).toFixed(18)}</TableBodyCell
 									>
 									<TableBodyCell class="px-4 py-2 text-center"
 										>{(parseFloat(order.maxOutput) * parseFloat(order.ratio)).toFixed(
-											4
+											18
 										)}</TableBodyCell
 									>
 									<TableBodyCell class="px-4 py-2 text-center"
-										>{parseFloat(order.ratio).toFixed(4)}</TableBodyCell
+										>{parseFloat(order.ratio).toFixed(18)}</TableBodyCell
 									>
 									<TableBodyCell class="px-4 py-2 text-center">{order.price}</TableBodyCell>
 									<TableBodyCell class="px-4 py-2 text-center">{order.priceDistance}%</TableBodyCell
