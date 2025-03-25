@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 import { getSwap } from 'sushi';
 import { type ExtractorSupportedChainId } from 'sushi/config';
+import { RPParams } from 'sushiswap/router';
 
 export interface TokenPrice {
 	averagePrice: number;
@@ -112,3 +113,16 @@ export const fetchDexTokenPrice = async (
 		return 0;
 	}
 };
+
+export async function getRpSwap() {
+	let test: RPParams = {
+		tokenIn: `0x833589fcd6edb6e08f4c7c32d4f71b54bda02913`,
+		amountIn: BigInt(1),
+		tokenOut: `0x833589fcd6edb6e08f4c7c32d4f71b54bda02913`,
+		amountOutMin: BigInt(2),
+		to: `0x833589fcd6edb6e08f4c7c32d4f71b54bda02913`,
+		routeCode: `0x123445`,
+		data: `0x123345`
+	};
+	console.log(test);
+}
