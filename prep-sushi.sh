@@ -2,6 +2,8 @@
 
 set -euxo pipefail
 
+pnpm i -g pnpm
+pnpm -v
 git submodule update --init --recursive
 
 (cd lib/sushiswap && pnpm install --frozen-lockfile)
