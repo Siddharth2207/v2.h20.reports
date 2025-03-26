@@ -5,7 +5,8 @@
 		ClipboardListSolid,
 		DesktopPcSolid,
 		BookOpenOutline,
-		GearSolid
+		GearSolid,
+		ColumnSolid
 	} from 'flowbite-svelte-icons';
 
 	export let network: string;
@@ -48,6 +49,17 @@
 		</SidebarGroup>
 
 		<SidebarGroup class="gap-4 p-2">
+			<SidebarItem label="" href="/{tokenSlug}-{network}/dashboard">
+				<svelte:fragment slot="icon">
+					<ColumnSolid class="h-5 w-5" />
+					<span class="px-3 text-base text-gray-600 hover:text-indigo-600 dark:text-white"
+						>Dashboard</span
+					>
+				</svelte:fragment>
+			</SidebarItem>
+		</SidebarGroup>
+
+		<SidebarGroup class="gap-4 p-2">
 			<SidebarItem label="" href="/{tokenSlug}-{network}/solverlogs">
 				<svelte:fragment slot="icon">
 					<DesktopPcSolid class="h-5 w-5" />
@@ -79,5 +91,6 @@
 				</svelte:fragment>
 			</SidebarItem>
 		</SidebarGroup>
+
 	</SidebarWrapper>
 </Sidebar>
