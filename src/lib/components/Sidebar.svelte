@@ -91,6 +91,5 @@
 				</svelte:fragment>
 			</SidebarItem>
 		</SidebarGroup>
-
 	</SidebarWrapper>
 </Sidebar>
