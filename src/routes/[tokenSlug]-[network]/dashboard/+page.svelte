@@ -386,10 +386,10 @@
 
 			// Add sections to dashboard
 			container.appendChild(ordersSection);
-			container.appendChild(balancesSection);
 			container.appendChild(volumesSection);
 			container.appendChild(totalDepositsSection);
 			container.appendChild(totalWithdrawalsSection);
+			container.appendChild(balancesSection);
 			dashboard.appendChild(container);
 		}
 
