@@ -3,16 +3,9 @@ import type {
 	OrderListVault,
 	OrderListTotalVolume
 } from '$lib/types';
-import {
-	DEFAULT_VAULTS_PAGE_SIZE
-} from '$lib/constants';
-import type {
-	SgTrade,
-	SgVaultBalanceChangeUnwrapped
-} from '@rainlanguage/orderbook/js_api';
-import {
-	getVaultBalanceChanges
-} from '@rainlanguage/orderbook/js_api';
+import { DEFAULT_VAULTS_PAGE_SIZE } from '$lib/constants';
+import type { SgTrade, SgVaultBalanceChangeUnwrapped } from '@rainlanguage/orderbook/js_api';
+import { getVaultBalanceChanges } from '@rainlanguage/orderbook/js_api';
 import { getTokenPriceUsd } from '$lib/price';
 import { ethers } from 'ethers';
 
@@ -67,11 +60,10 @@ export async function orderWithVaultBalanceChanges(
 			let currentPage = 1;
 			let hasMore = true;
 			while (hasMore) {
-				const balanceChanges = await getVaultBalanceChanges(
-					subgraphUrl,
-					vault.id,
-					{ page: currentPage, pageSize: DEFAULT_VAULTS_PAGE_SIZE }
-				);
+				const balanceChanges = await getVaultBalanceChanges(subgraphUrl, vault.id, {
+					page: currentPage,
+					pageSize: DEFAULT_VAULTS_PAGE_SIZE
+				});
 				allBalanceChanges = [...allBalanceChanges, ...balanceChanges];
 				hasMore = balanceChanges.length === DEFAULT_VAULTS_PAGE_SIZE;
 				currentPage++;
@@ -107,10 +99,7 @@ export async function getTokenPriceUsdMap(
 				if (tokenPriceUsdMap.has(output.token.address)) {
 					continue;
 				}
-				const tokenPrice = await getTokenPriceUsd(
-					output.token.address,
-					output.token?.symbol || ''
-				);
+				const tokenPrice = await getTokenPriceUsd(output.token.address, output.token?.symbol || '');
 				tokenPriceUsdMap.set(output.token.address, tokenPrice.currentPrice);
 			}
 			order.order['tokenPriceUsdMap'] = tokenPriceUsdMap;
@@ -179,9 +168,7 @@ export function calculateTotalDepositsAndWithdrawals(
 					.reduce(
 						(sum: number, change: SgVaultBalanceChangeUnwrapped) =>
 							sum +
-							parseFloat(
-								ethers.utils.formatUnits(change.amount, input.token.decimals).toString()
-							),
+							parseFloat(ethers.utils.formatUnits(change.amount, input.token.decimals).toString()),
 						0
 					);
 				input['totalWithdrawals'] = input.balanceChanges
@@ -189,9 +176,7 @@ export function calculateTotalDepositsAndWithdrawals(
 					.reduce(
 						(sum: number, change: SgVaultBalanceChangeUnwrapped) =>
 							sum +
-							parseFloat(
-								ethers.utils.formatUnits(change.amount, input.token.decimals).toString()
-							),
+							parseFloat(ethers.utils.formatUnits(change.amount, input.token.decimals).toString()),
 						0
 					);
 				input['currentVaultInputs'] =
@@ -213,9 +198,7 @@ export function calculateTotalDepositsAndWithdrawals(
 					.reduce(
 						(sum: number, change: SgVaultBalanceChangeUnwrapped) =>
 							sum +
-							parseFloat(
-								ethers.utils.formatUnits(change.amount, output.token.decimals).toString()
-							),
+							parseFloat(ethers.utils.formatUnits(change.amount, output.token.decimals).toString()),
 						0
 					);
 				output['totalWithdrawals'] = output.balanceChanges
@@ -223,9 +206,7 @@ export function calculateTotalDepositsAndWithdrawals(
 					.reduce(
 						(sum: number, change: SgVaultBalanceChangeUnwrapped) =>
 							sum +
-							parseFloat(
-								ethers.utils.formatUnits(change.amount, output.token.decimals).toString()
-							),
+							parseFloat(ethers.utils.formatUnits(change.amount, output.token.decimals).toString()),
 						0
 					);
 				output['currentVaultInputs'] =

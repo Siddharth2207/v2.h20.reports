@@ -9,20 +9,17 @@
 	} from '@rainlanguage/orderbook/js_api';
 	import OrderListTable from '$lib/components/OrderListTable.svelte';
 	import { orderActiveState } from '$lib/stores/report';
-	import {
-		getOrders,
-		getOrderTradesList
-	} from '@rainlanguage/orderbook/js_api';
+	import { getOrders, getOrderTradesList } from '@rainlanguage/orderbook/js_api';
 	import { createInfiniteQuery } from '@tanstack/svelte-query';
+	import { DEFAULT_ORDERS_PAGE_SIZE, DEFAULT_TRADES_PAGE_SIZE, tokenConfig } from '$lib/constants';
+	import type { OrderListOrderWithSubgraphName } from '$lib/types';
 	import {
-		DEFAULT_ORDERS_PAGE_SIZE,
-		DEFAULT_TRADES_PAGE_SIZE,
-		tokenConfig
-	} from '$lib/constants';
-	import type {
-		OrderListOrderWithSubgraphName,	
-	} from '$lib/types';
-	import { calculateBalanceChanges, calculateTotalDepositsAndWithdrawals, calculateTradeVolume, getTokenPriceUsdMap, orderWithVaultBalanceChanges } from '$lib/orders';
+		calculateBalanceChanges,
+		calculateTotalDepositsAndWithdrawals,
+		calculateTradeVolume,
+		getTokenPriceUsdMap,
+		orderWithVaultBalanceChanges
+	} from '$lib/orders';
 	const { activeSubgraphs, tokenSlug, network } = $page.data.stores;
 
 	let activeSubgraphsValue: MultiSubgraphArgs[] = $activeSubgraphs;
@@ -67,7 +64,11 @@
 			let filteredOrdersWithTrades: OrderListOrderWithSubgraphName[] =
 				await orderWithTrades(filteredOrders);
 			let filteredOrdersWithVaultBalanceChanges: OrderListOrderWithSubgraphName[] =
-				await orderWithVaultBalanceChanges(activeSubgraphsValue.find((subgraph: MultiSubgraphArgs) => subgraph.name === networkValue)?.url || '', filteredOrdersWithTrades);
+				await orderWithVaultBalanceChanges(
+					activeSubgraphsValue.find((subgraph: MultiSubgraphArgs) => subgraph.name === networkValue)
+						?.url || '',
+					filteredOrdersWithTrades
+				);
 			let filteredOrdersWithTokenPriceUsdMap: OrderListOrderWithSubgraphName[] =
 				await getTokenPriceUsdMap(filteredOrdersWithVaultBalanceChanges);
 			for (let order of filteredOrdersWithTokenPriceUsdMap) {

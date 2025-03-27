@@ -1,27 +1,20 @@
 <script lang="ts">
 	import { ethers } from 'ethers';
-	import type {
-		SgTrade,
-		MultiSubgraphArgs
-	} from '@rainlanguage/orderbook/js_api';
-	import {
-		getOrders,
-		getOrderTradesList,
-	} from '@rainlanguage/orderbook/js_api';
+	import type { SgTrade, MultiSubgraphArgs } from '@rainlanguage/orderbook/js_api';
+	import { getOrders, getOrderTradesList } from '@rainlanguage/orderbook/js_api';
 	import { page } from '$app/stores';
-	
-	import type {
-		OrderListOrderWithSubgraphName,
-		OrderListVault
-	} from '$lib/types';
-	import {
-		DEFAULT_ORDERS_PAGE_SIZE,
-		DEFAULT_TRADES_PAGE_SIZE,
-		tokenConfig
-	} from '$lib/constants';
+
+	import type { OrderListOrderWithSubgraphName, OrderListVault } from '$lib/types';
+	import { DEFAULT_ORDERS_PAGE_SIZE, DEFAULT_TRADES_PAGE_SIZE, tokenConfig } from '$lib/constants';
 	import { onMount } from 'svelte';
 	import { getTokenPriceUsd } from '$lib/price';
-	import { calculateTotalDepositsAndWithdrawals, calculateTradeVolume, formatBalance, getTokenPriceUsdMap, orderWithVaultBalanceChanges } from '$lib/orders';
+	import {
+		calculateTotalDepositsAndWithdrawals,
+		calculateTradeVolume,
+		formatBalance,
+		getTokenPriceUsdMap,
+		orderWithVaultBalanceChanges
+	} from '$lib/orders';
 
 	const { tokenSlug, network, activeSubgraphs } = $page.data.stores;
 	const tokenSymbol = tokenConfig[$tokenSlug.toUpperCase()]?.symbol;
@@ -59,7 +52,10 @@
 		}
 		orders = await fetchAllOrderWithTrades();
 		orders = await getTokenPriceUsdMap(orders);
-		orders = await orderWithVaultBalanceChanges($activeSubgraphs.find((subgraph: MultiSubgraphArgs) => subgraph.name === $network)?.url || '', orders);
+		orders = await orderWithVaultBalanceChanges(
+			$activeSubgraphs.find((subgraph: MultiSubgraphArgs) => subgraph.name === $network)?.url || '',
+			orders
+		);
 
 		for (let order of orders) {
 			order.order['totalVolume'] = calculateTradeVolume(order.order.trades);
@@ -479,8 +475,6 @@
 
 		return raindexOrders;
 	}
-
-	
 </script>
 
 {#if errorMessage}
