@@ -34,7 +34,6 @@
 	let errorMessage: string = '';
 	let orders: OrderListOrderWithSubgraphName[] = [];
 	let loading = true;
-	let tokenUsdPrice: number = 0;
 	let isLoading = false;
 	let isInitialized = true;
 
@@ -75,7 +74,6 @@
 		}
 		orders = calculateTotalDepositsAndWithdrawals(orders);
 
-		tokenUsdPrice = (await getTokenPriceUsd(tokenAddress, tokenSymbol)).currentPrice;
 		// Only create dashboard if element exists
 		if (dashboard) {
 			// Clear existing content
@@ -392,7 +390,6 @@
 			});
 
 			totalWithdrawalsSection.appendChild(totalWithdrawalsGrid);
-
 
 			// Add sections to dashboard
 			container.appendChild(ordersSection);
@@ -722,28 +719,30 @@
 		</h2>
 	</div>
 
-	<div class="flex flex-col gap-4 sm:flex-row">
-		<div class="flex w-full flex-col sm:w-auto">
-			<label for="from-date" class="mb-1 text-sm text-gray-600">From Date</label>
-			<input
-				id="from-date"
-				type="date"
-				bind:value={fromTimestamp}
-				on:change={handleDateChange}
-				class="w-full rounded border p-2"
-			/>
+	{#if !isInitialized}
+		<div class="flex flex-col gap-4 sm:flex-row">
+			<div class="flex w-full flex-col sm:w-auto">
+				<label for="from-date" class="mb-1 text-sm text-gray-600">From Date</label>
+				<input
+					id="from-date"
+					type="date"
+					bind:value={fromTimestamp}
+					on:change={handleDateChange}
+					class="w-full rounded border p-2"
+				/>
+			</div>
+			<div class="flex w-full flex-col sm:w-auto">
+				<label for="to-date" class="mb-1 text-sm text-gray-600">To Date</label>
+				<input
+					id="to-date"
+					type="date"
+					bind:value={toTimestamp}
+					on:change={handleDateChange}
+					class="w-full rounded border p-2"
+				/>
+			</div>
 		</div>
-		<div class="flex w-full flex-col sm:w-auto">
-			<label for="to-date" class="mb-1 text-sm text-gray-600">To Date</label>
-			<input
-				id="to-date"
-				type="date"
-				bind:value={toTimestamp}
-				on:change={handleDateChange}
-				class="w-full rounded border p-2"
-			/>
-		</div>
-	</div>
+	{/if}
 </div>
 <hr class=" w-full border-t border-gray-200" />
 {#if loading}
@@ -754,5 +753,5 @@
 		<p class="mt-3 text-lg font-medium text-gray-600">Loading...</p>
 	</div>
 {/if}
-``
+
 <div bind:this={dashboard} class="dashboard-container"></div>
