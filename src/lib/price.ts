@@ -23,7 +23,6 @@ export async function getTokenPriceUsd(tokenAddress: string, tokenSymbol: string
 		if (pairs.length === 0) {
 			return { averagePrice: 0, currentPrice: 0 };
 		}
-		console.log('pairs : ', JSON.stringify(pairs));
 
 		let currentPrice = 0;
 		let averagePrice = 0;
