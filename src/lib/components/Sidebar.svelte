@@ -69,7 +69,7 @@
 				<svelte:fragment slot="icon">
 					<ClipboardListSolid class="h-5 w-5" />
 					<span class="px-3 text-base text-gray-600 hover:text-indigo-600 dark:text-white"
-						>Order List</span
+						>Orders</span
 					>
 				</svelte:fragment>
 			</SidebarItem>

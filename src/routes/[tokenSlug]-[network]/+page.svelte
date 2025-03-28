@@ -149,7 +149,7 @@
 {/if}
 <div class="flex items-center justify-between border-b border-gray-400">
 	<h1 class="text-2xl font-bold text-gray-800">
-		{tokenSlugValue.toUpperCase()} Order List
+		{tokenSlugValue.toUpperCase()} Orders
 	</h1>
 	<div class="flex gap-3">
 		<div class="p-2 text-gray-600">
