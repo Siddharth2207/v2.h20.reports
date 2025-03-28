@@ -7,7 +7,7 @@ export interface TokenPrice {
 	currentPrice: number;
 }
 
-export async function getTokenPriceUsd(tokenAddress: string, tokenSymbol: string) {
+export async function getTokenPriceUsd(tokenAddress: string, tokenSymbol: string, network: string) {
 	try {
 		if (tokenSymbol.includes('USD')) {
 			return {
@@ -18,10 +18,12 @@ export async function getTokenPriceUsd(tokenAddress: string, tokenSymbol: string
 		const response = await fetch(`https://api.dexscreener.io/latest/dex/search?q=${tokenAddress}`);
 		const data = await response.json();
 
-		const pairs = data?.pairs || [];
+		//eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const pairs = data?.pairs.filter((pair: any) => pair.chainId === network) || [];
 		if (pairs.length === 0) {
 			return { averagePrice: 0, currentPrice: 0 };
 		}
+		console.log("pairs : ", JSON.stringify(pairs))
 
 		let currentPrice = 0;
 		let averagePrice = 0;

@@ -82,7 +82,7 @@
 
 			vaultVolume = await prepareVaultVolumeData(raindexOrdersWithTrades);
 
-			const { currentPrice } = await getTokenPriceUsd(tokenAddress, tokenSymbol);
+			const { currentPrice } = await getTokenPriceUsd(tokenAddress, tokenSymbol, $network);
 			currentTokenPrice = currentPrice;
 
 			marketData = getTradesByDay(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp);
