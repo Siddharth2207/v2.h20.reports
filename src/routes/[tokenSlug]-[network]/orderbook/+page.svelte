@@ -332,9 +332,7 @@
 	}
 </script>
 
-<div
-	class="m-2 mx-auto w-full max-w-8xl p-5 font-sans"
->
+<div class="max-w-8xl m-2 mx-auto w-full p-5 font-sans">
 	<div class="mb-5 flex flex-col items-center gap-4">
 		<h2 class="text-2xl font-bold text-gray-800">Orderbook Market Depth</h2>
 	</div>
