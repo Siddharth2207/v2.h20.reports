@@ -92,14 +92,22 @@ export async function getTokenPriceUsdMap(
 				if (tokenPriceUsdMap.has(input.token.address)) {
 					continue;
 				}
-				const tokenPrice = await getTokenPriceUsd(input.token.address, input.token?.symbol || '', order.subgraphName);
+				const tokenPrice = await getTokenPriceUsd(
+					input.token.address,
+					input.token?.symbol || '',
+					order.subgraphName
+				);
 				tokenPriceUsdMap.set(input.token.address, tokenPrice.currentPrice);
 			}
 			for (const output of order.order.outputs) {
 				if (tokenPriceUsdMap.has(output.token.address)) {
 					continue;
 				}
-				const tokenPrice = await getTokenPriceUsd(output.token.address, output.token?.symbol || '', order.subgraphName);
+				const tokenPrice = await getTokenPriceUsd(
+					output.token.address,
+					output.token?.symbol || '',
+					order.subgraphName
+				);
 				tokenPriceUsdMap.set(output.token.address, tokenPrice.currentPrice);
 			}
 			order.order['tokenPriceUsdMap'] = tokenPriceUsdMap;

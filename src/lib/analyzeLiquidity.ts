@@ -238,7 +238,11 @@ async function analyzeHyperSyncData(
 	let totalPoolTradesForDuration = 0;
 
 	const tradesAccordingToTimeStamp: TradesByTimeStamp[] = [];
-	const { currentPrice: currentTokenPrice } = await getTokenPriceUsd(token.address, token.symbol, network['label'] || '' );
+	const { currentPrice: currentTokenPrice } = await getTokenPriceUsd(
+		token.address,
+		token.symbol,
+		network['label'] || ''
+	);
 
 	for (let i = 0; i < token.poolsV2.length; i++) {
 		const poolContractAddress = token.poolsV2[i];
