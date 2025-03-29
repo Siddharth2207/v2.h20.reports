@@ -27,7 +27,6 @@
 	const tokenSymbol = tokenConfig[$tokenSlug.toUpperCase()]?.symbol;
 	const tokenAddress = tokenConfig[$tokenSlug.toUpperCase()]?.address;
 
-	let initFlag = false;
 	let activeTab = 'Market Analytics';
 	let loading = true;
 	let analyticsDataLoaded = false;
@@ -76,13 +75,12 @@
 			allTrades = await analyzeLiquidity(
 				$network,
 				$tokenSlug.toUpperCase(),
-				new Date(fromTimestamp).getTime() / 1000,
+				new Date(fromTimestamp).getTime() / 1000 - 86400 * 30,
 				new Date(toTimestamp).getTime() / 1000
 			);
-
 			vaultVolume = await prepareVaultVolumeData(raindexOrdersWithTrades);
 
-			const { currentPrice } = await getTokenPriceUsd(tokenAddress, tokenSymbol);
+			const { currentPrice } = await getTokenPriceUsd(tokenAddress, tokenSymbol, $network);
 			currentTokenPrice = currentPrice;
 
 			marketData = getTradesByDay(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp);
@@ -102,29 +100,34 @@
 		}
 	}
 
-	$: if (activeTab === 'Market Analytics') {
-		if (!analyticsDataLoaded) {
-			fetchAndPlotData();
-		} else if (marketData) {
-			setTimeout(() => renderMarketDataCharts(marketData), 0);
-		}
-	} else if (activeTab === 'Order Analytics') {
-		if (!analyticsDataLoaded) {
-			fetchAndPlotData();
-		} else {
-			setTimeout(
-				() => renderOrderDataCharts(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp),
-				0
-			);
-		}
-	} else if (activeTab === 'Vault Analytics') {
-		if (!analyticsDataLoaded) {
-			fetchAndPlotData();
-		} else {
-			setTimeout(
-				() => renderVaultsAnalytics(raindexOrdersWithTrades, vaultVolume, currentTokenPrice),
-				0
-			);
+	$: if (fromTimestamp && toTimestamp) {
+		if (!dataFetchInProgress) {
+			if (activeTab === 'Market Analytics') {
+				if (!analyticsDataLoaded) {
+					fetchAndPlotData();
+				} else if (marketData) {
+					setTimeout(() => renderMarketDataCharts(marketData), 0);
+				}
+			} else if (activeTab === 'Order Analytics') {
+				if (!analyticsDataLoaded) {
+					fetchAndPlotData();
+				} else {
+					setTimeout(
+						() =>
+							renderOrderDataCharts(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp),
+						0
+					);
+				}
+			} else if (activeTab === 'Vault Analytics') {
+				if (!analyticsDataLoaded) {
+					fetchAndPlotData();
+				} else {
+					setTimeout(
+						() => renderVaultsAnalytics(raindexOrdersWithTrades, vaultVolume, currentTokenPrice),
+						0
+					);
+				}
+			}
 		}
 	}
 
@@ -714,7 +717,7 @@
 	}
 
 	function renderMarketDataCharts(data: MarketAnalyticsData) {
-		const {
+		let {
 			plotData,
 			totalRaindexTrades,
 			totalExternalTrades,
@@ -1594,11 +1597,6 @@
 
 		element.appendChild(plot);
 	}
-
-	function applyDateFilter() {
-		initFlag = true;
-		fetchAndPlotData();
-	}
 </script>
 
 <div class="border-b border-gray-200 bg-white">
@@ -1640,17 +1638,11 @@
 					class="rounded border px-2 py-1"
 				/>
 			</div>
-			<button
-				on:click={applyDateFilter}
-				class="rounded bg-blue-500 px-4 py-1 text-white hover:bg-blue-600"
-			>
-				Apply
-			</button>
 		</div>
 	</div>
 </div>
 
-{#if !fromTimestamp || !toTimestamp || !initFlag}
+{#if !fromTimestamp || !toTimestamp}
 	<div class="mt-10 flex flex-col items-center justify-start">
 		<p class="mt-3 text-lg font-medium text-gray-600">Please select a date range</p>
 	</div>
