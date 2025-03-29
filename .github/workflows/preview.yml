@@ -25,6 +25,8 @@ jobs:
         with:
           determinate: true
       - uses: DeterminateSystems/flakehub-cache-action@main
+
+      - run: npm install -g pnpm@latest-10
       - run: ./prep-sushi.sh
 
       - name: Install Vercel CLI
