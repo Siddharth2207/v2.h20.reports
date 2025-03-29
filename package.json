@@ -5,7 +5,7 @@
 	"license": "LicenseRef-DCL-1.0",
 	"author": "H20",
 	"engines": {
-		"node": ">=20.x",
+		"node": ">=22.x",
 		"pnpm": ">=8.15.3"
 	},
 	"packageManager": "pnpm@8.15.3",
