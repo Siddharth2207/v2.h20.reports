@@ -2,8 +2,7 @@
 
 set -euxo pipefail
 
-pnpm -v
+# build the sushi package from sushiswap monorepo submodule
 git submodule update --init --recursive
-
-(cd lib/sushiswap && pnpm install)
-(cd lib/sushiswap && pnpm exec turbo run build --filter=./packages/sushi) 
+(cd lib/sushiswap && nix develop -c pnpm install --frozen-lockfile)
+(cd lib/sushiswap && nix develop -c pnpm exec turbo run build --filter=./packages/sushi) 
