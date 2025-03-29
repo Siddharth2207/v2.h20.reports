@@ -5,8 +5,10 @@
 	"license": "LicenseRef-DCL-1.0",
 	"author": "H20",
 	"engines": {
-		"node": ">=18"
+		"node": ">=22.x",
+		"pnpm": ">=8.15.3"
 	},
+	"packageManager": "pnpm@8.15.3",
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
@@ -34,7 +36,8 @@
 		"svelte-markdown": "^0.4.1",
 		"viem": "^2.21.51",
 		"wagmi": "^2.14.7",
-		"zod": "^3.24.1"
+		"zod": "^3.24.1",
+		"sushiswap": "./lib/sushiswap/packages/sushi"
 	},
 	"devDependencies": {
 		"@rollup/plugin-json": "^6.1.0",
@@ -79,5 +82,10 @@
 		"typescript-eslint": "^8.0.0",
 		"vite": "^5.0.11",
 		"vitest": "^2.0.5"
+	},
+	"pnpm": {
+		"overrides": {
+			"@tanstack/virtual-core": "3.9.0"
+		}
 	}
 }
