@@ -5,7 +5,8 @@
 	"license": "LicenseRef-DCL-1.0",
 	"author": "H20",
 	"engines": {
-		"node": ">=18"
+		"node": ">=22.x",
+		"pnpm": ">=8.15.3"
 	},
 	"scripts": {
 		"dev": "vite dev",
@@ -34,7 +35,8 @@
 		"svelte-markdown": "^0.4.1",
 		"viem": "^2.21.51",
 		"wagmi": "^2.14.7",
-		"zod": "^3.24.1"
+		"zod": "^3.24.1",
+		"sushiswap": "./lib/sushiswap/packages/sushi"
 	},
 	"devDependencies": {
 		"@rollup/plugin-json": "^6.1.0",
