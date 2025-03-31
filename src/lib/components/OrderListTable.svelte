@@ -621,7 +621,9 @@
 										{order.order.trades.length > 0
 											? formatBalance(
 													(parseFloat(order.order.trades[0].timestamp) -
-														parseFloat(order.order.trades[order.order.trades.length - 1].timestamp)) /
+														parseFloat(
+															order.order.trades[order.order.trades.length - 1].timestamp
+														)) /
 														86400
 												) + ' days'
 											: '-'}
@@ -852,7 +854,9 @@
 												<span class="text-gray-800"
 													>{formatBalance(
 														parseFloat(
-															ethers.utils.formatUnits(input.balance, input.token.decimals).toString()
+															ethers.utils
+																.formatUnits(input.balance, input.token.decimals)
+																.toString()
 														)
 													)}</span
 												>
@@ -1024,7 +1028,8 @@
 												<span
 													class="font-medium {input.currentVaultApyPercentage > 0
 														? 'text-green-600'
-														: 'text-red-600'}">{formatBalance(input.currentVaultApyPercentage)}%</span
+														: 'text-red-600'}"
+													>{formatBalance(input.currentVaultApyPercentage)}%</span
 												>
 											</div>
 										{/each}
