@@ -1,14 +1,10 @@
 <script lang="ts">
-	import type { SgTrade, MultiSubgraphArgs, VaultVolume } from '@rainlanguage/orderbook/js_api';
-	import {
-		getOrders,
-		getOrderTradesList,
-		getOrderVaultsVolume
-	} from '@rainlanguage/orderbook/js_api';
-	import type { OrderListOrderWithSubgraphName, OrderListVault } from '$lib/types';
+	import type { SgTrade } from '@rainlanguage/orderbook/js_api';
+	import { getOrderTradesList } from '@rainlanguage/orderbook/js_api';
+	import type { OrderListOrderWithSubgraphName } from '$lib/types';
 	import { page } from '$app/stores';
-	import { tokenConfig, DEFAULT_TRADES_PAGE_SIZE, generateColorPalette, DEFAULT_ORDERS_PAGE_SIZE } from '$lib/constants';
-  import { createInfiniteQuery } from '@tanstack/svelte-query';
+	import { DEFAULT_TRADES_PAGE_SIZE } from '$lib/constants';
+	import { createInfiniteQuery } from '@tanstack/svelte-query';
 	import { calculateTradeVolume, fetchAllPaginatedData, getTokenPriceUsdMap } from '$lib/orders';
 	import OrderListTable from '$lib/components/OrderListTable.svelte';
 
@@ -16,7 +12,7 @@
 	const now = Math.floor(Date.now() / 1000);
 
 	let activeTab = '1h';
-  const fetchAllNetworksOrderQuery = `query OrderTakesListQuery($skip: Int = 0, $first: Int = 1000, $timestampGt: Int!) {
+	const fetchAllNetworksOrderQuery = `query OrderTakesListQuery($skip: Int = 0, $first: Int = 1000, $timestampGt: Int!) {
   orders(
     orderBy: timestampAdded
     orderDirection: desc
@@ -90,17 +86,22 @@
 }
 `;
 
-
-  $: ordersQuery = createInfiniteQuery({
+	$: ordersQuery = createInfiniteQuery({
 		queryKey: ['orders', activeTab],
 		queryFn: async () => {
+			const durationInSeconds =
+				activeTab === '1h'
+					? 1 * 60 * 60
+					: activeTab === '24h'
+						? 24 * 60 * 60
+						: activeTab === '1w'
+							? 7 * 24 * 60 * 60
+							: 30 * 24 * 60 * 60;
+			let allOrdersForDuration: OrderListOrderWithSubgraphName[] = [];
+			allOrdersForDuration = await getOrdersForDuration(durationInSeconds);
 
-       const durationInSeconds = activeTab === '1h' ? 1 * 60 * 60 : activeTab === '24h' ? 24 * 60 * 60 : activeTab === '1w' ? 7 * 24 * 60 * 60 : 30 * 24 * 60 * 60;
-       let allOrdersForDuration: OrderListOrderWithSubgraphName[] = [];
-       allOrdersForDuration = await getOrdersForDuration(durationInSeconds);
-
-       allOrdersForDuration = await getTokenPriceUsdMap(allOrdersForDuration);
-       for (let order of allOrdersForDuration) {
+			allOrdersForDuration = await getTokenPriceUsdMap(allOrdersForDuration);
+			for (let order of allOrdersForDuration) {
 				order.order['totalVolume'] = calculateTradeVolume(order.order.trades);
 				order.order['totalVolume24h'] = calculateTradeVolume(
 					order.order.trades.filter(
@@ -108,11 +109,10 @@
 					)
 				);
 			}
-      return {
+			return {
 				orders: allOrdersForDuration,
 				hasMore: false
 			};
-       
 		},
 		initialPageParam: 0,
 		getNextPageParam(lastPage, _allPages, lastPageParam) {
@@ -121,11 +121,10 @@
 		enabled: true
 	});
 
-	
 	async function getOrdersForDuration(
 		elapsedTime: number
 	): Promise<OrderListOrderWithSubgraphName[]> {
-    let ordersForDuration: OrderListOrderWithSubgraphName[] = [];
+		let ordersForDuration: OrderListOrderWithSubgraphName[] = [];
 		const networksArray: string[] = Object.keys($settings.subgraphs);
 		const subgraphs: string[] = Object.values($settings.subgraphs);
 
@@ -185,7 +184,6 @@
 
 		return raindexOrders;
 	}
-
 </script>
 
 <div>
@@ -205,20 +203,20 @@
 </div>
 
 <div>
-    <OrderListTable
-      query={ordersQuery}
-      networkValue={''}
-      inputChangeFlag={false}
-      outputChangeFlag={false}
-      totalDepositsFlag={false}
-      totalInputsFlag={false}
-      absoluteChangeFlag={false}
-      percentChangeFlag={false}
-      tradesDurationFlag={false}
-      orderDurationFlag={false}
-      roiFlag={false}
-      roiPercentFlag={false}
-      apyFlag={false}
-      apyPercentFlag={false}
-  />
+	<OrderListTable
+		query={ordersQuery}
+		networkValue={''}
+		inputChangeFlag={false}
+		outputChangeFlag={false}
+		totalDepositsFlag={false}
+		totalInputsFlag={false}
+		absoluteChangeFlag={false}
+		percentChangeFlag={false}
+		tradesDurationFlag={false}
+		orderDurationFlag={false}
+		roiFlag={false}
+		roiPercentFlag={false}
+		apyFlag={false}
+		apyPercentFlag={false}
+	/>
 </div>

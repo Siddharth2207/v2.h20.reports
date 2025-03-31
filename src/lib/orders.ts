@@ -319,32 +319,41 @@ export function calculateBalanceChanges(
 	}
 }
 
-export async function fetchAllPaginatedData(endpoint: string, query: string, variables: any, itemsKey: string, first = 1000) {
+ 
+// TODO: Introduce type checking for the response
+export async function fetchAllPaginatedData(
+	endpoint: string,
+	query: string,
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	variables: any,
+	itemsKey: string,
+	first = 1000
+): Promise<any[]> {
 	try {
 		const allItems = [];
 		let skip = 0;
-		while (true) {
-			
-				// Prepare variables with updated pagination parameters
-				const paginatedVariables = { ...variables, skip, first };
-				// Fetch a batch of items
-				const response = await axios.post(endpoint, {
-					query,
-					variables: paginatedVariables,
-				});
-				// Extract the items from the response
-				const items = response.data.data[itemsKey] || [];
-				allItems.push(...items); // Append items to the result array
-				// Check if fewer items are returned than the `first` limit
-				if (items.length < first) {
-					// All items fetched; exit the loop
-					break;
-				}
-				// Increment skip for the next batch
-				skip += first;
+		let hasMore = true;
+		while (hasMore) {
+			// Prepare variables with updated pagination parameters
+			const paginatedVariables = { ...variables, skip, first };
+			// Fetch a batch of items
+			const response = await axios.post(endpoint, {
+				query,
+				variables: paginatedVariables
+			});
+			// Extract the items from the response
+			const items = response.data.data[itemsKey] || [];
+			allItems.push(...items); // Append items to the result array
+			// Check if fewer items are returned than the `first` limit
+			if (items.length < first) {
+				// All items fetched; exit the loop
+				hasMore = false;
 			}
-			return allItems;
-		} catch {
-			return [];
+			// Increment skip for the next batch
+			skip += first;
 		}
+		return allItems;
+	} catch {
+		return [];
+	}
 }
