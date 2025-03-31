@@ -319,7 +319,6 @@ export function calculateBalanceChanges(
 	}
 }
 
- 
 // TODO: Introduce type checking for the response
 export async function fetchAllPaginatedData(
 	endpoint: string,
@@ -328,6 +327,7 @@ export async function fetchAllPaginatedData(
 	variables: any,
 	itemsKey: string,
 	first = 1000
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any[]> {
 	try {
 		const allItems = [];
