@@ -43,6 +43,15 @@ export const tokenConfig: Config = {
 		poolsV3: ['0x6df98c35b438edaae702afc6046f440b845313fe'],
 		poolsPancakSwapV3: []
 	},
+	BRZ: {
+		symbol: 'BRZ',
+		decimals: 18,
+		network: 'polygon',
+		address: '0x4ed141110f6eeeaba9a1df36d8c26f684d2475dc',
+		poolsV2: [],
+		poolsV3: ['0x4af62a93775c093af3e32949ef23c9a323d20817'],
+		poolsPancakSwapV3: []
+	},
 	MXNE: {
 		symbol: 'MXNE',
 		decimals: 6,

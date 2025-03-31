@@ -1008,7 +1008,7 @@
 									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
 										<span class="font-semibold">Total</span>
 										<span class="text-gray-800">
-											{formatBalance(order.order.apy)}%
+											$ {formatBalance(order.order.apy)}
 										</span>
 									</div>
 								</TableBodyCell>

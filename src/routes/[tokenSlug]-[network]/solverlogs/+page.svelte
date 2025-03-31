@@ -192,7 +192,7 @@
 											{#each order.solverLogs as solverLog}
 												<TableBodyRow>
 													<TableBodyCell class="w-[40px] px-4 py-3 text-center"
-														>{formatTimestamp(solverLog.timestamp)}</TableBodyCell
+														>{formatTimestamp(solverLog.timestamp / 1000)}</TableBodyCell
 													>
 													<TableBodyCell class="w-[40px] px-4 py-3 text-center"
 														>{solverLog.pair}</TableBodyCell
