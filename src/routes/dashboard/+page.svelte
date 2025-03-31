@@ -11,7 +11,7 @@
 	const { settings } = $page.data.stores;
 	const now = Math.floor(Date.now() / 1000);
 
-	let activeTab = '1h';
+	let activeTab = '15min';
 	const fetchAllNetworksOrderQuery = `query OrderTakesListQuery($skip: Int = 0, $first: Int = 1000, $timestampGt: Int!) {
   orders(
     orderBy: timestampAdded
@@ -90,13 +90,15 @@
 		queryKey: ['orders', activeTab],
 		queryFn: async () => {
 			const durationInSeconds =
-				activeTab === '1h'
-					? 1 * 60 * 60
-					: activeTab === '24h'
-						? 24 * 60 * 60
-						: activeTab === '1w'
-							? 7 * 24 * 60 * 60
-							: 30 * 24 * 60 * 60;
+				activeTab === '15min'
+					? 15 * 60
+					: activeTab === '1h'
+						? 1 * 60 * 60
+						: activeTab === '24h'
+							? 24 * 60 * 60
+							: activeTab === '1w'
+								? 7 * 24 * 60 * 60
+								: 30 * 24 * 60 * 60;
 			let allOrdersForDuration: OrderListOrderWithSubgraphName[] = [];
 			allOrdersForDuration = await getOrdersForDuration(durationInSeconds);
 
@@ -188,7 +190,7 @@
 
 <div>
 	<div class="flex border-b border-gray-300 bg-gray-200">
-		{#each ['1h', '24h', '1w', '1m'] as tab}
+		{#each ['15min', '1h', '24h', '1w', '1m'] as tab}
 			<button
 				class="border-b-2 border-gray-300 px-6 py-3 text-sm font-medium transition-all {activeTab ===
 				tab
@@ -205,7 +207,6 @@
 <div>
 	<OrderListTable
 		query={ordersQuery}
-		networkValue={''}
 		inputChangeFlag={false}
 		outputChangeFlag={false}
 		totalDepositsFlag={false}

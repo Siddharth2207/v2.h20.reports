@@ -19,7 +19,6 @@
 	} from '$lib/types';
 	import type { SgTrade } from '@rainlanguage/orderbook/js_api';
 
-	export let networkValue: string;
 	export let query: CreateInfiniteQueryResult<
 		InfiniteData<{ orders: OrderListOrderWithSubgraphName[] }, unknown>,
 		Error
@@ -603,130 +602,87 @@
 		<TableBody>
 			{#if sortedData}
 				{#each sortedData.pages as page}
-					{#each page.orders as order (order.order.orderHash)}
-						<TableBodyRow class="border-t border-gray-300 text-gray-700">
-							<TableBodyCell class="px-4 py-3 text-center text-sm"
-								>{order.subgraphName}</TableBodyCell
-							>
-							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								<span
-									class={`rounded px-2 py-1 ${order.order.active ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
-								>
-									{order.order.active ? 'Active' : 'Inactive'}
-								</span>
-							</TableBodyCell>
-
-							{#if tradesDurationFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{order.order.trades.length > 0
-										? formatBalance(
-												(parseFloat(order.order.trades[0].timestamp) -
-													parseFloat(order.order.trades[order.order.trades.length - 1].timestamp)) /
-													86400
-											) + ' days'
-										: '-'}
-								</TableBodyCell>
-							{/if}
-
-							{#if orderDurationFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{order.order.orderDuration > 0
-										? formatBalance(order.order.orderDuration / 86400) + ' days'
-										: '-'}
-								</TableBodyCell>
-							{/if}
-
-							{#if lastTradeFlag}
+					{#if page.orders.length > 0}
+						{#each page.orders as order (order.order.orderHash)}
+							<TableBodyRow class="border-t border-gray-300 text-gray-700">
 								<TableBodyCell class="px-4 py-3 text-center text-sm"
-									>{order.order.trades.length > 0
-										? formatTimestamp(parseFloat(order.order.trades[0].timestamp))
-										: 'N/A'}</TableBodyCell
+									>{order.subgraphName}</TableBodyCell
 								>
-							{/if}
-
-							{#if firstTradeFlag}
 								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{order.order.trades.length > 0
-										? formatTimestamp(
-												parseFloat(order.order.trades[order.order.trades.length - 1].timestamp)
-											)
-										: 'N/A'}</TableBodyCell
-								>
-							{/if}
-
-							{#if totalTradesFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm"
-									>{order.order.trades.length}</TableBodyCell
-								>
-							{/if}
-							{#if trades24hFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{order.order.trades.length > 0
-										? order.order.trades.filter(
-												(trade) => Date.now() / 1000 - parseFloat(trade.timestamp) <= 86400
-											).length
-										: 'N/A'}
+									<span
+										class={`rounded px-2 py-1 ${order.order.active ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
+									>
+										{order.order.active ? 'Active' : 'Inactive'}
+									</span>
 								</TableBodyCell>
-							{/if}
 
-							{#if volumeTotalFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{#if order.order.totalVolume.length > 0}
-										{#each order.order.totalVolume as token (token)}
-											<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-												<span class="font-semibold">{token.token}</span>
-												<span class="text-gray-800">{formatBalance(token.totalVolume)}</span>
-											</div>
-										{/each}
-										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-											<span class="font-semibold">Total</span>
-											<span class="text-gray-800">
-												${formatBalance(
-													order.order.trades.reduce(
-														(acc, trade) =>
-															acc +
-															parseFloat(
-																ethers.utils
-																	.formatUnits(
-																		ethers.BigNumber.from(
-																			trade.outputVaultBalanceChange.amount
-																		).abs(),
-																		trade.outputVaultBalanceChange.vault.token.decimals
-																	)
-																	.toString()
-															) *
-																(order.order.tokenPriceUsdMap.get(
-																	trade.outputVaultBalanceChange.vault.token.address
-																) || 0),
-														0
-													)
-												)}
-											</span>
-										</div>
-									{:else}
-										-
-									{/if}
-								</TableBodyCell>
-							{/if}
+								{#if tradesDurationFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm">
+										{order.order.trades.length > 0
+											? formatBalance(
+													(parseFloat(order.order.trades[0].timestamp) -
+														parseFloat(order.order.trades[order.order.trades.length - 1].timestamp)) /
+														86400
+												) + ' days'
+											: '-'}
+									</TableBodyCell>
+								{/if}
 
-							{#if volume24hFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{#if order.order.totalVolume24h.length > 0}
-										{#each order.order.totalVolume24h as token (token)}
+								{#if orderDurationFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm">
+										{order.order.orderDuration > 0
+											? formatBalance(order.order.orderDuration / 86400) + ' days'
+											: '-'}
+									</TableBodyCell>
+								{/if}
+
+								{#if lastTradeFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm"
+										>{order.order.trades.length > 0
+											? formatTimestamp(parseFloat(order.order.trades[0].timestamp))
+											: 'N/A'}</TableBodyCell
+									>
+								{/if}
+
+								{#if firstTradeFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm">
+										{order.order.trades.length > 0
+											? formatTimestamp(
+													parseFloat(order.order.trades[order.order.trades.length - 1].timestamp)
+												)
+											: 'N/A'}</TableBodyCell
+									>
+								{/if}
+
+								{#if totalTradesFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm"
+										>{order.order.trades.length}</TableBodyCell
+									>
+								{/if}
+								{#if trades24hFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm">
+										{order.order.trades.length > 0
+											? order.order.trades.filter(
+													(trade) => Date.now() / 1000 - parseFloat(trade.timestamp) <= 86400
+												).length
+											: 'N/A'}
+									</TableBodyCell>
+								{/if}
+
+								{#if volumeTotalFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm">
+										{#if order.order.totalVolume.length > 0}
+											{#each order.order.totalVolume as token (token)}
+												<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+													<span class="font-semibold">{token.token}</span>
+													<span class="text-gray-800">{formatBalance(token.totalVolume)}</span>
+												</div>
+											{/each}
 											<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-												<span class="font-semibold">{token.token}</span>
-												<span class="text-gray-800">{formatBalance(token.totalVolume)}</span>
-											</div>
-										{/each}
-										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-											<span class="font-semibold">Total</span>
-											<span class="text-gray-800">
-												${formatBalance(
-													order.order.trades
-														.filter(
-															(trade) => parseFloat(trade.timestamp) > Date.now() / 1000 - 86400
-														)
-														.reduce(
+												<span class="font-semibold">Total</span>
+												<span class="text-gray-800">
+													${formatBalance(
+														order.order.trades.reduce(
 															(acc, trade) =>
 																acc +
 																parseFloat(
@@ -744,311 +700,360 @@
 																	) || 0),
 															0
 														)
+													)}
+												</span>
+											</div>
+										{:else}
+											-
+										{/if}
+									</TableBodyCell>
+								{/if}
+
+								{#if volume24hFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm">
+										{#if order.order.totalVolume24h.length > 0}
+											{#each order.order.totalVolume24h as token (token)}
+												<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+													<span class="font-semibold">{token.token}</span>
+													<span class="text-gray-800">{formatBalance(token.totalVolume)}</span>
+												</div>
+											{/each}
+											<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+												<span class="font-semibold">Total</span>
+												<span class="text-gray-800">
+													${formatBalance(
+														order.order.trades
+															.filter(
+																(trade) => parseFloat(trade.timestamp) > Date.now() / 1000 - 86400
+															)
+															.reduce(
+																(acc, trade) =>
+																	acc +
+																	parseFloat(
+																		ethers.utils
+																			.formatUnits(
+																				ethers.BigNumber.from(
+																					trade.outputVaultBalanceChange.amount
+																				).abs(),
+																				trade.outputVaultBalanceChange.vault.token.decimals
+																			)
+																			.toString()
+																	) *
+																		(order.order.tokenPriceUsdMap.get(
+																			trade.outputVaultBalanceChange.vault.token.address
+																		) || 0),
+																0
+															)
+													)}
+												</span>
+											</div>
+										{:else}
+											-
+										{/if}
+									</TableBodyCell>
+								{/if}
+
+								{#if totalDepositsFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm">
+										{#each order.order.outputs as output (output.id)}
+											<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+												<span class="font-semibold">{output.token.symbol}</span>
+												<span class="text-gray-800">{formatBalance(output.totalDeposits)}</span>
+											</div>
+										{/each}
+										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+											<span class="font-semibold">Total</span>
+											<span class="text-gray-800">
+												${formatBalance(
+													order.order.outputs.reduce(
+														(acc, output) =>
+															acc +
+															output.totalDeposits *
+																(order.order.tokenPriceUsdMap.get(output.token.address) || 0),
+														0
+													)
 												)}
 											</span>
 										</div>
-									{:else}
-										-
-									{/if}
-								</TableBodyCell>
-							{/if}
+									</TableBodyCell>
+								{/if}
 
-							{#if totalDepositsFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{#each order.order.outputs as output (output.id)}
+								{#if totalInputsFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm">
+										{#each order.order.inputs as input (input.id)}
+											<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+												<span class="font-semibold">{input.token.symbol}</span>
+												<span class="text-gray-800">{formatBalance(input.currentVaultInputs)}</span>
+											</div>
+										{/each}
 										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-											<span class="font-semibold">{output.token.symbol}</span>
-											<span class="text-gray-800">{formatBalance(output.totalDeposits)}</span>
-										</div>
-									{/each}
-									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">Total</span>
-										<span class="text-gray-800">
-											${formatBalance(
-												order.order.outputs.reduce(
-													(acc, output) =>
-														acc +
-														output.totalDeposits *
-															(order.order.tokenPriceUsdMap.get(output.token.address) || 0),
-													0
-												)
-											)}
-										</span>
-									</div>
-								</TableBodyCell>
-							{/if}
-
-							{#if totalInputsFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{#each order.order.inputs as input (input.id)}
-										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-											<span class="font-semibold">{input.token.symbol}</span>
-											<span class="text-gray-800">{formatBalance(input.currentVaultInputs)}</span>
-										</div>
-									{/each}
-									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">Total</span>
-										<span class="text-gray-800">
-											${formatBalance(
-												order.order.inputs.reduce(
-													(acc, input) =>
-														acc +
-														input.currentVaultInputs *
-															(order.order.tokenPriceUsdMap.get(input.token.address) || 0),
-													0
-												)
-											)}
-										</span>
-									</div>
-								</TableBodyCell>
-							{/if}
-
-							{#if absoluteChangeFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{#each order.order.inputs as input (input.id)}
-										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-											<span class="font-semibold">{input.token.symbol}</span>
-											<span class="text-gray-800"
-												>{formatBalance(input.curerentVaultDifferential)}</span
-											>
-										</div>
-									{/each}
-									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">Total</span>
-										<span class="text-gray-800">
-											${formatBalance(order.order.roi)}
-										</span>
-									</div>
-								</TableBodyCell>
-							{/if}
-
-							{#if percentChangeFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{#each order.order.inputs as input (input.id)}
-										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-											<span class="font-semibold">{input.token.symbol}</span>
-											<span
-												class="font-medium {input.curerentVaultDifferentialPercentage > 0
-													? 'text-green-600'
-													: 'text-red-600'}"
-												>{formatBalance(input.curerentVaultDifferentialPercentage)}%</span
-											>
-										</div>
-									{/each}
-									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">Total (USD)</span>
-										<span class="text-gray-800">
-											{formatBalance(order.order.roiPercentage)}%
-										</span>
-									</div>
-								</TableBodyCell>
-							{/if}
-
-							{#if inputBalanceFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{#each order.order.inputs as input (input.id)}
-										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-											<span class="font-semibold">{input.token.symbol}</span>
-											<span class="text-gray-800"
-												>{formatBalance(
-													parseFloat(
-														ethers.utils.formatUnits(input.balance, input.token.decimals).toString()
+											<span class="font-semibold">Total</span>
+											<span class="text-gray-800">
+												${formatBalance(
+													order.order.inputs.reduce(
+														(acc, input) =>
+															acc +
+															input.currentVaultInputs *
+																(order.order.tokenPriceUsdMap.get(input.token.address) || 0),
+														0
 													)
-												)}</span
-											>
+												)}
+											</span>
 										</div>
-									{/each}
-									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">Total</span>
-										<span class="text-gray-800">
-											${formatBalance(
-												order.order.inputs.reduce(
-													(acc, input) =>
-														acc +
+									</TableBodyCell>
+								{/if}
+
+								{#if absoluteChangeFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm">
+										{#each order.order.inputs as input (input.id)}
+											<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+												<span class="font-semibold">{input.token.symbol}</span>
+												<span class="text-gray-800"
+													>{formatBalance(input.curerentVaultDifferential)}</span
+												>
+											</div>
+										{/each}
+										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+											<span class="font-semibold">Total</span>
+											<span class="text-gray-800">
+												${formatBalance(order.order.roi)}
+											</span>
+										</div>
+									</TableBodyCell>
+								{/if}
+
+								{#if percentChangeFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm">
+										{#each order.order.inputs as input (input.id)}
+											<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+												<span class="font-semibold">{input.token.symbol}</span>
+												<span
+													class="font-medium {input.curerentVaultDifferentialPercentage > 0
+														? 'text-green-600'
+														: 'text-red-600'}"
+													>{formatBalance(input.curerentVaultDifferentialPercentage)}%</span
+												>
+											</div>
+										{/each}
+										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+											<span class="font-semibold">Total (USD)</span>
+											<span class="text-gray-800">
+												{formatBalance(order.order.roiPercentage)}%
+											</span>
+										</div>
+									</TableBodyCell>
+								{/if}
+
+								{#if inputBalanceFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm">
+										{#each order.order.inputs as input (input.id)}
+											<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+												<span class="font-semibold">{input.token.symbol}</span>
+												<span class="text-gray-800"
+													>{formatBalance(
 														parseFloat(
-															ethers.utils
-																.formatUnits(input.balance, input.token.decimals)
-																.toString()
-														) *
-															(order.order.tokenPriceUsdMap.get(input.token.address) || 0),
-													0
-												)
-											)}
-										</span>
-									</div>
-								</TableBodyCell>
-							{/if}
-
-							{#if outputBalanceFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{#each order.order.outputs as output (output.id)}
+															ethers.utils.formatUnits(input.balance, input.token.decimals).toString()
+														)
+													)}</span
+												>
+											</div>
+										{/each}
 										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-											<span class="font-semibold">{output.token.symbol}</span>
-											<span class="text-gray-800"
-												>{formatBalance(
-													parseFloat(
-														ethers.utils
-															.formatUnits(output.balance, output.token.decimals)
-															.toString()
+											<span class="font-semibold">Total</span>
+											<span class="text-gray-800">
+												${formatBalance(
+													order.order.inputs.reduce(
+														(acc, input) =>
+															acc +
+															parseFloat(
+																ethers.utils
+																	.formatUnits(input.balance, input.token.decimals)
+																	.toString()
+															) *
+																(order.order.tokenPriceUsdMap.get(input.token.address) || 0),
+														0
 													)
-												)}</span
-											>
+												)}
+											</span>
 										</div>
-									{/each}
-									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">Total</span>
-										<span class="text-gray-800">
-											${formatBalance(
-												order.order.outputs.reduce(
-													(acc, output) =>
-														acc +
+									</TableBodyCell>
+								{/if}
+
+								{#if outputBalanceFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm">
+										{#each order.order.outputs as output (output.id)}
+											<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+												<span class="font-semibold">{output.token.symbol}</span>
+												<span class="text-gray-800"
+													>{formatBalance(
 														parseFloat(
 															ethers.utils
 																.formatUnits(output.balance, output.token.decimals)
 																.toString()
-														) *
-															(order.order.tokenPriceUsdMap.get(output.token.address) || 0),
-													0
-												)
-											)}
-										</span>
-									</div>
-								</TableBodyCell>
-							{/if}
-
-							{#if inputChangeFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{#each order.order.inputs as input (input.id)}
+														)
+													)}</span
+												>
+											</div>
+										{/each}
 										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-											<span class="font-semibold">{input.token.symbol}</span>
-											<span
-												class="font-medium {input.percentageChange24h >= 0
-													? 'text-green-600'
-													: 'text-red-600'}"
-											>
-												{formatBalance(input.balanceChange24h)} ({formatBalance(
-													input.percentageChange24h
-												)}%)
+											<span class="font-semibold">Total</span>
+											<span class="text-gray-800">
+												${formatBalance(
+													order.order.outputs.reduce(
+														(acc, output) =>
+															acc +
+															parseFloat(
+																ethers.utils
+																	.formatUnits(output.balance, output.token.decimals)
+																	.toString()
+															) *
+																(order.order.tokenPriceUsdMap.get(output.token.address) || 0),
+														0
+													)
+												)}
 											</span>
 										</div>
-									{/each}
-								</TableBodyCell>
-							{/if}
+									</TableBodyCell>
+								{/if}
 
-							{#if outputChangeFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{#each order.order.outputs as output (output.id)}
+								{#if inputChangeFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm">
+										{#each order.order.inputs as input (input.id)}
+											<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+												<span class="font-semibold">{input.token.symbol}</span>
+												<span
+													class="font-medium {input.percentageChange24h >= 0
+														? 'text-green-600'
+														: 'text-red-600'}"
+												>
+													{formatBalance(input.balanceChange24h)} ({formatBalance(
+														input.percentageChange24h
+													)}%)
+												</span>
+											</div>
+										{/each}
+									</TableBodyCell>
+								{/if}
+
+								{#if outputChangeFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm">
+										{#each order.order.outputs as output (output.id)}
+											<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+												<span class="font-semibold">{output.token.symbol}</span>
+												<span
+													class="font-medium {output.percentageChange24h >= 0
+														? 'text-green-600'
+														: 'text-red-600'}"
+												>
+													{formatBalance(output.balanceChange24h)} ({formatBalance(
+														output.percentageChange24h
+													)}%)
+												</span>
+											</div>
+										{/each}
+									</TableBodyCell>
+								{/if}
+
+								{#if roiFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm">
+										{#each order.order.inputs as input (input.id)}
+											<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+												<span class="font-semibold">{input.token.symbol}</span>
+												<span class="text-gray-800"
+													>{formatBalance(input.curerentVaultDifferential)}</span
+												>
+											</div>
+										{/each}
 										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-											<span class="font-semibold">{output.token.symbol}</span>
-											<span
-												class="font-medium {output.percentageChange24h >= 0
-													? 'text-green-600'
-													: 'text-red-600'}"
-											>
-												{formatBalance(output.balanceChange24h)} ({formatBalance(
-													output.percentageChange24h
-												)}%)
+											<span class="font-semibold">Total</span>
+											<span class="text-gray-800">
+												${formatBalance(order.order.roi)}
 											</span>
 										</div>
-									{/each}
-								</TableBodyCell>
-							{/if}
+									</TableBodyCell>
+								{/if}
 
-							{#if roiFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{#each order.order.inputs as input (input.id)}
+								{#if roiPercentFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm">
+										{#each order.order.inputs as input (input.id)}
+											<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+												<span class="font-semibold">{input.token.symbol}</span>
+												<span
+													class="font-medium {input.curerentVaultDifferentialPercentage > 0
+														? 'text-green-600'
+														: 'text-red-600'}"
+													>{formatBalance(input.curerentVaultDifferentialPercentage)}%</span
+												>
+											</div>
+										{/each}
 										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-											<span class="font-semibold">{input.token.symbol}</span>
-											<span class="text-gray-800"
-												>{formatBalance(input.curerentVaultDifferential)}</span
-											>
+											<span class="font-semibold">Total</span>
+											<span class="text-gray-800">
+												{formatBalance(order.order.roiPercentage)}%
+											</span>
 										</div>
-									{/each}
-									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">Total</span>
-										<span class="text-gray-800">
-											${formatBalance(order.order.roi)}
-										</span>
-									</div>
-								</TableBodyCell>
-							{/if}
+									</TableBodyCell>
+								{/if}
 
-							{#if roiPercentFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{#each order.order.inputs as input (input.id)}
+								{#if apyFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm">
+										{#each order.order.inputs as input (input.id)}
+											<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+												<span class="font-semibold">{input.token.symbol}</span>
+												<span
+													class="font-medium {input.currentVaultApy > 0
+														? 'text-green-600'
+														: 'text-red-600'}">{formatBalance(input.currentVaultApy)}</span
+												>
+											</div>
+										{/each}
 										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-											<span class="font-semibold">{input.token.symbol}</span>
-											<span
-												class="font-medium {input.curerentVaultDifferentialPercentage > 0
-													? 'text-green-600'
-													: 'text-red-600'}"
-												>{formatBalance(input.curerentVaultDifferentialPercentage)}%</span
-											>
+											<span class="font-semibold">Total</span>
+											<span class="text-gray-800">
+												$ {formatBalance(order.order.apy)}
+											</span>
 										</div>
-									{/each}
-									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">Total</span>
-										<span class="text-gray-800">
-											{formatBalance(order.order.roiPercentage)}%
-										</span>
-									</div>
-								</TableBodyCell>
-							{/if}
+									</TableBodyCell>
+								{/if}
 
-							{#if apyFlag}
-								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{#each order.order.inputs as input (input.id)}
+								{#if apyPercentFlag}
+									<TableBodyCell class="px-4 py-3 text-center text-sm">
+										{#each order.order.inputs as input (input.id)}
+											<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
+												<span class="font-semibold">{input.token.symbol}</span>
+												<span
+													class="font-medium {input.currentVaultApyPercentage > 0
+														? 'text-green-600'
+														: 'text-red-600'}">{formatBalance(input.currentVaultApyPercentage)}%</span
+												>
+											</div>
+										{/each}
 										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-											<span class="font-semibold">{input.token.symbol}</span>
-											<span
-												class="font-medium {input.currentVaultApy > 0
-													? 'text-green-600'
-													: 'text-red-600'}">{formatBalance(input.currentVaultApy)}</span
-											>
+											<span class="font-semibold">Total</span>
+											<span class="text-gray-800">
+												{formatBalance(order.order.apyPercentage)}%
+											</span>
 										</div>
-									{/each}
-									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">Total</span>
-										<span class="text-gray-800">
-											$ {formatBalance(order.order.apy)}
-										</span>
-									</div>
-								</TableBodyCell>
-							{/if}
+									</TableBodyCell>
+								{/if}
 
-							{#if apyPercentFlag}
 								<TableBodyCell class="px-4 py-3 text-center text-sm">
-									{#each order.order.inputs as input (input.id)}
-										<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-											<span class="font-semibold">{input.token.symbol}</span>
-											<span
-												class="font-medium {input.currentVaultApyPercentage > 0
-													? 'text-green-600'
-													: 'text-red-600'}">{formatBalance(input.currentVaultApyPercentage)}%</span
-											>
-										</div>
-									{/each}
-									<div class="flex justify-between rounded-lg px-3 py-2 text-sm shadow-sm">
-										<span class="font-semibold">Total</span>
-										<span class="text-gray-800">
-											{formatBalance(order.order.apyPercentage)}%
-										</span>
-									</div>
-								</TableBodyCell>
-							{/if}
-
-							<TableBodyCell class="px-4 py-3 text-center text-sm">
-								<a
-									href={`https://v2.raindex.finance/orders/${networkValue}-${order.order.orderHash}`}
-									target="_blank"
-								>
-									<span class="text-blue-500 hover:text-blue-700"
-										>{order.order.orderHash.slice(0, 6)}...{order.order.orderHash.slice(-4)}</span
+									<a
+										href={`https://v2.raindex.finance/orders/${order.subgraphName}-${order.order.orderHash}`}
+										target="_blank"
 									>
-								</a>
-							</TableBodyCell>
+										<span class="text-blue-500 hover:text-blue-700"
+											>{order.order.orderHash.slice(0, 6)}...{order.order.orderHash.slice(-4)}</span
+										>
+									</a>
+								</TableBodyCell>
+							</TableBodyRow>
+						{/each}
+					{:else}
+						<TableBodyRow>
+							<TableBodyCell colspan="100" class="text-center">No orders found</TableBodyCell>
 						</TableBodyRow>
-					{/each}
+					{/if}
 				{/each}
 			{/if}
 		</TableBody>
