@@ -605,7 +605,7 @@
 				{#each sortedData.pages as page}
 					{#each page.orders as order (order.order.orderHash)}
 						<TableBodyRow class="border-t border-gray-300 text-gray-700">
-							<TableBodyCell class="px-4 py-3 text-center text-sm">{networkValue}</TableBodyCell>
+							<TableBodyCell class="px-4 py-3 text-center text-sm">{order.subgraphName}</TableBodyCell>
 							<TableBodyCell class="px-4 py-3 text-center text-sm">
 								<span
 									class={`rounded px-2 py-1 ${order.order.active ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
