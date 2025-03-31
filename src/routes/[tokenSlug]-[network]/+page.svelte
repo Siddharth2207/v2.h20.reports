@@ -251,7 +251,6 @@
 	{#if activeTab === 'Trades'}
 		<OrderListTable
 			query={ordersQuery}
-			{networkValue}
 			inputChangeFlag={false}
 			outputChangeFlag={false}
 			totalDepositsFlag={false}
@@ -268,7 +267,6 @@
 	{:else if activeTab === 'Balances'}
 		<OrderListTable
 			query={ordersQuery}
-			{networkValue}
 			totalTradesFlag={false}
 			volumeTotalFlag={false}
 			totalDepositsFlag={false}
@@ -285,7 +283,6 @@
 	{:else if activeTab === 'Vaults'}
 		<OrderListTable
 			query={ordersQuery}
-			{networkValue}
 			trades24hFlag={false}
 			volume24hFlag={false}
 			inputBalanceFlag={false}
@@ -302,7 +299,6 @@
 	{:else if activeTab === 'P&L'}
 		<OrderListTable
 			query={ordersQuery}
-			{networkValue}
 			lastTradeFlag={false}
 			firstTradeFlag={false}
 			absoluteChangeFlag={false}
