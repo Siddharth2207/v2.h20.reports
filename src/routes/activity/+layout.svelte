@@ -1,5 +1,5 @@
 <script lang="ts">
-	import DashboardSidebar from '$lib/components/DashboardSidebar.svelte';
+	import DashboardSidebar from '$lib/components/ActivitySidebar.svelte';
 </script>
 
 <div class="flex min-h-screen w-full justify-start bg-white dark:bg-gray-900 dark:text-gray-400">
