@@ -189,6 +189,8 @@
 </script>
 
 <div>
+	<h1 class="px-2 py-2 text-2xl font-bold text-gray-800">Activity List</h1>
+
 	<div class="flex border-b border-gray-300 bg-gray-200">
 		{#each ['15min', '1h', '24h', '1w', '1m'] as tab}
 			<button
