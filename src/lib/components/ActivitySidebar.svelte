@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { Sidebar, SidebarGroup, SidebarItem, SidebarWrapper } from 'flowbite-svelte';
-	import { ClipboardListSolid } from 'flowbite-svelte-icons';
+	import { ClipboardListSolid, FileCsvSolid } from 'flowbite-svelte-icons';
 
 	// Add state for mobile menu
 	let isMobileMenuOpen = false;
@@ -61,6 +61,17 @@
 					<ClipboardListSolid class="h-5 w-5" />
 					<span class="px-3 text-base text-gray-600 hover:text-indigo-600 dark:text-white"
 						>Activity List</span
+					>
+				</svelte:fragment>
+			</SidebarItem>
+		</SidebarGroup>
+
+		<SidebarGroup class="gap-4 p-2">
+			<SidebarItem label="" href="/activity/blockdata">
+				<svelte:fragment slot="icon">
+					<FileCsvSolid class="h-5 w-5" />
+					<span class="px-3 text-base text-gray-600 hover:text-indigo-600 dark:text-white"
+						>Block Data</span
 					>
 				</svelte:fragment>
 			</SidebarItem>
