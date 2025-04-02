@@ -41,22 +41,26 @@
 	}
 
 	async function getCsvData() {
-		isLoading = true;
+		try {
+			isLoading = true;
 
-		const fromBlock = await getBlockNumberForTimestamp(
-			$settings.networks[network],
-			new Date(fromTimestamp).getTime() / 1000
-		);
-		const toBlock = await getBlockNumberForTimestamp(
-			$settings.networks[network],
-			new Date(toTimestamp).getTime() / 1000 - 300
-		);
-		let networkSettings = $settings.networks[network];
-		networkSettings['rpc'] = networkRpc ? networkRpc : networkSettings['rpc'];
+			const fromBlock = await getBlockNumberForTimestamp(
+				$settings.networks[network],
+				new Date(fromTimestamp).getTime() / 1000
+			);
+			const toBlock = await getBlockNumberForTimestamp(
+				$settings.networks[network],
+				new Date(toTimestamp).getTime() / 1000 - 300
+			);
+			let networkSettings = $settings.networks[network];
+			networkSettings['rpc'] = networkRpc ? networkRpc : networkSettings['rpc'];
 
-		poolData = await getBlockData(networkSettings, poolAddress, poolType, fromBlock, toBlock);
-		poolData.poolTrades.sort((a, b) => b.blockNumber - a.blockNumber);
-		isLoading = false;
+			poolData = await getBlockData(networkSettings, poolAddress, poolType, fromBlock, toBlock);
+			poolData.poolTrades.sort((a, b) => b.blockNumber - a.blockNumber);
+			isLoading = false;
+		} catch {
+			isLoading = false;
+		}
 	}
 
 	function exportToCsv() {
