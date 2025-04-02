@@ -54,13 +54,7 @@
 		let networkSettings = $settings.networks[network];
 		networkSettings['rpc'] = networkRpc ? networkRpc : networkSettings['rpc'];
 
-		poolData = await getBlockData(
-			networkSettings,
-			poolAddress,
-			poolType,
-			fromBlock,
-			toBlock
-		);
+		poolData = await getBlockData(networkSettings, poolAddress, poolType, fromBlock, toBlock);
 		poolData.poolTrades.sort((a, b) => b.blockNumber - a.blockNumber);
 		isLoading = false;
 	}
@@ -102,15 +96,17 @@
 	}
 </script>
 
-<div class="flex flex-col">
-	<div class="mb-5 flex flex-col items-center gap-4">
-		<h2 class="text-2xl font-bold text-gray-800">Historical Block Data</h2>
+<div class="flex min-h-screen flex-col p-2 md:p-4">
+	<div class="mb-3 flex flex-col items-center gap-2 md:mb-5 md:gap-4">
+		<h2 class="text-lg font-bold text-gray-800 md:text-2xl">Historical Block Data</h2>
 	</div>
-	<div class="items-right mb-5 flex gap-4 bg-white p-3 shadow-sm">
-		<div class="w-40">
+	<div
+		class="mb-3 flex flex-col items-center gap-2 overflow-x-auto rounded-lg bg-white p-2 shadow-sm md:mb-5 md:flex-row md:gap-4 md:p-3"
+	>
+		<div class="w-full md:w-40">
 			<select
 				id="network-select"
-				class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+				class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
 				bind:value={network}
 			>
 				<option value="">Network</option>
@@ -120,19 +116,19 @@
 			</select>
 		</div>
 
-		<div class="w-64">
+		<div class="w-full md:w-64">
 			<input
 				type="text"
 				placeholder="Network RPC"
-				class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+				class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
 				bind:value={networkRpc}
 			/>
 		</div>
 
-		<div class="w-40">
+		<div class="w-full md:w-40">
 			<select
 				id="token-select"
-				class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+				class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
 				bind:value={token}
 			>
 				<option value="">Token</option>
@@ -143,10 +139,10 @@
 		</div>
 
 		{#if token && (tokenConfig[`${token}`].poolsV2.length > 0 || tokenConfig[`${token}`].poolsV3.length > 0 || tokenConfig[`${token}`].poolsPancakSwapV3.length > 0)}
-			<div class="w-64">
+			<div class="w-full md:w-64">
 				<select
 					id="pool-address-select"
-					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
 					bind:value={poolAddress}
 				>
 					<option value="">Pool Address</option>
@@ -162,110 +158,132 @@
 				</select>
 			</div>
 
-			<div class="w-44">
+			<div class="w-full md:w-44">
 				<input
 					type="datetime-local"
 					placeholder="From"
-					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
 					bind:value={fromTimestamp}
 				/>
 			</div>
 
-			<div class="w-44">
+			<div class="w-full md:w-44">
 				<input
 					type="datetime-local"
 					placeholder="To"
-					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
 					bind:value={toTimestamp}
 				/>
 			</div>
 		{/if}
 	</div>
-	<div>
-		{#if isLoading}
-			<div class="mt-10 flex flex-col items-center justify-start">
-				<div
-					class="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-indigo-600"
-				></div>
-				<p class="mt-3 text-lg font-medium text-gray-600">Loading...</p>
-			</div>
-		{/if}
-		{#if poolData && poolData.poolTrades.length > 0}
-			<div class="mb-4 flex justify-end">
-				<button
-					on:click={exportToCsv}
-					class="rounded bg-blue-600 px-4 py-2 font-bold text-white hover:bg-blue-700"
-				>
-					Export to CSV
-				</button>
-			</div>
-			<div class="relative h-[calc(100vh-250px)]">
-				<div class="absolute inset-0 overflow-auto">
-					<Table class="relative w-full table-fixed border-collapse bg-white">
+
+	{#if isLoading}
+		<div class="mt-4 flex flex-col items-center justify-start md:mt-10">
+			<div
+				class="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-indigo-600 md:h-10 md:w-10"
+			></div>
+			<p class="mt-2 text-base font-medium text-gray-600 md:mt-3 md:text-lg">Loading...</p>
+		</div>
+	{/if}
+	{#if poolData && poolData.poolTrades.length > 0}
+		<div class="mb-2 flex justify-end md:mb-4">
+			<button
+				on:click={exportToCsv}
+				class="rounded bg-blue-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-blue-700 md:px-4 md:py-2 md:text-base"
+			>
+				Export to CSV
+			</button>
+		</div>
+		<div class="relative h-[calc(100vh-200px)] w-full md:h-[calc(100vh-250px)]">
+			<div class="absolute inset-0 overflow-auto rounded-lg">
+				<div class="min-w-full overflow-x-auto">
+					<Table class="relative w-full table-fixed border-collapse bg-white text-left">
 						<TableHead class="sticky top-0 z-10 bg-gray-50 shadow-sm">
 							<TableHeadCell
-								class="w-32 px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-900"
-								>Block Number</TableHeadCell
+								class="w-20 px-2 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-900 md:w-32 md:px-6 md:py-3 md:text-xs"
 							>
+								Block Number
+							</TableHeadCell>
 							<TableHeadCell
-								class="w-96 px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-900"
-								>Transaction Hash</TableHeadCell
+								class="w-28 px-2 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-900 md:w-96 md:px-6 md:py-3 md:text-xs"
 							>
+								Transaction Hash
+							</TableHeadCell>
 							<TableHeadCell
-								class="w-32 px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-900"
-								>{poolData.token0Symbol} Amount</TableHeadCell
+								class="w-20 px-2 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-900 md:w-32 md:px-6 md:py-3 md:text-xs"
 							>
+								{poolData.token0Symbol} Amount
+							</TableHeadCell>
 							<TableHeadCell
-								class="w-32 px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-900"
-								>{poolData.token1Symbol} Amount</TableHeadCell
+								class="w-20 px-2 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-900 md:w-32 md:px-6 md:py-3 md:text-xs"
 							>
+								{poolData.token1Symbol} Amount
+							</TableHeadCell>
 							<TableHeadCell
-								class="w-40 px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-900"
-								>timestamp</TableHeadCell
+								class="w-24 px-2 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-900 md:w-40 md:px-6 md:py-3 md:text-xs"
 							>
+								Timestamp
+							</TableHeadCell>
 							<TableHeadCell
-								class="w-32 px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-900"
-								>{poolData.token0Symbol}/{poolData.token1Symbol} Ratio</TableHeadCell
+								class="w-20 px-2 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-900 md:w-32 md:px-6 md:py-3 md:text-xs"
 							>
+								{poolData.token0Symbol}/{poolData.token1Symbol}
+							</TableHeadCell>
 							<TableHeadCell
-								class="w-32 px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-900"
-								>{poolData.token1Symbol}/{poolData.token0Symbol} Ratio</TableHeadCell
+								class="w-20 px-2 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-900 md:w-32 md:px-6 md:py-3 md:text-xs"
 							>
+								{poolData.token1Symbol}/{poolData.token0Symbol}
+							</TableHeadCell>
 						</TableHead>
 						<TableBody tableBodyClass="divide-y divide-gray-200">
 							{#each poolData.poolTrades as trade}
 								<TableBodyRow class="hover:bg-gray-50">
-									<TableBodyCell class="truncate px-6 py-3 text-sm text-gray-600"
-										>{trade.blockNumber}</TableBodyCell
+									<TableBodyCell
+										class="truncate px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
 									>
-									<TableBodyCell class="truncate px-6 py-3 text-sm text-gray-600"
-										>{trade.transactionHash}</TableBodyCell
+										{trade.blockNumber}
+									</TableBodyCell>
+									<TableBodyCell
+										class="truncate px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
 									>
-									<TableBodyCell class="truncate px-6 py-3 text-sm text-gray-600"
-										>{trade.amount0}</TableBodyCell
+										{trade.transactionHash}
+									</TableBodyCell>
+									<TableBodyCell
+										class="truncate px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
 									>
-									<TableBodyCell class="truncate px-6 py-3 text-sm text-gray-600"
-										>{trade.amount1}</TableBodyCell
+										{trade.amount0}
+									</TableBodyCell>
+									<TableBodyCell
+										class="truncate px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
 									>
-									<TableBodyCell class="truncate px-6 py-3 text-sm text-gray-600"
-										>{trade.timestamp}</TableBodyCell
+										{trade.amount1}
+									</TableBodyCell>
+									<TableBodyCell
+										class="truncate px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
 									>
-									<TableBodyCell class="truncate px-6 py-3 text-sm text-gray-600"
-										>{trade.ratio0}</TableBodyCell
+										{trade.timestamp}
+									</TableBodyCell>
+									<TableBodyCell
+										class="truncate px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
 									>
-									<TableBodyCell class="truncate px-6 py-3 text-sm text-gray-600"
-										>{trade.ratio1}</TableBodyCell
+										{trade.ratio0}
+									</TableBodyCell>
+									<TableBodyCell
+										class="truncate px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
 									>
+										{trade.ratio1}
+									</TableBodyCell>
 								</TableBodyRow>
 							{/each}
 						</TableBody>
 					</Table>
 				</div>
 			</div>
-		{:else if !isLoading}
-			<div class="mt-4 text-center text-gray-500">
-				No block data available. Please select the parameters and submit the query.
-			</div>
-		{/if}
-	</div>
+		</div>
+	{:else if !isLoading}
+		<div class="mt-4 text-center text-sm text-gray-500 md:text-base">
+			No block data available. Please select the parameters and submit the query.
+		</div>
+	{/if}
 </div>
