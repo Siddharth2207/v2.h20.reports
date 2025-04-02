@@ -1,12 +1,34 @@
 import { sveltekit } from '@sveltejs/kit/vite';
-import {} from '@sveltejs/adapter-vercel'
+import {} from '@sveltejs/adapter-vercel';
 import { defineConfig } from 'vite';
-import {loadEnv} from "vite";
+import { loadEnv } from 'vite';
+// import path from 'path';
 
 export default defineConfig({
 	plugins: [sveltekit()],
-	define: {
-		'process.env': loadEnv('', process.cwd(),''),
-		'import.meta.vitest': 'undefined'
+	optimizeDeps: {
+		include: ['sushi/router', 'sushi/currency', 'sushi/tines']
 	},
+	build: {
+		commonjsOptions: {
+			include: [/sushi\/router/, /sushi\/currency/, /sushi\/tines/]
+		}
+	},
+	server: {
+		fs: {
+			// Allow serving files from the sushi package directory
+			allow: [
+				// Default directories
+				'src',
+				'node_modules',
+				'.svelte-kit',
+				// Add sushi package directory
+				'./lib'
+			]
+		}
+	},
+	define: {
+		'process.env': loadEnv('', process.cwd(), ''),
+		'import.meta.vitest': 'undefined'
+	}
 });

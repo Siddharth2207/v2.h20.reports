@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import { getSwap } from 'sushi';
+// import { getSwap } from 'sushi';
 import { type ExtractorSupportedChainId } from 'sushi/config';
 
 export interface TokenPrice {
@@ -80,33 +80,33 @@ export const fetchDexTokenPrice = async (
 	quoteTokenDecimals: number
 ): Promise<number> => {
 	try {
-		// Generate a recipient address dynamically
-		const recipientAddress = ethers.Wallet.createRandom().address;
+		// // Generate a recipient address dynamically
+		// const recipientAddress = ethers.Wallet.createRandom().address;
 
-		// Fixed swap amount of 1 base token
-		const amountIn = ethers.utils.parseUnits('1', baseTokenDecimals).toBigInt();
+		// // Fixed swap amount of 1 base token
+		// const amountIn = ethers.utils.parseUnits('1', baseTokenDecimals).toBigInt();
 
-		// Get the swap data from SushiSwap
-		const data = await getSwap({
-			chainId: chainId as ExtractorSupportedChainId,
-			tokenIn: baseTokenAddress as `0x${string}`,
-			tokenOut: quoteTokenAddress as `0x${string}`,
-			to: recipientAddress as `0x${string}`,
-			amount: amountIn,
-			maxSlippage: 0.005,
-			includeTransaction: true
-		});
+		// // Get the swap data from SushiSwap
+		// const data = await getSwap({
+		// 	chainId: chainId as ExtractorSupportedChainId,
+		// 	tokenIn: baseTokenAddress as `0x${string}`,
+		// 	tokenOut: quoteTokenAddress as `0x${string}`,
+		// 	to: recipientAddress as `0x${string}`,
+		// 	amount: amountIn,
+		// 	maxSlippage: 0.005,
+		// 	includeTransaction: true
+		// });
 
-		if (data.status === 'Success') {
-			const amountInFormatted: number = parseFloat(
-				ethers.utils.formatUnits(data.amountIn, baseTokenDecimals)
-			);
-			const amountOutFormatted: number = parseFloat(
-				ethers.utils.formatUnits(data.assumedAmountOut, quoteTokenDecimals)
-			);
-			const price = amountOutFormatted / amountInFormatted;
-			return parseFloat(price.toFixed(18));
-		}
+		// if (data.status === 'Success') {
+		// 	const amountInFormatted: number = parseFloat(
+		// 		ethers.utils.formatUnits(data.amountIn, baseTokenDecimals)
+		// 	);
+		// 	const amountOutFormatted: number = parseFloat(
+		// 		ethers.utils.formatUnits(data.assumedAmountOut, quoteTokenDecimals)
+		// 	);
+		// 	const price = amountOutFormatted / amountInFormatted;
+		// 	return parseFloat(price.toFixed(18));
+		// }
 
 		return 0;
 	} catch {

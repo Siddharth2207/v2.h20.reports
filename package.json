@@ -30,9 +30,9 @@
 		"i": "^0.3.7",
 		"lodash": "^4.17.21",
 		"npm": "^11.1.0",
-		"sushi": "^5.0.5",
+		"sushi": "file:lib/sushiswap/packages/sushi",
 		"svelte-markdown": "^0.4.1",
-		"viem": "^2.21.51",
+		"viem": "2.21.35",
 		"wagmi": "^2.14.7",
 		"zod": "^3.24.1"
 	},
