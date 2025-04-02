@@ -24,11 +24,6 @@
 	let isLoading = false;
 	let poolData: PoolData;
 
-	$: {
-		if (fromTimestamp && toTimestamp) {
-			getCsvData();
-		}
-	}
 
 	$: if (poolAddress) {
 		if (tokenConfig[token].poolsV2.includes(poolAddress)) {
@@ -42,6 +37,9 @@
 
 	async function getCsvData() {
 		try {
+			if (poolData) {
+				poolData.poolTrades = [];
+			}
 			isLoading = true;
 
 			const fromBlock = await getBlockNumberForTimestamp(
@@ -178,6 +176,16 @@
 					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
 					bind:value={toTimestamp}
 				/>
+			</div>
+
+			<div class="w-full md:w-auto">
+				<button
+					on:click={getCsvData}
+					disabled={!fromTimestamp || !toTimestamp || !poolAddress || !network || !token}
+					class="w-full rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto md:px-4 md:py-2 md:text-sm"
+				>
+					Apply Filter
+				</button>
 			</div>
 		{/if}
 	</div>
