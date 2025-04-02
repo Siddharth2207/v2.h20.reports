@@ -9,6 +9,28 @@ import type {
 	ConfigSource
 } from '@rainlanguage/orderbook/js_api';
 
+export interface PoolData {
+	token0Address: string;
+	token1Address: string;
+	token0Decimals: number;
+	token1Decimals: number;
+	token0Symbol: string;
+	token1Symbol: string;
+	poolAddress: string;
+	poolType: string;
+	poolTrades: PoolTrade[];
+}
+
+export interface PoolTrade {
+	blockNumber: number;
+	poolAddress: string;
+	transactionHash: string;
+	amount0: number;
+	amount1: number;
+	timestamp: number;
+	ratio0: number;
+	ratio1: number;
+}
 export interface VaultAnalyticsToken {
 	address: string;
 	symbol: string;
