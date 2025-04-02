@@ -629,8 +629,7 @@ export async function fetchPoolData(
 			if (!currentBlock || currentBlock > endBlock) {
 				break;
 			}
-		} catch (error) {
-			console.error('Error fetching logs:', error);
+		} catch {
 			break;
 		}
 	}
@@ -717,8 +716,6 @@ export async function getBlockData(
 					ratio0: ratio0,
 					ratio1: ratio1
 				});
-			} else {
-				console.error('Hex string is undefined!');
 			}
 		}
 	} else if (poolType === 'v3' || poolType === 'pancakSwapV3') {
