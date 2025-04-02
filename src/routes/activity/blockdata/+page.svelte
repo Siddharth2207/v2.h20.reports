@@ -24,7 +24,6 @@
 	let isLoading = false;
 	let poolData: PoolData;
 
-
 	$: if (poolAddress) {
 		if (tokenConfig[token].poolsV2.includes(poolAddress)) {
 			poolType = 'v2';
