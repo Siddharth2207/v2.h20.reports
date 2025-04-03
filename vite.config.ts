@@ -25,10 +25,10 @@ export default defineConfig({
 		fs: {
 			// Allow serving files from the sushi package directory
 			allow: [
-				// // Default directories
-				// 'src',
-				// 'node_modules',
-				// '.svelte-kit',
+				// Default directories
+				'src',
+				'node_modules',
+				'.svelte-kit',
 				// Add sushi package directory
 				'./lib'
 			]
