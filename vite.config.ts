@@ -9,11 +9,11 @@ export default defineConfig({
 	optimizeDeps: {
 		include: ['sushi/router', 'sushi/currency', 'sushi/tines', 'sushi/config', 'sushi/chain']
 	},
-	build: {
-		commonjsOptions: {
-			include: [/sushi\/router/, /sushi\/currency/, /sushi\/tines/, /sushi\/config/, /sushi\/chain/]
-		}
-	},
+	// build: {
+	// 	commonjsOptions: {
+	// 		include: [/sushi\/router/, /sushi\/currency/, /sushi\/tines/, /sushi\/config/, /sushi\/chain/]
+	// 	}
+	// },
 	server: {
 		fs: {
 			// Allow serving files from the sushi package directory
