@@ -11,7 +11,10 @@ export default defineConfig({
 	},
 	build: {
 		commonjsOptions: {
-			include: [/sushi\/router/, /sushi\/currency/, /sushi\/tines/]
+			include: [/sushi\/router/, /sushi\/currency/, /sushi\/tines/, /sushi\/config/, /sushi\/chain/]
+		},
+		rollupOptions: {
+			external: ['sushi', 'sushi/currency', 'sushi/config', 'sushi/router', 'sushi/chain']
 		}
 	},
 	server: {
