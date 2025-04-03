@@ -5,8 +5,7 @@
 	"license": "LicenseRef-DCL-1.0",
 	"author": "H20",
 	"engines": {
-		"node": ">=22.x",
-		"pnpm": ">=8.15.3"
+		"node": ">=18"
 	},
 	"scripts": {
 		"dev": "vite dev",
