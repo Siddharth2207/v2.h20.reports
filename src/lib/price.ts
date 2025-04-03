@@ -1,4 +1,4 @@
-import { BigNumber, ethers } from 'ethers';
+import { ethers } from 'ethers';
 // import { getSwap } from 'sushi';
 import { type ExtractorSupportedChainId } from 'sushi/config';
 import { Token } from 'sushi/currency';
@@ -137,7 +137,7 @@ export const getSushiUsdPrice = async (
 			});
 			await dataFetcher.fetchPoolsForToken(fromToken, toToken);
 			const pcMap = dataFetcher.getCurrentPoolCodeMap(fromToken, toToken);
-			const amountIn = BigNumber.from('1' + '0'.repeat(targetTokenDecimals));
+			const amountIn = ethers.BigNumber.from('1' + '0'.repeat(targetTokenDecimals));
 			const route = Router.findBestRoute(
 				pcMap,
 				taregtChainId,
