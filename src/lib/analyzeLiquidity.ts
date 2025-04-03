@@ -48,7 +48,7 @@ export async function analyzeLiquidity(
 
 	const { tradesAccordingToTimeStamp, totalPoolVolumeUsdForDuration, totalPoolTradesForDuration } =
 		await analyzeHyperSyncData(
-			tokenConfig[tokenSlug],
+			tokenSlug,
 			network,
 			networkSettings?.networks[network],
 			fromTimestamp,
@@ -225,7 +225,7 @@ export async function getBlockNumberForTimestamp(
 }
 
 async function analyzeHyperSyncData(
-	token: TokenConfig,
+	tokenSlug: string,
 	networkLabel: string,
 	network: NetworkConfigSourceWithBlockTime,
 	fromTimestamp: number,
@@ -233,6 +233,7 @@ async function analyzeHyperSyncData(
 ) {
 	// Create hypersync client using the mainnet hypersync endpoint
 	const hyperSyncClinet = `https://${network['chain-id']}.hypersync.xyz/query`;
+	const token = tokenConfig[tokenSlug.toUpperCase()];
 
 	const fromBlockNumber = await getBlockNumberForTimestamp(network, fromTimestamp);
 	const toBlockNumber = await getBlockNumberForTimestamp(network, toTimestamp);
@@ -251,10 +252,11 @@ async function analyzeHyperSyncData(
 	let totalPoolTradesForDuration = 0;
 
 	const tradesAccordingToTimeStamp: TradesByTimeStamp[] = [];
-	const { currentPrice: currentTokenPrice } = await getTokenPriceUsd(
+	const currentTokenPrice = await getTokenPriceUsd(
+		networkLabel,
 		token.address,
 		token.symbol,
-		networkLabel
+		token.decimals
 	);
 
 	for (let i = 0; i < token.poolsV2.length; i++) {

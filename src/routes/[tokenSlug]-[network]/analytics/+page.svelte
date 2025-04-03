@@ -26,7 +26,7 @@
 
 	const tokenSymbol = tokenConfig[$tokenSlug.toUpperCase()]?.symbol;
 	const tokenAddress = tokenConfig[$tokenSlug.toUpperCase()]?.address;
-
+	const tokenDecimals = tokenConfig[$tokenSlug.toUpperCase()]?.decimals;
 	let activeTab = 'Market Analytics';
 	let loading = true;
 	let analyticsDataLoaded = false;
@@ -80,8 +80,12 @@
 			);
 			vaultVolume = await prepareVaultVolumeData(raindexOrdersWithTrades);
 
-			const { currentPrice } = await getTokenPriceUsd(tokenAddress, tokenSymbol, $network);
-			currentTokenPrice = currentPrice;
+			currentTokenPrice = await getTokenPriceUsd(
+				$network,
+				tokenAddress,
+				tokenSymbol,
+				tokenDecimals
+			);
 
 			marketData = getTradesByDay(raindexOrdersWithTrades, allTrades.tradesAccordingToTimeStamp);
 			analyticsDataLoaded = true;

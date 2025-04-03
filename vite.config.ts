@@ -7,7 +7,7 @@ import { loadEnv } from 'vite';
 export default defineConfig({
 	plugins: [sveltekit()],
 	optimizeDeps: {
-		include: ['sushi/router', 'sushi/currency', 'sushi/tines']
+		include: ['sushi/router', 'sushi/currency', 'sushi/tines', 'sushi/config', 'sushi/chain']
 	},
 	build: {
 		commonjsOptions: {
