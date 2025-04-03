@@ -113,7 +113,6 @@
 			// Then fetch all prices in parallel
 			await Promise.all(
 				Array.from(tokensMap.values()).map(async (token) => {
-	
 					const tokenPrice = await getTokenPriceUsd(
 						$network,
 						token.address,

@@ -9,7 +9,6 @@ import type {
 	NetworkConfigSourceWithBlockTime,
 	PoolData,
 	PoolTrade,
-	TokenConfig,
 	TradesByTimeStamp
 } from './types';
 
