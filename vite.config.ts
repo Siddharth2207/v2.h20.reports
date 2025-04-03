@@ -9,17 +9,13 @@ export default defineConfig({
 		include: ['sushi/router', 'sushi/currency', 'sushi/tines', 'sushi/config', 'sushi/chain']
 	},
 	build: {
-		// commonjsOptions: {
-		// 	include: [/sushi\/router/, /sushi\/currency/, /sushi\/tines/, /sushi\/config/, /sushi\/chain/]
-		// },
+		commonjsOptions: {
+			include: [/sushi\/router/, /sushi\/currency/, /sushi\/tines/, /sushi\/config/, /sushi\/chain/]
+		},
 		rollupOptions: {
 			external: [
-				'sushi/router',
-				'sushi/currency',
-				'sushi/tines',
-				'sushi/config',
-				'sushi/chain',
-				'ethers',
+				/sushi\/[a-zA-Z0-9-_]/,
+				/@ethersproject\/[a-zA-Z0-9-_]/,
 				'buffer',
 				'interval-tree-1d'
 			]
@@ -29,10 +25,10 @@ export default defineConfig({
 		fs: {
 			// Allow serving files from the sushi package directory
 			allow: [
-				// Default directories
-				'src',
-				'node_modules',
-				'.svelte-kit',
+				// // Default directories
+				// 'src',
+				// 'node_modules',
+				// '.svelte-kit',
 				// Add sushi package directory
 				'./lib'
 			]
