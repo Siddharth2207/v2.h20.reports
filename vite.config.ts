@@ -1,49 +1,37 @@
 import { sveltekit } from '@sveltejs/kit/vite';
+import {} from '@sveltejs/adapter-vercel';
 import { defineConfig } from 'vite';
 import { loadEnv } from 'vite';
-import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill';
-import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill';
-import rollupNodePolyFill from 'rollup-plugin-node-polyfills';
 
 export default defineConfig({
 	plugins: [sveltekit()],
-	resolve: {
-		alias: {
-			buffer: 'buffer/',
-		}
-	},
 	optimizeDeps: {
-		include: [
-			'buffer',
-			'sushi/router',
-			'sushi/currency',
-			'sushi/tines',
-			'sushi/config',
-			'sushi/chain'
-		],
-		esbuildOptions: {
-			define: {
-				global: 'globalThis'
-			},
-			plugins: [
-				NodeGlobalsPolyfillPlugin({
-					buffer: true
-				}),
-				NodeModulesPolyfillPlugin()
-			]
-		}
+		include: ['sushi/router', 'sushi/currency', 'sushi/tines', 'sushi/config', 'sushi/chain']
 	},
 	build: {
+		commonjsOptions: {
+			include: [/sushi\/router/, /sushi\/currency/, /sushi\/tines/, /sushi\/config/, /sushi\/chain/]
+		},
 		rollupOptions: {
-			plugins: [rollupNodePolyFill()],
 			external: [
 				/sushi\/[a-zA-Z0-9-_]/,
 				/@ethersproject\/[a-zA-Z0-9-_]/,
-				'interval-tree-1d' // keep external ones like this
+				'buffer',
+				'interval-tree-1d'
 			]
-		},
-		commonjsOptions: {
-			include: [/sushi\/router/, /sushi\/currency/, /sushi\/tines/, /sushi\/config/, /sushi\/chain/]
+		}
+	},
+	server: {
+		fs: {
+			// Allow serving files from the sushi package directory
+			allow: [
+				// Default directories
+				'src',
+				'node_modules',
+				'.svelte-kit',
+				// Add sushi package directory
+				'./lib'
+			]
 		}
 	},
 	define: {
