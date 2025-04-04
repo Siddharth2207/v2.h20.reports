@@ -6,19 +6,58 @@ import { loadEnv } from 'vite';
 export default defineConfig({
 	plugins: [sveltekit()],
 	optimizeDeps: {
-		include: ['sushi/router', 'sushi/currency', 'sushi/tines', 'sushi/config', 'sushi/chain']
+		include: [
+			'sushi/router',
+			'sushi/currency',
+			'sushi/tines',
+			'sushi/config',
+			'sushi/chain',
+			'buffer',
+			// Add ethersproject packages that are being used
+			'@ethersproject/bytes',
+			'@ethersproject/constants',
+			'@ethersproject/bignumber',
+			'@ethersproject/contracts',
+			'@ethersproject/providers',
+			'@ethersproject/units',
+			'@ethersproject/wallet',
+			'@ethersproject/abstract-provider',
+			'@ethersproject/abstract-signer'
+		],
+		esbuildOptions: {
+			target: 'es2020'
+		}
 	},
 	build: {
-		commonjsOptions: {
-			include: [/sushi\/router/, /sushi\/currency/, /sushi\/tines/, /sushi\/config/, /sushi\/chain/]
-		},
+		target: 'es2020',
 		rollupOptions: {
 			external: [
-				/sushi\/[a-zA-Z0-9-_]/,
-				/@ethersproject\/[a-zA-Z0-9-_]/,
+				'sushi/router',
+				'sushi/currency',
+				'sushi/tines',
+				'sushi/config',
+				'sushi/chain',
 				'buffer',
 				'interval-tree-1d'
 			]
+		}
+	},
+	resolve: {
+		alias: {
+			// Add aliases for ethersproject packages
+			'@ethersproject/bytes': '@ethersproject/bytes/lib.esm/index.js',
+			'@ethersproject/constants': '@ethersproject/constants/lib.esm/index.js',
+			'@ethersproject/bignumber': '@ethersproject/bignumber/lib.esm/index.js',
+			'@ethersproject/contracts': '@ethersproject/contracts/lib.esm/index.js',
+			'@ethersproject/providers': '@ethersproject/providers/lib.esm/index.js',
+			'@ethersproject/units': '@ethersproject/units/lib.esm/index.js',
+			'@ethersproject/wallet': '@ethersproject/wallet/lib.esm/index.js',
+			'@ethersproject/abstract-provider': '@ethersproject/abstract-provider/lib.esm/index.js',
+			'@ethersproject/abstract-signer': '@ethersproject/abstract-signer/lib.esm/index.js',
+			process: 'process/browser',
+			stream: 'stream-browserify',
+			zlib: 'browserify-zlib',
+			util: 'util'
 		}
 	},
 	server: {
@@ -36,6 +75,7 @@ export default defineConfig({
 	},
 	define: {
 		'process.env': loadEnv('', process.cwd(), ''),
-		'import.meta.vitest': 'undefined'
+		'import.meta.vitest': 'undefined',
+		global: 'globalThis'
 	}
 });
