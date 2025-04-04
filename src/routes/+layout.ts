@@ -1,3 +1,5 @@
+export const ssr = false;
+
 import { settings } from '$lib/stores/report';
 export const load = async ({ fetch }) => {
 	const response = await fetch(
@@ -11,5 +13,3 @@ export const load = async ({ fetch }) => {
 		}
 	};
 };
-
-export const ssr = false;

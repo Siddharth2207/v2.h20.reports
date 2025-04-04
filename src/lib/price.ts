@@ -1,13 +1,42 @@
 import { ethers } from 'ethers';
-import { getSwap } from 'sushi';
+// import { getSwap } from 'sushi';
 import { type ExtractorSupportedChainId } from 'sushi/config';
+import { Token } from 'sushi/currency';
+import { DataFetcher, Router } from 'sushi/router';
+import { USDC } from 'sushi/currency';
+import { ChainId } from 'sushi/chain';
+import { networkConfig } from '$lib/constants';
 
+import { http, fallback, webSocket, PublicClient, Chain, createPublicClient } from 'viem';
+import { publicClientConfig } from 'sushi/config';
 export interface TokenPrice {
 	averagePrice: number;
 	currentPrice: number;
 }
 
-export async function getTokenPriceUsd(tokenAddress: string, tokenSymbol: string, network: string) {
+export async function getTokenPriceUsd(
+	network: string,
+	tokenAddress: string,
+	tokenSymbol: string,
+	tokenDecimals: number
+): Promise<number> {
+	try {
+		const dexScreenerPrice = await getDexScreenerUsdPrice(network, tokenAddress, tokenSymbol);
+		if (dexScreenerPrice.currentPrice > 0) {
+			return dexScreenerPrice.currentPrice;
+		}
+		const sushiPrice = await getSushiUsdPrice(network, tokenAddress, tokenDecimals);
+		return sushiPrice;
+	} catch {
+		return 0;
+	}
+}
+
+export const getDexScreenerUsdPrice = async (
+	network: string,
+	tokenAddress: string,
+	tokenSymbol: string
+) => {
 	try {
 		if (tokenSymbol.includes('USD')) {
 			return {
@@ -70,8 +99,64 @@ export async function getTokenPriceUsd(tokenAddress: string, tokenSymbol: string
 	} catch {
 		return { averagePrice: 0, currentPrice: 0 };
 	}
-}
+};
 
+export const getSushiUsdPrice = async (
+	network: string,
+	targetTokenAddress: string,
+	targetTokenDecimals: number
+): Promise<number> => {
+	try {
+		const taregtChainId = networkConfig[network].chainId;
+		const urls = networkConfig[network].rpc;
+		const fallbacks = urls.map((v) =>
+			v.startsWith('http')
+				? http(v, {
+						timeout: 10000
+					})
+				: webSocket(v, {
+						timeout: 10000,
+						keepAlive: true,
+						reconnect: true
+					})
+		);
+		const configuration = { rank: false, retryCount: 3 };
+		if (publicClientConfig[taregtChainId]?.chain) {
+			const publicClient: PublicClient = createPublicClient({
+				chain: publicClientConfig[taregtChainId]?.chain as Chain,
+				transport: fallback(fallbacks, configuration)
+			});
+			const dataFetcher = new DataFetcher(taregtChainId as ChainId, publicClient);
+			dataFetcher.startDataFetching(undefined);
+			dataFetcher.stopDataFetching();
+			const toToken: Token = USDC[taregtChainId];
+			const fromToken: Token = new Token({
+				chainId: taregtChainId,
+				decimals: targetTokenDecimals,
+				address: targetTokenAddress
+			});
+			await dataFetcher.fetchPoolsForToken(fromToken, toToken);
+			const pcMap = dataFetcher.getCurrentPoolCodeMap(fromToken, toToken);
+			const amountIn = ethers.BigNumber.from('1' + '0'.repeat(targetTokenDecimals));
+			const route = Router.findBestRoute(
+				pcMap,
+				taregtChainId,
+				fromToken,
+				amountIn.toBigInt(),
+				toToken,
+				Number(await dataFetcher.web3Client.getGasPrice()),
+				undefined
+			);
+			const amountOut = ethers.utils.formatUnits(route.amountOutBI, toToken.decimals);
+			return parseFloat(amountOut);
+		}
+		return 0;
+	} catch {
+		return 0;
+	}
+};
+
+// TODO: Remove this function
 export const fetchDexTokenPrice = async (
 	chainId: number,
 	baseTokenAddress: string,

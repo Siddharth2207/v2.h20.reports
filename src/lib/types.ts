@@ -176,7 +176,7 @@ export type RainSolverPartialAttempt = {
 export interface NetworkConfig {
 	chainId: number;
 	blockTime: number;
-	rpc: string;
+	rpc: string[];
 	subgraphUrl: string;
 	stables: StablesConfig[];
 }
