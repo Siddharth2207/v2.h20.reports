@@ -10,7 +10,7 @@
 		TableHead
 	} from 'flowbite-svelte';
 	import { tokenConfig } from '$lib/constants';
-	import type { PoolData } from '$lib/types';
+	import type { PoolData, PoolTrade } from '$lib/types';
 
 	const { settings } = $page.data.stores;
 	let network = '';
@@ -23,6 +23,10 @@
 
 	let isLoading = false;
 	let poolData: PoolData;
+	let currentPage = 1;
+	let itemsPerPage = 50;
+	let totalPages = 1;
+	let visibleTrades: PoolTrade[] = [];
 
 	$: if (poolAddress) {
 		if (tokenConfig[token].poolsV2.includes(poolAddress)) {
@@ -31,6 +35,32 @@
 			poolType = 'v3';
 		} else if (tokenConfig[token].poolsPancakSwapV3.includes(poolAddress)) {
 			poolType = 'pancakSwapV3';
+		}
+	}
+
+	$: if (poolData) {
+		totalPages = Math.ceil(poolData.poolTrades.length / itemsPerPage);
+		updateVisibleTrades();
+	}
+
+	function updateVisibleTrades() {
+		if (!poolData) return;
+		const start = (currentPage - 1) * itemsPerPage;
+		const end = start + itemsPerPage;
+		visibleTrades = poolData.poolTrades.slice(start, end);
+	}
+
+	function nextPage() {
+		if (currentPage < totalPages) {
+			currentPage++;
+			updateVisibleTrades();
+		}
+	}
+
+	function prevPage() {
+		if (currentPage > 1) {
+			currentPage--;
+			updateVisibleTrades();
 		}
 	}
 
@@ -198,7 +228,26 @@
 		</div>
 	{/if}
 	{#if poolData && poolData.poolTrades.length > 0}
-		<div class="mb-2 flex justify-end md:mb-4">
+		<div class="mb-2 flex items-center justify-between md:mb-4">
+			<div class="flex items-center gap-2">
+				<button
+					on:click={prevPage}
+					disabled={currentPage === 1}
+					class="rounded bg-gray-200 px-3 py-1.5 text-sm font-bold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+				>
+					Previous
+				</button>
+				<span class="text-sm text-gray-600">
+					Page {currentPage} of {totalPages}
+				</span>
+				<button
+					on:click={nextPage}
+					disabled={currentPage === totalPages}
+					class="rounded bg-gray-200 px-3 py-1.5 text-sm font-bold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+				>
+					Next
+				</button>
+			</div>
 			<button
 				on:click={exportToCsv}
 				class="rounded bg-blue-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-blue-700 md:px-4 md:py-2 md:text-base"
@@ -248,7 +297,7 @@
 							</TableHeadCell>
 						</TableHead>
 						<TableBody tableBodyClass="divide-y divide-gray-200">
-							{#each poolData.poolTrades as trade}
+							{#each visibleTrades as trade}
 								<TableBodyRow class="hover:bg-gray-50">
 									<TableBodyCell
 										class="truncate px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
