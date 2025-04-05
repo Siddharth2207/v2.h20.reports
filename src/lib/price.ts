@@ -1,14 +1,14 @@
 import { ethers } from 'ethers';
-// import { getSwap } from 'sushi';
-import { type ExtractorSupportedChainId } from 'sushi/config';
-import { Token } from 'sushi/currency';
-import { DataFetcher, Router } from 'sushi/router';
-import { USDC } from 'sushi/currency';
-import { ChainId } from 'sushi/chain';
+import { getSwap } from 'sushi';
+import { type ExtractorSupportedChainId } from 'sushiswap/config';
+import { Token } from 'sushiswap/currency';
+import { DataFetcher, Router } from 'sushiswap/router';
+import { USDC } from 'sushiswap/currency';
+import { ChainId } from 'sushiswap/chain';
+import { publicClientConfig } from 'sushiswap/config';
 import { networkConfig } from '$lib/constants';
 
 import { http, fallback, webSocket, PublicClient, Chain, createPublicClient } from 'viem';
-import { publicClientConfig } from 'sushi/config';
 export interface TokenPrice {
 	averagePrice: number;
 	currentPrice: number;
