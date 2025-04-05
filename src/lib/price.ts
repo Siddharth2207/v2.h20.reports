@@ -121,15 +121,16 @@ export const getSushiUsdPrice = async (
 					})
 		);
 		const configuration = { rank: false, retryCount: 3 };
-		if (publicClientConfig[taregtChainId]?.chain) {
+		if (publicClientConfig[taregtChainId as ChainId]?.chain) {
 			const publicClient: PublicClient = createPublicClient({
-				chain: publicClientConfig[taregtChainId]?.chain as Chain,
+				chain: publicClientConfig[taregtChainId as ChainId]?.chain as Chain,
 				transport: fallback(fallbacks, configuration)
 			});
 			const dataFetcher = new DataFetcher(taregtChainId as ChainId, publicClient);
 			dataFetcher.startDataFetching(undefined);
 			dataFetcher.stopDataFetching();
-			const toToken: Token = USDC[taregtChainId];
+			// @ts-expect-error ChainId type is not supported
+			const toToken: Token = USDC[taregtChainId as ChainId];
 			const fromToken: Token = new Token({
 				chainId: taregtChainId,
 				decimals: targetTokenDecimals,
@@ -140,7 +141,7 @@ export const getSushiUsdPrice = async (
 			const amountIn = ethers.BigNumber.from('1' + '0'.repeat(targetTokenDecimals));
 			const route = Router.findBestRoute(
 				pcMap,
-				taregtChainId,
+				taregtChainId as ChainId,
 				fromToken,
 				amountIn.toBigInt(),
 				toToken,
@@ -166,7 +167,7 @@ export const fetchDexTokenPrice = async (
 ): Promise<number> => {
 	try {
 		// Generate a recipient address dynamically
-		const recipientAddress = ethers.Wallet.createRandom().address;
+		const senderAddress = ethers.Wallet.createRandom().address;
 
 		// Fixed swap amount of 1 base token
 		const amountIn = ethers.utils.parseUnits('1', baseTokenDecimals).toBigInt();
@@ -176,10 +177,9 @@ export const fetchDexTokenPrice = async (
 			chainId: chainId as ExtractorSupportedChainId,
 			tokenIn: baseTokenAddress as `0x${string}`,
 			tokenOut: quoteTokenAddress as `0x${string}`,
-			to: recipientAddress as `0x${string}`,
 			amount: amountIn,
-			maxSlippage: 0.005,
-			includeTransaction: true
+			sender: senderAddress as `0x${string}`,
+			maxSlippage: 0.005
 		});
 
 		if (data.status === 'Success') {
