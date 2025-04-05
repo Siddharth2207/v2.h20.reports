@@ -399,7 +399,16 @@ export const tokenConfig: Config = {
 export const networkConfig: NetworkConfigurations = {
 	polygon: {
 		chainId: 137,
-		rpc: 'https://rpc.ankr.com/polygon',
+		rpc: [
+			'https://polygon-mainnet.g.alchemy.com/v2/y3BXawVv5uuP_g8BaDlKbKoTBGHo9zD9',
+			'https://1rpc.io/matic',
+			'https://polygon.drpc.org',
+			'https://polygon.meowrpc.com',
+			'wss://polygon-bor-rpc.publicnode.com',
+			'wss://polygon.gateway.tenderly.co',
+			'https://polygon-pokt.nodies.app',
+			'https://polygon-mainnet.public.blastapi.io'
+		],
 		blockTime: 2.1,
 		subgraphUrl:
 			'https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-matic/2024-12-13-d2b4/gn',
@@ -428,7 +437,16 @@ export const networkConfig: NetworkConfigurations = {
 	},
 	arbitrum: {
 		chainId: 42161,
-		rpc: 'https://rpc.ankr.com/arbitrum',
+		rpc: [
+			'https://arbitrum.meowrpc.com',
+			'https://arbitrum.drpc.org',
+			'https://1rpc.io/arb',
+			'https://arb1.arbitrum.io/rpc',
+			'https://arb1.lava.build',
+			'https://arbitrum.gateway.tenderly.co',
+			'wss://arbitrum.callstaticrpc.com',
+			'https://arbitrum-one.public.blastapi.io'
+		],
 		blockTime: 0.25,
 		subgraphUrl:
 			'https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-arbitrum-one/2024-12-13-7435/gn',
@@ -447,7 +465,17 @@ export const networkConfig: NetworkConfigurations = {
 	},
 	bsc: {
 		chainId: 56,
-		rpc: 'https://bsc-dataseed.bnbchain.org',
+		rpc: [
+			'https://bsc-dataseed.bnbchain.org',
+			'https://bsc-dataseed1.ninicoin.io',
+			'https://bsc-dataseed3.defibit.io',
+			'https://bsc-dataseed2.defibit.io',
+			'https://binance.llamarpc.com',
+			'https://bsc.drpc.org',
+			'https://bsc.meowrpc.com',
+			'https://1rpc.io/bnb',
+			'https://bsc-dataseed2.bnbchain.org'
+		],
 		blockTime: 3,
 		subgraphUrl:
 			'https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-bsc/2024-12-13-2244/gn',
@@ -471,7 +499,14 @@ export const networkConfig: NetworkConfigurations = {
 	},
 	base: {
 		chainId: 8453,
-		rpc: 'https://mainnet.base.org',
+		rpc: [
+			'https://1rpc.io/base',
+			'https://base.llamarpc.com',
+			'https://0xrpc.io/base',
+			'https://base.drpc.org',
+			'https://base.lava.build',
+			'https://mainnet.base.org'
+		],
 		blockTime: 2,
 		subgraphUrl:
 			'https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-base/2024-12-13-9c39/gn',
@@ -491,7 +526,12 @@ export const networkConfig: NetworkConfigurations = {
 	flare: {
 		chainId: 14,
 		blockTime: 3,
-		rpc: 'https://rpc.ankr.com/flare',
+		rpc: [
+			'https://flare-api.flare.network/ext/C/rpc',
+			'https://flare.rpc.thirdweb.com',
+			'https://rpc.au.cc/flare',
+			'https://flare.solidifi.app/ext/C/rpc'
+		],
 		subgraphUrl:
 			'https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-flare/2024-12-13-9dc7/gn',
 		stables: []
@@ -499,7 +539,13 @@ export const networkConfig: NetworkConfigurations = {
 	ethereum: {
 		chainId: 1,
 		blockTime: 12,
-		rpc: 'https://rpc.ankr.com/eth',
+		rpc: [
+			'https://1rpc.io/eth',
+			'https://eth.llamarpc.com',
+			'https://rpc.mevblocker.io',
+			'https://eth.meowrpc.com',
+			'https://ethereum.blockpi.network/v1/rpc/public'
+		],
 		subgraphUrl:
 			'https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-mainnet/2024-12-13-7f22/gn',
 		stables: [
