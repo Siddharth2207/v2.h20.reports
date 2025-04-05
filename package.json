@@ -5,10 +5,8 @@
 	"license": "LicenseRef-DCL-1.0",
 	"author": "H20",
 	"engines": {
-		"node": ">=22.x",
-		"pnpm": ">=8.15.3"
+		"node": ">=18"
 	},
-	"packageManager": "pnpm@8.15.3",
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
@@ -84,10 +82,5 @@
 		"typescript-eslint": "^8.0.0",
 		"vite": "^5.0.11",
 		"vitest": "^2.0.5"
-	},
-	"pnpm": {
-		"overrides": {
-			"@tanstack/virtual-core": "3.9.0"
-		}
 	}
 }
