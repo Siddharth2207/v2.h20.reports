@@ -1,6 +1,4 @@
 import { ethers } from 'ethers';
-import { getSwap, getPrice } from 'sushi';
-import { type ExtractorSupportedChainId } from 'sushiswap/config';
 import { Token } from 'sushiswap/currency';
 import { DataFetcher, Router } from 'sushiswap/router';
 import { USDC } from 'sushiswap/currency';
@@ -110,14 +108,13 @@ export const getSushiUsdPrice = async (
 		const taregtChainId = networkConfig[network].chainId;
 		const price = await getSushiPrice(
 			network,
-			targetTokenAddress, 
-			targetTokenDecimals, 
+			targetTokenAddress,
+			targetTokenDecimals,
 			// @ts-expect-error type not supported
-			USDC[taregtChainId].address, 
+			USDC[taregtChainId].address,
 			// @ts-expect-error type not supported
 			USDC[taregtChainId].decimals
 		);
-		console.log('price :', price);
 		return price;
 	} catch {
 		return 0;
@@ -132,7 +129,6 @@ export const getSushiPrice = async (
 	toTokenDecimals: number
 ): Promise<number> => {
 	try {
-		console.log('get sushi price here :');
 		const taregtChainId = networkConfig[network].chainId;
 		const urls = networkConfig[network].rpc;
 		const fallbacks = urls.map((v) =>
@@ -155,8 +151,6 @@ export const getSushiPrice = async (
 			const dataFetcher = new DataFetcher(taregtChainId as ChainId, publicClient);
 			dataFetcher.startDataFetching(undefined);
 			dataFetcher.stopDataFetching();
-			// // @ts-expect-error ChainId type is not supported
-			// const toToken: Token = USDC[taregtChainId as ChainId];
 			const fromToken: Token = new Token({
 				chainId: taregtChainId,
 				decimals: fromTokenDecimals,

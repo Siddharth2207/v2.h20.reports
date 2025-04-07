@@ -21,14 +21,14 @@
 
 <div>
 	<div class="max-w-8xl m-2 mx-auto w-full p-5 font-sans">
-		<div class="mb-5 flex flex-col items-center gap-4 relative">
+		<div class="relative mb-5 flex flex-col items-center gap-4">
 			<button
 				on:click={() => $marketDepthQuery.refetch()}
-				class="absolute right-0 top-0 p-2 rounded-full hover:bg-gray-100 transition-all duration-200 focus:outline-none"
+				class="absolute right-0 top-0 rounded-full p-2 transition-all duration-200 hover:bg-gray-100 focus:outline-none"
 				aria-label="Refresh data"
 			>
 				<svg
-					class="w-5 h-5 text-gray-600 {$marketDepthQuery.isFetching ? 'animate-spin' : ''}"
+					class="h-5 w-5 text-gray-600 {$marketDepthQuery.isFetching ? 'animate-spin' : ''}"
 					xmlns="http://www.w3.org/2000/svg"
 					fill="none"
 					viewBox="0 0 24 24"
