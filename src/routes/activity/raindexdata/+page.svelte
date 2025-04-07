@@ -13,6 +13,7 @@
 	import { getTokenPriceUsd } from '$lib/price';
 	import { ethers } from 'ethers';
 	import type { RaindexData } from '$lib/types';
+	import { SgTrade } from '@rainlanguage/orderbook/js_api';
 	const { settings } = $page.data.stores;
 	let network = '';
 	let token = '';
@@ -117,7 +118,7 @@
 				'trades'
 			);
 
-			raindexTrades = raindexTrades.filter((trade: any) => {
+			raindexTrades = raindexTrades.filter((trade: SgTrade) => {
 				return (
 					trade.inputVaultBalanceChange.vault.token.address === tokenConfig[token].address ||
 					trade.outputVaultBalanceChange.vault.token.address === tokenConfig[token].address
@@ -189,7 +190,7 @@
 			totalPages = Math.ceil(raindexData.length / itemsPerPage);
 			updateVisibleTrades();
 			isLoading = false;
-		} catch (error) {
+		} catch {
 			isLoading = false;
 		}
 	}
@@ -211,7 +212,7 @@
 			'Transaction Hash'
 		];
 
-		const csvData = raindexData.map((item: any) => [
+		const csvData = raindexData.map((item: RaindexData) => [
 			item.timestamp,
 			item.orderHash,
 			item.tokenIn,
@@ -225,7 +226,7 @@
 			item.transactionHash
 		]);
 
-		const csvContent = [headers.join(','), ...csvData.map((row: any) => row.join(','))].join('\n');
+		const csvContent = [headers.join(','), ...csvData.map((row) => row.join(','))].join('\n');
 
 		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
 		const link = document.createElement('a');
