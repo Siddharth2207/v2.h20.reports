@@ -16,7 +16,7 @@
 	import type { MarketDepthOrder } from '$lib/types';
 	import { ethers } from 'ethers';
 	import { OrderV3 as OrderV3Tuple } from '$lib/constants';
-	import { fetchDexTokenPrice } from '$lib/price';
+	import { getSushiPrice } from '$lib/price';
 
 	const { settings, tokenSlug, network } = $page.data.stores;
 
@@ -50,20 +50,22 @@
 				{ page: pageParam + 1, pageSize: DEFAULT_ORDERS_PAGE_SIZE }
 			);
 			const filteredBuySellOrders = await getFilteredBuySellOrders(allOrders);
-			baseTokenPrice = await fetchDexTokenPrice(
-				$settings.networks[$network]['chain-id'],
+
+			baseTokenPrice = await getSushiPrice(
+				$network,
 				baseTokenAddress,
-				quoteTokenAddress,
 				baseTokenDecimals,
+				quoteTokenAddress,
 				quoteTokenDecimals
 			);
-			quoteTokenPrice = await fetchDexTokenPrice(
-				$settings.networks[$network]['chain-id'],
+			quoteTokenPrice = await getSushiPrice(
+				$network,
 				quoteTokenAddress,
-				baseTokenAddress,
 				quoteTokenDecimals,
+				baseTokenAddress,
 				baseTokenDecimals
 			);
+
 			const orderQuotes = await getOrderQuotes(filteredBuySellOrders);
 
 			const filteredValidOrders: MarketDepthOrder[] = [];
@@ -333,9 +335,6 @@
 </script>
 
 <div class="max-w-8xl m-2 mx-auto w-full p-5 font-sans">
-	<div class="mb-5 flex flex-col items-center gap-4">
-		<h2 class="text-2xl font-bold text-gray-800">Orderbook Market Depth</h2>
-	</div>
 	<div class="mb-5 flex flex-col gap-4">
 		<div>
 			<label for="base-token-select" class="block font-semibold">Base Token:</label>
