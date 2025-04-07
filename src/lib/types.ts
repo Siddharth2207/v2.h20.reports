@@ -9,6 +9,20 @@ import type {
 	ConfigSource
 } from '@rainlanguage/orderbook/js_api';
 
+export interface RaindexData {
+	blockNumber: number;
+	timestamp: number;
+	transactionHash: string;
+	orderHash: string;
+	sender: string;
+	tokenIn: string;
+	tokenOut: string;
+	amountIn: number;
+	amountOut: number;
+	amountInUsd: number;
+	amountOutUsd: number;
+	ioRatio: number;
+}
 export interface PoolData {
 	token0Address: string;
 	token1Address: string;
