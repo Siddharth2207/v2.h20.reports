@@ -1,6 +1,4 @@
 import { ethers } from 'ethers';
-import { getSwap } from 'sushi';
-import { type ExtractorSupportedChainId } from 'sushiswap/config';
 import { Token } from 'sushiswap/currency';
 import { DataFetcher, Router } from 'sushiswap/router';
 import { USDC } from 'sushiswap/currency';
@@ -108,6 +106,30 @@ export const getSushiUsdPrice = async (
 ): Promise<number> => {
 	try {
 		const taregtChainId = networkConfig[network].chainId;
+		const price = await getSushiPrice(
+			network,
+			targetTokenAddress,
+			targetTokenDecimals,
+			// @ts-expect-error type not supported
+			USDC[taregtChainId].address,
+			// @ts-expect-error type not supported
+			USDC[taregtChainId].decimals
+		);
+		return price;
+	} catch {
+		return 0;
+	}
+};
+
+export const getSushiPrice = async (
+	network: string,
+	fromTokenAddress: string,
+	fromTokenDecimals: number,
+	toTokenAddress: string,
+	toTokenDecimals: number
+): Promise<number> => {
+	try {
+		const taregtChainId = networkConfig[network].chainId;
 		const urls = networkConfig[network].rpc;
 		const fallbacks = urls.map((v) =>
 			v.startsWith('http')
@@ -129,16 +151,19 @@ export const getSushiUsdPrice = async (
 			const dataFetcher = new DataFetcher(taregtChainId as ChainId, publicClient);
 			dataFetcher.startDataFetching(undefined);
 			dataFetcher.stopDataFetching();
-			// @ts-expect-error ChainId type is not supported
-			const toToken: Token = USDC[taregtChainId as ChainId];
 			const fromToken: Token = new Token({
 				chainId: taregtChainId,
-				decimals: targetTokenDecimals,
-				address: targetTokenAddress
+				decimals: fromTokenDecimals,
+				address: fromTokenAddress
+			});
+			const toToken: Token = new Token({
+				chainId: taregtChainId,
+				decimals: toTokenDecimals,
+				address: toTokenAddress
 			});
 			await dataFetcher.fetchPoolsForToken(fromToken, toToken);
 			const pcMap = dataFetcher.getCurrentPoolCodeMap(fromToken, toToken);
-			const amountIn = ethers.BigNumber.from('1' + '0'.repeat(targetTokenDecimals));
+			const amountIn = ethers.BigNumber.from('1' + '0'.repeat(fromTokenDecimals));
 			const route = Router.findBestRoute(
 				pcMap,
 				taregtChainId as ChainId,
@@ -151,48 +176,6 @@ export const getSushiUsdPrice = async (
 			const amountOut = ethers.utils.formatUnits(route.amountOutBI, toToken.decimals);
 			return parseFloat(amountOut);
 		}
-		return 0;
-	} catch {
-		return 0;
-	}
-};
-
-// TODO: Remove this function
-export const fetchDexTokenPrice = async (
-	chainId: number,
-	baseTokenAddress: string,
-	quoteTokenAddress: string,
-	baseTokenDecimals: number,
-	quoteTokenDecimals: number
-): Promise<number> => {
-	try {
-		// Generate a recipient address dynamically
-		const senderAddress = ethers.Wallet.createRandom().address;
-
-		// Fixed swap amount of 1 base token
-		const amountIn = ethers.utils.parseUnits('1', baseTokenDecimals).toBigInt();
-
-		// Get the swap data from SushiSwap
-		const data = await getSwap({
-			chainId: chainId as ExtractorSupportedChainId,
-			tokenIn: baseTokenAddress as `0x${string}`,
-			tokenOut: quoteTokenAddress as `0x${string}`,
-			amount: amountIn,
-			sender: senderAddress as `0x${string}`,
-			maxSlippage: 0.005
-		});
-
-		if (data.status === 'Success') {
-			const amountInFormatted: number = parseFloat(
-				ethers.utils.formatUnits(data.amountIn, baseTokenDecimals)
-			);
-			const amountOutFormatted: number = parseFloat(
-				ethers.utils.formatUnits(data.assumedAmountOut, quoteTokenDecimals)
-			);
-			const price = amountOutFormatted / amountInFormatted;
-			return parseFloat(price.toFixed(18));
-		}
-
 		return 0;
 	} catch {
 		return 0;

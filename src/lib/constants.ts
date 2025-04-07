@@ -528,8 +528,8 @@ export const networkConfig: NetworkConfigurations = {
 		blockTime: 3,
 		rpc: [
 			'https://flare-api.flare.network/ext/C/rpc',
-			'https://flare.rpc.thirdweb.com',
 			'https://rpc.au.cc/flare',
+			'https://flare.rpc.thirdweb.com',
 			'https://flare.solidifi.app/ext/C/rpc'
 		],
 		subgraphUrl:
