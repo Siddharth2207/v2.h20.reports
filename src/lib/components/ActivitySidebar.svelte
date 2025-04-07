@@ -71,7 +71,18 @@
 				<svelte:fragment slot="icon">
 					<FileCsvSolid class="h-5 w-5" />
 					<span class="px-3 text-base text-gray-600 hover:text-indigo-600 dark:text-white"
-						>Block Data</span
+						>Historical Data</span
+					>
+				</svelte:fragment>
+			</SidebarItem>
+		</SidebarGroup>
+
+		<SidebarGroup class="gap-4 p-2">
+			<SidebarItem label="" href="/activity/raindexdata">
+				<svelte:fragment slot="icon">
+					<FileCsvSolid class="h-5 w-5" />
+					<span class="px-3 text-base text-gray-600 hover:text-indigo-600 dark:text-white"
+						>Raindex Data</span
 					>
 				</svelte:fragment>
 			</SidebarItem>

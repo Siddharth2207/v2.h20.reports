@@ -1,0 +1,468 @@
+<script lang="ts">
+	import { page } from '$app/stores';
+	import {
+		Table,
+		TableBody,
+		TableBodyRow,
+		TableHeadCell,
+		TableBodyCell,
+		TableHead
+	} from 'flowbite-svelte';
+	import { tokenConfig } from '$lib/constants';
+	import { fetchAllPaginatedData } from '$lib/orders';
+	import { getTokenPriceUsd } from '$lib/price';
+	import { ethers } from 'ethers';
+	import type { RaindexData } from '$lib/types';
+	import { SgTrade } from '@rainlanguage/orderbook/js_api';
+	const { settings } = $page.data.stores;
+	let network = '';
+	let token = '';
+	let fromTimestamp = '';
+	let toTimestamp = '';
+
+	let isLoading = false;
+	let raindexData: RaindexData[] = [];
+	let currentPage = 1;
+	let itemsPerPage = 50;
+	let totalPages = 1;
+	let visibleTrades: RaindexData[] = [];
+
+	$: if (raindexData) {
+		totalPages = Math.ceil(raindexData.length / itemsPerPage);
+		updateVisibleTrades();
+	}
+
+	function updateVisibleTrades() {
+		if (!raindexData) return;
+		const start = (currentPage - 1) * itemsPerPage;
+		const end = start + itemsPerPage;
+		visibleTrades = raindexData.slice(start, end);
+	}
+
+	function nextPage() {
+		if (currentPage < totalPages) {
+			currentPage++;
+			updateVisibleTrades();
+		}
+	}
+
+	function prevPage() {
+		if (currentPage > 1) {
+			currentPage--;
+			updateVisibleTrades();
+		}
+	}
+
+	// Custom query for fetching raindex data
+	// Raindex orderbook sdk is intentionally not used here to avoid fetching unnecessary data.
+	const fetchAllTradesQuery = `query OrderTakesListQuery($skip: Int = 0, $first: Int = 1000, $timestampGt: Int!, $timestampLt: Int!) {
+    trades(
+    orderBy: timestamp
+    orderDirection: desc
+    skip: $skip
+    first: $first
+    where: {
+      and: [
+        { timestamp_gt: $timestampGt }
+        { timestamp_lt: $timestampLt }
+      ]
+    }
+  ){
+   id
+    tradeEvent {
+      transaction {
+        id
+        blockNumber
+        timestamp
+		from
+      }
+    }
+	order {
+      orderHash
+    }
+    inputVaultBalanceChange {
+	  amount
+      vault {
+        token {
+          address
+          decimals
+          symbol
+        }
+      }
+    }
+	outputVaultBalanceChange {
+      amount
+      vault {
+        token {
+          address
+          decimals
+          symbol
+        }
+      }
+    }
+  }
+    }`;
+
+	async function getRaindexData() {
+		try {
+			raindexData = [];
+			isLoading = true;
+
+			const fromTimestampUnix = new Date(fromTimestamp).getTime() / 1000;
+			const toTimestampUnix = new Date(toTimestamp).getTime() / 1000;
+			const endpoint = $settings.subgraphs[network];
+			let raindexTrades = await fetchAllPaginatedData(
+				endpoint,
+				fetchAllTradesQuery,
+				{ timestampGt: fromTimestampUnix, timestampLt: toTimestampUnix },
+				'trades'
+			);
+
+			raindexTrades = raindexTrades.filter((trade: SgTrade) => {
+				return (
+					trade.inputVaultBalanceChange.vault.token.address === tokenConfig[token].address ||
+					trade.outputVaultBalanceChange.vault.token.address === tokenConfig[token].address
+				);
+			});
+
+			const tokenPriceUsdMap = new Map<string, number>();
+			for (const trade of raindexTrades) {
+				for (const token of [
+					trade.inputVaultBalanceChange.vault.token,
+					trade.outputVaultBalanceChange.vault.token
+				]) {
+					if (!tokenPriceUsdMap.has(token.address)) {
+						const tokenPrice = await getTokenPriceUsd(
+							network,
+							token.address,
+							token?.symbol || '',
+							parseFloat(token?.decimals || '0')
+						);
+						tokenPriceUsdMap.set(token.address, tokenPrice);
+					}
+				}
+			}
+			for (const trade of raindexTrades) {
+				const amountIn = Math.abs(
+					parseFloat(
+						ethers.utils.formatUnits(
+							trade.inputVaultBalanceChange.amount,
+							trade.inputVaultBalanceChange.vault.token.decimals
+						)
+					)
+				);
+				const amountOut = Math.abs(
+					parseFloat(
+						ethers.utils.formatUnits(
+							trade.outputVaultBalanceChange.amount,
+							trade.outputVaultBalanceChange.vault.token.decimals
+						)
+					)
+				);
+
+				let amountInUsd = 0;
+				let amountOutUsd = 0;
+				if (tokenPriceUsdMap.has(trade.inputVaultBalanceChange.vault.token.address)) {
+					const price = tokenPriceUsdMap.get(trade.inputVaultBalanceChange.vault.token.address);
+					amountInUsd = amountIn * (price ?? 0);
+				}
+				if (tokenPriceUsdMap.has(trade.outputVaultBalanceChange.vault.token.address)) {
+					const price = tokenPriceUsdMap.get(trade.outputVaultBalanceChange.vault.token.address);
+					amountOutUsd = amountOut * (price ?? 0);
+				}
+				const ioRatio = amountOut > 0 ? amountIn / amountOut : 0;
+				raindexData.push({
+					blockNumber: trade.tradeEvent.transaction.blockNumber,
+					timestamp: trade.tradeEvent.transaction.timestamp,
+					transactionHash: trade.tradeEvent.transaction.id,
+					orderHash: trade.order.orderHash,
+					sender: trade.tradeEvent.transaction.from,
+					tokenIn: trade.inputVaultBalanceChange.vault.token.symbol,
+					tokenOut: trade.outputVaultBalanceChange.vault.token.symbol,
+					amountIn: amountIn,
+					amountOut: amountOut,
+					amountInUsd: amountInUsd,
+					amountOutUsd: amountOutUsd,
+					ioRatio: ioRatio
+				});
+			}
+			currentPage = 1;
+			totalPages = Math.ceil(raindexData.length / itemsPerPage);
+			updateVisibleTrades();
+			isLoading = false;
+		} catch {
+			isLoading = false;
+		}
+	}
+
+	function exportToCsv() {
+		if (!raindexData || raindexData.length === 0) return;
+
+		const headers = [
+			'Timestamp',
+			'Order Hash',
+			'Token In',
+			'Token Out',
+			'Amount In',
+			'Amount Out',
+			'Amount In Usd',
+			'Amount Out Usd',
+			'IO Ratio',
+			'Sender',
+			'Transaction Hash'
+		];
+
+		const csvData = raindexData.map((item: RaindexData) => [
+			item.timestamp,
+			item.orderHash,
+			item.tokenIn,
+			item.tokenOut,
+			item.amountIn,
+			item.amountOut,
+			item.amountInUsd,
+			item.amountOutUsd,
+			item.ioRatio,
+			item.sender,
+			item.transactionHash
+		]);
+
+		const csvContent = [headers.join(','), ...csvData.map((row) => row.join(','))].join('\n');
+
+		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+		const link = document.createElement('a');
+		const url = URL.createObjectURL(blob);
+		link.setAttribute('href', url);
+		link.setAttribute('download', `block_data_${new Date().toISOString()}.csv`);
+		link.style.visibility = 'hidden';
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	}
+</script>
+
+<div class="flex min-h-screen flex-col p-2 md:p-4">
+	<div class="mb-3 flex flex-col items-center gap-2 md:mb-5 md:gap-4">
+		<h2 class="text-lg font-bold text-gray-800 md:text-2xl">Raindex Data</h2>
+	</div>
+	<div
+		class="mb-3 flex flex-col items-center gap-2 overflow-x-auto rounded-lg bg-white p-2 shadow-sm md:mb-5 md:flex-row md:gap-4 md:p-3"
+	>
+		<div class="w-full md:w-40">
+			<select
+				id="network-select"
+				class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
+				bind:value={network}
+			>
+				<option value="">Network</option>
+				{#each Object.keys($settings.networks) as network}
+					<option value={network}>{network}</option>
+				{/each}
+			</select>
+		</div>
+
+		<div class="w-full md:w-40">
+			<select
+				id="token-select"
+				class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
+				bind:value={token}
+			>
+				<option value="">Token</option>
+				{#each Object.keys(tokenConfig).filter((token) => tokenConfig[token].network === network) as token}
+					<option value={token}>{token}</option>
+				{/each}
+			</select>
+		</div>
+
+		{#if token}
+			<div class="w-full md:w-44">
+				<input
+					type="datetime-local"
+					placeholder="From"
+					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
+					bind:value={fromTimestamp}
+				/>
+			</div>
+
+			<div class="w-full md:w-44">
+				<input
+					type="datetime-local"
+					placeholder="To"
+					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
+					bind:value={toTimestamp}
+				/>
+			</div>
+
+			<div class="w-full md:w-auto">
+				<button
+					on:click={getRaindexData}
+					disabled={!fromTimestamp || !toTimestamp || !network || !token}
+					class="w-full rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto md:px-4 md:py-2 md:text-sm"
+				>
+					Apply Filter
+				</button>
+			</div>
+		{/if}
+	</div>
+
+	{#if isLoading}
+		<div class="mt-4 flex flex-col items-center justify-start md:mt-10">
+			<div
+				class="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-indigo-600 md:h-10 md:w-10"
+			></div>
+			<p class="mt-2 text-base font-medium text-gray-600 md:mt-3 md:text-lg">Loading...</p>
+		</div>
+	{/if}
+	{#if raindexData && raindexData.length > 0}
+		<div class="mb-2 flex items-center justify-between md:mb-4">
+			<div class="flex items-center gap-2">
+				<button
+					on:click={prevPage}
+					disabled={currentPage === 1}
+					class="rounded bg-gray-200 px-3 py-1.5 text-sm font-bold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+				>
+					Previous
+				</button>
+				<span class="text-sm text-gray-600">
+					Page {currentPage} of {totalPages}
+				</span>
+				<button
+					on:click={nextPage}
+					disabled={currentPage === totalPages}
+					class="rounded bg-gray-200 px-3 py-1.5 text-sm font-bold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+				>
+					Next
+				</button>
+			</div>
+			<button
+				on:click={exportToCsv}
+				class="rounded bg-blue-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-blue-700 md:px-4 md:py-2 md:text-base"
+			>
+				Export to CSV
+			</button>
+		</div>
+		<div class="overflow-x-auto rounded-lg border">
+			<div class="inline-block min-w-full align-middle">
+				<div class="overflow-hidden">
+					<Table class="min-w-full divide-y divide-gray-200">
+						<TableHead class="sticky top-0 z-10 bg-gray-50 shadow-sm">
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
+								Timestamp
+							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
+								Order Hash
+							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
+								Token In
+							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
+								Token Out
+							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
+								Amount In
+							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
+								Amount Out
+							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
+								IO Ratio
+							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
+								Sender
+							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
+								Transaction Hash
+							</TableHeadCell>
+						</TableHead>
+						<TableBody tableBodyClass="divide-y divide-gray-200">
+							{#each visibleTrades as trade}
+								<TableBodyRow class="hover:bg-gray-50">
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										{new Date(trade.timestamp * 1000).toLocaleString()}
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										<a
+											href={`https://v2.raindex.finance/orders/${network}-${trade.orderHash}`}
+											target="_blank"
+											class="text-blue-500 hover:text-blue-600"
+										>
+											{trade.orderHash.slice(0, 6)}...{trade.orderHash.slice(-4)}
+										</a>
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										{trade.tokenIn}
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										{trade.tokenOut}
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										{trade.amountIn.toFixed(2)}
+										{trade.tokenIn} (${trade.amountInUsd.toFixed(2)})
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										{trade.amountOut.toFixed(2)}
+										{trade.tokenOut} (${trade.amountOutUsd.toFixed(2)})
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										{trade.ioRatio.toFixed(6)}
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										{trade.sender}
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										{trade.transactionHash}
+									</TableBodyCell>
+								</TableBodyRow>
+							{/each}
+						</TableBody>
+					</Table>
+				</div>
+			</div>
+		</div>
+	{:else if !isLoading}
+		{#if !fromTimestamp || !toTimestamp || !network || !token}
+			<div class="mt-4 text-center text-sm text-gray-500 md:text-base">
+				Please select the parameters and submit the query.
+			</div>
+		{:else if raindexData && raindexData.length === 0}
+			<div class="mt-4 text-center text-sm text-gray-500 md:text-base">
+				No raindex data available for the selected parameters.
+			</div>
+		{/if}
+	{/if}
+</div>
