@@ -343,8 +343,8 @@
 		<div class="overflow-x-auto rounded-lg border">
 			<div class="inline-block min-w-full align-middle">
 				<div class="overflow-hidden">
-					<Table class="min-w-full divide-y divide-gray-200">
-						<TableHead class="sticky top-0 z-10 bg-gray-50 shadow-sm">
+					<Table class="min-w-full">
+						<TableHead class="sticky top-0 z-10 border-b border-gray-200 bg-gray-50">
 							<TableHeadCell
 								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
 							>
