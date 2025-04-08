@@ -13,12 +13,13 @@
 	import { getTokenPriceUsd } from '$lib/price';
 	import { ethers } from 'ethers';
 	import type { RaindexData } from '$lib/types';
-	import { SgTrade } from '@rainlanguage/orderbook/js_api';
+	import type { SgTrade } from '@rainlanguage/orderbook/js_api';
 	const { settings } = $page.data.stores;
 	let network = '';
 	let token = '';
 	let fromTimestamp = '';
 	let toTimestamp = '';
+	let filterOrderHash = '';
 
 	let isLoading = false;
 	let raindexData: RaindexData[] = [];
@@ -27,16 +28,35 @@
 	let totalPages = 1;
 	let visibleTrades: RaindexData[] = [];
 
-	$: if (raindexData) {
-		totalPages = Math.ceil(raindexData.length / itemsPerPage);
-		updateVisibleTrades();
+	function filterRaindexData(data: RaindexData[]): RaindexData[] {
+		if (!data) return [];
+		if (!filterOrderHash) return data;
+		return data.filter((trade) => trade.orderHash.toLowerCase() === filterOrderHash.toLowerCase());
 	}
 
-	function updateVisibleTrades() {
-		if (!raindexData) return;
+	$: if (raindexData) {
+		const filteredData = filterRaindexData(raindexData);
+		totalPages = Math.ceil(filteredData.length / itemsPerPage);
+		currentPage = Math.min(currentPage, totalPages) || 1;
+		updateVisibleTrades(filteredData);
+	}
+
+	// Watch for changes in filterOrderHash and reset page
+	$: if (filterOrderHash !== undefined) {
+		currentPage = 1;
+		if (raindexData) {
+			const filteredData = filterRaindexData(raindexData);
+			totalPages = Math.ceil(filteredData.length / itemsPerPage);
+			updateVisibleTrades(filteredData);
+		}
+	}
+
+	function updateVisibleTrades(data = raindexData) {
+		if (!data) return;
+		const filteredData = filterRaindexData(data);
 		const start = (currentPage - 1) * itemsPerPage;
 		const end = start + itemsPerPage;
-		visibleTrades = raindexData.slice(start, end);
+		visibleTrades = filteredData.slice(start, end);
 	}
 
 	function nextPage() {
@@ -198,6 +218,7 @@
 	function exportToCsv() {
 		if (!raindexData || raindexData.length === 0) return;
 
+		const dataToExport = filterRaindexData(raindexData);
 		const headers = [
 			'Timestamp',
 			'Order Hash',
@@ -212,7 +233,7 @@
 			'Transaction Hash'
 		];
 
-		const csvData = raindexData.map((item: RaindexData) => [
+		const csvData = dataToExport.map((item: RaindexData) => [
 			item.timestamp,
 			item.orderHash,
 			item.tokenIn,
@@ -289,6 +310,15 @@
 					placeholder="To"
 					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
 					bind:value={toTimestamp}
+				/>
+			</div>
+
+			<div class="w-full md:w-96">
+				<input
+					type="text"
+					placeholder="Filter by Order Hash"
+					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
+					bind:value={filterOrderHash}
 				/>
 			</div>
 
