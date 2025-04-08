@@ -10,6 +10,7 @@ import { getTokenPriceUsd } from '$lib/price';
 import axios from 'axios';
 import { ethers } from 'ethers';
 import pako from 'pako';
+// @ts-expect-error no types for cbor-web
 import * as CBOR from 'cbor-web';
 
 export function formatTimestamp(timestamp: number) {
