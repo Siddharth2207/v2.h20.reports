@@ -19,7 +19,6 @@
 	let token = '';
 	let fromTimestamp = '';
 	let toTimestamp = '';
-	let filterOrderHash = '';
 	let showOnlyDsf = false;
 
 	let isLoading = false;
@@ -29,22 +28,50 @@
 	let totalPages = 1;
 	let visibleTrades: RaindexData[] = [];
 
+	let tokenPriceUsdMap = new Map<
+		string,
+		{ price: number; decimals: number; symbol: string; address: string }
+	>();
+	let orderHashMap = new Map<string, string>();
+	let selectedOrderHash = '';
+	let selectedTokenSymbol = '';
+
+	interface TokenMapValue {
+		symbol: string;
+		address: string;
+	}
+	let tokenSymbolMap = new Map<string, TokenMapValue>();
+
+	$: filteredTokens = Array.from(tokenSymbolMap.values()).filter(
+		(t) => t.address.toLowerCase() !== (tokenConfig[token]?.address || '').toLowerCase()
+	);
+
 	function filterRaindexData(data: RaindexData[]): RaindexData[] {
 		if (!data) return [];
 		let filteredData = data;
 
-		// Apply order hash filter
-		if (filterOrderHash) {
-			filteredData = filteredData.filter(
-				(trade) => trade.orderHash.toLowerCase() === filterOrderHash.toLowerCase()
-			);
-		}
-
 		// Apply order type filter
 		if (showOnlyDsf) {
 			filteredData = filteredData.filter((trade) => {
-				return trade.orderType === 'DSF';
+				if (!trade.orderMeta) return false;
+				return isOrderDsf(trade.orderMeta);
 			});
+		}
+
+		// Apply selected order hash filter
+		if (selectedOrderHash) {
+			filteredData = filteredData.filter((trade) => trade.orderHash === selectedOrderHash);
+		}
+
+		// Apply selected token symbol filter
+		if (selectedTokenSymbol) {
+			const [_, selectedAddress] = selectedTokenSymbol.split('-');
+			if (selectedAddress) {
+				filteredData = filteredData.filter(
+					(trade) =>
+						trade.tokenIn.address === selectedAddress || trade.tokenOut.address === selectedAddress
+				);
+			}
 		}
 
 		return filteredData;
@@ -57,8 +84,12 @@
 		updateVisibleTrades(filteredData);
 	}
 
-	// Watch for changes in filterOrderHash or showOnlyDsf and reset page
-	$: if (filterOrderHash !== undefined || showOnlyDsf !== undefined) {
+	// Watch for changes in showOnlyDsf, selectedOrderHash, and selectedTokenSymbol and reset page
+	$: if (
+		showOnlyDsf !== undefined ||
+		selectedOrderHash !== undefined ||
+		selectedTokenSymbol !== undefined
+	) {
 		currentPage = 1;
 		if (raindexData) {
 			const filteredData = filterRaindexData(raindexData);
@@ -162,7 +193,12 @@
 				);
 			});
 
-			const tokenPriceUsdMap = new Map<string, number>();
+			for (const trade of raindexTrades) {
+				if (!orderHashMap.has(trade.order.orderHash)) {
+					orderHashMap.set(trade.order.orderHash, trade.order.orderHash);
+				}
+			}
+
 			for (const trade of raindexTrades) {
 				for (const token of [
 					trade.inputVaultBalanceChange.vault.token,
@@ -175,7 +211,12 @@
 							token?.symbol || '',
 							parseFloat(token?.decimals || '0')
 						);
-						tokenPriceUsdMap.set(token.address, tokenPrice);
+						tokenPriceUsdMap.set(token.address, {
+							price: tokenPrice,
+							decimals: token.decimals,
+							symbol: token.symbol,
+							address: token.address
+						});
 					}
 				}
 			}
@@ -200,12 +241,16 @@
 				let amountInUsd = 0;
 				let amountOutUsd = 0;
 				if (tokenPriceUsdMap.has(trade.inputVaultBalanceChange.vault.token.address)) {
-					const price = tokenPriceUsdMap.get(trade.inputVaultBalanceChange.vault.token.address);
-					amountInUsd = amountIn * (price ?? 0);
+					const tokenPriceMap = tokenPriceUsdMap.get(
+						trade.inputVaultBalanceChange.vault.token.address
+					);
+					amountInUsd = amountIn * (tokenPriceMap?.price ?? 0);
 				}
 				if (tokenPriceUsdMap.has(trade.outputVaultBalanceChange.vault.token.address)) {
-					const price = tokenPriceUsdMap.get(trade.outputVaultBalanceChange.vault.token.address);
-					amountOutUsd = amountOut * (price ?? 0);
+					const tokenPriceMap = tokenPriceUsdMap.get(
+						trade.outputVaultBalanceChange.vault.token.address
+					);
+					amountOutUsd = amountOut * (tokenPriceMap?.price ?? 0);
 				}
 				const ioRatio = amountOut > 0 ? amountIn / amountOut : 0;
 				raindexData.push({
@@ -216,8 +261,18 @@
 					orderMeta: trade.order.meta,
 					orderType: isOrderDsf(trade.order.meta) ? 'DSF' : 'NON-DSF',
 					sender: trade.tradeEvent.transaction.from,
-					tokenIn: trade.inputVaultBalanceChange.vault.token.symbol,
-					tokenOut: trade.outputVaultBalanceChange.vault.token.symbol,
+					tokenIn: {
+						address: trade.inputVaultBalanceChange.vault.token.address,
+						decimals: trade.inputVaultBalanceChange.vault.token.decimals,
+						symbol: trade.inputVaultBalanceChange.vault.token.symbol,
+						id: trade.inputVaultBalanceChange.vault.token.id
+					},
+					tokenOut: {
+						address: trade.outputVaultBalanceChange.vault.token.address,
+						decimals: trade.outputVaultBalanceChange.vault.token.decimals,
+						symbol: trade.outputVaultBalanceChange.vault.token.symbol,
+						id: trade.outputVaultBalanceChange.vault.token.id
+					},
 					amountIn: amountIn,
 					amountOut: amountOut,
 					amountInUsd: amountInUsd,
@@ -229,6 +284,23 @@
 			totalPages = Math.ceil(raindexData.length / itemsPerPage);
 			updateVisibleTrades();
 			isLoading = false;
+
+			// Create unique order hashes map
+			orderHashMap = new Map(raindexData.map((trade) => [trade.orderHash, trade.orderHash]));
+			// Create unique token symbols map
+			tokenSymbolMap = new Map(
+				Array.from(
+					new Set([
+						...raindexData.map((trade) => `${trade.tokenIn.symbol}-${trade.tokenIn.address}`),
+						...raindexData.map((trade) => `${trade.tokenOut.symbol}-${trade.tokenOut.address}`)
+					])
+				)
+					.filter(Boolean)
+					.map((key) => {
+						const [symbol, address] = key.split('-');
+						return [key, { symbol, address }];
+					})
+			);
 		} catch {
 			isLoading = false;
 		}
@@ -257,8 +329,8 @@
 			item.timestamp,
 			item.orderHash,
 			item.orderType,
-			item.tokenIn,
-			item.tokenOut,
+			item.tokenIn.symbol,
+			item.tokenOut.symbol,
 			item.amountIn,
 			item.amountOut,
 			item.amountInUsd,
@@ -315,7 +387,6 @@
 			</select>
 		</div>
 
-		<!-- {#if token} -->
 		<div class="w-full md:w-44">
 			<input
 				type="datetime-local"
@@ -334,26 +405,6 @@
 			/>
 		</div>
 
-		<div class="w-full md:w-96">
-			<input
-				type="text"
-				placeholder="Filter by Order Hash"
-				class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
-				bind:value={filterOrderHash}
-			/>
-		</div>
-
-		<div class="flex items-center gap-2">
-			<label class="flex items-center gap-2 text-sm text-gray-700">
-				<input
-					type="checkbox"
-					class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-					bind:checked={showOnlyDsf}
-				/>
-				<span>Show only DSF orders</span>
-			</label>
-		</div>
-
 		<div class="w-full md:w-auto">
 			<button
 				on:click={getRaindexData}
@@ -363,7 +414,6 @@
 				Apply
 			</button>
 		</div>
-		<!-- {/if} -->
 	</div>
 
 	{#if isLoading}
@@ -375,32 +425,68 @@
 		</div>
 	{/if}
 	{#if raindexData && raindexData.length > 0}
-		<div class="mb-2 flex items-center justify-between md:mb-4">
-			<div class="flex items-center gap-2">
-				<button
-					on:click={prevPage}
-					disabled={currentPage === 1}
-					class="rounded bg-gray-200 px-3 py-1.5 text-sm font-bold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
-				>
-					Previous
-				</button>
-				<span class="text-sm text-gray-600">
-					Page {currentPage} of {totalPages}
-				</span>
-				<button
-					on:click={nextPage}
-					disabled={currentPage === totalPages}
-					class="rounded bg-gray-200 px-3 py-1.5 text-sm font-bold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
-				>
-					Next
-				</button>
+		<div class="mb-2 flex flex-col gap-2 md:mb-4">
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-2">
+					<button
+						on:click={prevPage}
+						disabled={currentPage === 1}
+						class="rounded bg-gray-200 px-3 py-1.5 text-sm font-bold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						Previous
+					</button>
+					<span class="text-sm text-gray-600">
+						Page {currentPage} of {totalPages}
+					</span>
+					<button
+						on:click={nextPage}
+						disabled={currentPage === totalPages}
+						class="rounded bg-gray-200 px-3 py-1.5 text-sm font-bold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						Next
+					</button>
+				</div>
+				<div class="flex items-center gap-4">
+					<div class="w-64">
+						<select
+							bind:value={selectedOrderHash}
+							class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+						>
+							<option value="">Filter by Order Hash</option>
+							{#each Array.from(orderHashMap.keys()) as hash}
+								<option value={hash}>{hash.slice(0, 6)}...{hash.slice(-4)}</option>
+							{/each}
+						</select>
+					</div>
+					<div class="w-64">
+						<select
+							bind:value={selectedTokenSymbol}
+							class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+						>
+							<option value="">Filter by Token</option>
+							{#each filteredTokens as token}
+								<option value={`${token.symbol}-${token.address}`}>
+									{token.symbol}
+								</option>
+							{/each}
+						</select>
+					</div>
+					<label class="flex items-center gap-2 text-sm text-gray-700">
+						<input
+							type="checkbox"
+							class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+							bind:checked={showOnlyDsf}
+						/>
+						<span>Show only DSF orders</span>
+					</label>
+					<button
+						on:click={exportToCsv}
+						class="rounded bg-blue-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-blue-700 md:px-4 md:py-2 md:text-base"
+					>
+						Export to CSV
+					</button>
+				</div>
 			</div>
-			<button
-				on:click={exportToCsv}
-				class="rounded bg-blue-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-blue-700 md:px-4 md:py-2 md:text-base"
-			>
-				Export to CSV
-			</button>
 		</div>
 		<div class="overflow-x-auto rounded-lg border">
 			<div class="inline-block min-w-full align-middle">
@@ -475,24 +561,24 @@
 									<TableBodyCell
 										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
 									>
-										{trade.tokenIn}
+										{trade.tokenIn.symbol}
 									</TableBodyCell>
 									<TableBodyCell
 										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
 									>
-										{trade.tokenOut}
+										{trade.tokenOut.symbol}
 									</TableBodyCell>
 									<TableBodyCell
 										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
 									>
 										{trade.amountIn.toFixed(2)}
-										{trade.tokenIn} (${trade.amountInUsd.toFixed(2)})
+										{trade.tokenIn.symbol} (${trade.amountInUsd.toFixed(2)})
 									</TableBodyCell>
 									<TableBodyCell
 										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
 									>
 										{trade.amountOut.toFixed(2)}
-										{trade.tokenOut} (${trade.amountOutUsd.toFixed(2)})
+										{trade.tokenOut.symbol} (${trade.amountOutUsd.toFixed(2)})
 									</TableBodyCell>
 									<TableBodyCell
 										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"

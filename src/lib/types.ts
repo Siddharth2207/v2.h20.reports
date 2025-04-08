@@ -6,7 +6,8 @@ import type {
 	SgVault,
 	SgVaultBalanceChangeUnwrapped,
 	NetworkConfigSource,
-	ConfigSource
+	ConfigSource,
+	SgErc20
 } from '@rainlanguage/orderbook/js_api';
 
 export interface RaindexData {
@@ -17,8 +18,8 @@ export interface RaindexData {
 	orderMeta: string;
 	orderType: 'DSF' | 'NON-DSF';
 	sender: string;
-	tokenIn: string;
-	tokenOut: string;
+	tokenIn: SgErc20;
+	tokenOut: SgErc20;
 	amountIn: number;
 	amountOut: number;
 	amountInUsd: number;
