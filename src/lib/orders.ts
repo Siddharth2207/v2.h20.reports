@@ -388,7 +388,6 @@ export function isOrderDsf(orderMeta: string): boolean {
 :set(hash(order-hash() "last-trade-output-token") output-token());`
 		);
 	} catch (error) {
-		console.error('Error checking if order is DSF:', error);
 		return false;
 	}
 }
