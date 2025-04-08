@@ -346,7 +346,7 @@
 		const link = document.createElement('a');
 		const url = URL.createObjectURL(blob);
 		link.setAttribute('href', url);
-		link.setAttribute('download', `block_data_${new Date().toISOString()}.csv`);
+		link.setAttribute('download', `${token}-${network}-${fromTimestamp}-${toTimestamp}.csv`);
 		link.style.visibility = 'hidden';
 		document.body.appendChild(link);
 		link.click();
