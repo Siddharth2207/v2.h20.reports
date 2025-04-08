@@ -9,6 +9,8 @@ import { getVaultBalanceChanges } from '@rainlanguage/orderbook/js_api';
 import { getTokenPriceUsd } from '$lib/price';
 import axios from 'axios';
 import { ethers } from 'ethers';
+import pako from 'pako';
+import * as CBOR from 'cbor-web';
 
 export function formatTimestamp(timestamp: number) {
 	if (!timestamp || timestamp === 0) {
@@ -370,4 +372,42 @@ export async function fetchAllPaginatedData(
 	} catch {
 		return [];
 	}
+}
+
+// Non-canonical order check
+export function isOrderDsf(orderMeta: string): boolean {
+	try {
+		let rainlangDoc = orderMeta.slice(18, orderMeta.length);
+		let decoded = CBOR.decodeAllSync(rainlangDoc);
+		let structure = bytesToMeta(decoded[0].get(0), 'string');
+		
+		return structure.includes(
+			`last-io:,
+:set(hash(order-hash() "last-trade-time") now()),
+:set(hash(order-hash() "last-trade-io") last-io),
+:set(hash(order-hash() "last-trade-output-token") output-token());`
+		);
+	} catch (error) {
+		console.error("Error checking if order is DSF:", error);
+		return false;
+	}
+}
+
+function bytesToMeta(bytes: string | Uint8Array, type: 'json' | 'string'): any {
+	if (ethers.utils.isBytesLike(bytes)) {
+		const _bytesArr = ethers.utils.arrayify(bytes);
+		let _meta;
+		if (type === 'json') {
+			_meta = pako.inflate(_bytesArr, { to: 'string' });
+		} else {
+			_meta = new TextDecoder().decode(_bytesArr).slice(3);
+		}
+		let res;
+		try {
+			res = JSON.parse(_meta);
+		} catch {
+			res = _meta;
+		}
+		return res;
+	} else throw new Error('invalid meta');
 }
