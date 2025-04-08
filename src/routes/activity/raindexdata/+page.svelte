@@ -316,53 +316,53 @@
 		</div>
 
 		<!-- {#if token} -->
-			<div class="w-full md:w-44">
+		<div class="w-full md:w-44">
+			<input
+				type="datetime-local"
+				placeholder="From"
+				class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
+				bind:value={fromTimestamp}
+			/>
+		</div>
+
+		<div class="w-full md:w-44">
+			<input
+				type="datetime-local"
+				placeholder="To"
+				class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
+				bind:value={toTimestamp}
+			/>
+		</div>
+
+		<div class="w-full md:w-96">
+			<input
+				type="text"
+				placeholder="Filter by Order Hash"
+				class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
+				bind:value={filterOrderHash}
+			/>
+		</div>
+
+		<div class="flex items-center gap-2">
+			<label class="flex items-center gap-2 text-sm text-gray-700">
 				<input
-					type="datetime-local"
-					placeholder="From"
-					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
-					bind:value={fromTimestamp}
+					type="checkbox"
+					class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+					bind:checked={showOnlyDsf}
 				/>
-			</div>
+				<span>Show only DSF orders</span>
+			</label>
+		</div>
 
-			<div class="w-full md:w-44">
-				<input
-					type="datetime-local"
-					placeholder="To"
-					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
-					bind:value={toTimestamp}
-				/>
-			</div>
-
-			<div class="w-full md:w-96">
-				<input
-					type="text"
-					placeholder="Filter by Order Hash"
-					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
-					bind:value={filterOrderHash}
-				/>
-			</div>
-
-			<div class="flex items-center gap-2">
-				<label class="flex items-center gap-2 text-sm text-gray-700">
-					<input
-						type="checkbox"
-						class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-						bind:checked={showOnlyDsf}
-					/>
-					<span>Show only DSF orders</span>
-				</label>
-			</div>
-
-			<div class="w-full md:w-auto">
-				<button
-					on:click={getRaindexData}
-					disabled={!fromTimestamp || !toTimestamp || !network || !token}
-					class="w-full rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto md:px-4 md:py-2 md:text-sm"
-				>
-					Apply
-				</button>
-			</div>
+		<div class="w-full md:w-auto">
+			<button
+				on:click={getRaindexData}
+				disabled={!fromTimestamp || !toTimestamp || !network || !token}
+				class="w-full rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto md:px-4 md:py-2 md:text-sm"
+			>
+				Apply
+			</button>
+		</div>
 		<!-- {/if} -->
 	</div>
 
