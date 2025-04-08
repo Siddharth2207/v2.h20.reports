@@ -3,16 +3,17 @@
 
 	// Group tokens by network
 	const tokensByNetwork = Object.entries(tokenConfig).reduce(
-		(acc, [, token]) => {
+		(acc, [slug, token]) => {
 			if (!acc[token.network]) {
 				acc[token.network] = [];
 			}
 			acc[token.network].push({
+				slug,
 				...token
 			});
 			return acc;
 		},
-		{} as Record<string, Array<{ symbol: string; address: string; network: string }>>
+		{} as Record<string, Array<{ slug: string; symbol: string; address: string; network: string }>>
 	);
 </script>
 
@@ -31,9 +32,9 @@
 					{#each tokens as token}
 						<div class="rounded-md bg-gray-50 p-2 md:p-3">
 							<div class="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
-								<span class="text-sm font-medium text-gray-700 md:text-base">{token.symbol}</span>
+								<span class="text-sm font-medium text-gray-700 md:text-base">{token.slug}</span>
 								<a
-									href={`/${token.symbol.toLowerCase()}-${network}`}
+									href={`/${token.slug.toLowerCase()}-${token.network}`}
 									class="break-all text-xs text-blue-500 hover:text-blue-600 md:text-sm"
 								>
 									{token.address}

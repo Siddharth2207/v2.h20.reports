@@ -9,16 +9,18 @@
 		TableHead
 	} from 'flowbite-svelte';
 	import { tokenConfig } from '$lib/constants';
-	import { fetchAllPaginatedData } from '$lib/orders';
+	import { fetchAllPaginatedData, isOrderDsf } from '$lib/orders';
 	import { getTokenPriceUsd } from '$lib/price';
 	import { ethers } from 'ethers';
 	import type { RaindexData } from '$lib/types';
-	import { SgTrade } from '@rainlanguage/orderbook/js_api';
+	import type { SgTrade } from '@rainlanguage/orderbook/js_api';
 	const { settings } = $page.data.stores;
 	let network = '';
 	let token = '';
 	let fromTimestamp = '';
 	let toTimestamp = '';
+	let filterOrderHash = '';
+	let showOnlyDsf = false;
 
 	let isLoading = false;
 	let raindexData: RaindexData[] = [];
@@ -27,16 +29,50 @@
 	let totalPages = 1;
 	let visibleTrades: RaindexData[] = [];
 
-	$: if (raindexData) {
-		totalPages = Math.ceil(raindexData.length / itemsPerPage);
-		updateVisibleTrades();
+	function filterRaindexData(data: RaindexData[]): RaindexData[] {
+		if (!data) return [];
+		let filteredData = data;
+
+		// Apply order hash filter
+		if (filterOrderHash) {
+			filteredData = filteredData.filter(
+				(trade) => trade.orderHash.toLowerCase() === filterOrderHash.toLowerCase()
+			);
+		}
+
+		// Apply order type filter
+		if (showOnlyDsf) {
+			filteredData = filteredData.filter((trade) => {
+				return trade.orderType === 'DSF';
+			});
+		}
+
+		return filteredData;
 	}
 
-	function updateVisibleTrades() {
-		if (!raindexData) return;
+	$: if (raindexData) {
+		const filteredData = filterRaindexData(raindexData);
+		totalPages = Math.ceil(filteredData.length / itemsPerPage);
+		currentPage = Math.min(currentPage, totalPages) || 1;
+		updateVisibleTrades(filteredData);
+	}
+
+	// Watch for changes in filterOrderHash or showOnlyDsf and reset page
+	$: if (filterOrderHash !== undefined || showOnlyDsf !== undefined) {
+		currentPage = 1;
+		if (raindexData) {
+			const filteredData = filterRaindexData(raindexData);
+			totalPages = Math.ceil(filteredData.length / itemsPerPage);
+			updateVisibleTrades(filteredData);
+		}
+	}
+
+	function updateVisibleTrades(data = raindexData) {
+		if (!data) return;
+		const filteredData = filterRaindexData(data);
 		const start = (currentPage - 1) * itemsPerPage;
 		const end = start + itemsPerPage;
-		visibleTrades = raindexData.slice(start, end);
+		visibleTrades = filteredData.slice(start, end);
 	}
 
 	function nextPage() {
@@ -79,6 +115,7 @@
     }
 	order {
       orderHash
+	  meta
     }
     inputVaultBalanceChange {
 	  amount
@@ -176,6 +213,8 @@
 					timestamp: trade.tradeEvent.transaction.timestamp,
 					transactionHash: trade.tradeEvent.transaction.id,
 					orderHash: trade.order.orderHash,
+					orderMeta: trade.order.meta,
+					orderType: isOrderDsf(trade.order.meta) ? 'DSF' : 'NON-DSF',
 					sender: trade.tradeEvent.transaction.from,
 					tokenIn: trade.inputVaultBalanceChange.vault.token.symbol,
 					tokenOut: trade.outputVaultBalanceChange.vault.token.symbol,
@@ -198,9 +237,11 @@
 	function exportToCsv() {
 		if (!raindexData || raindexData.length === 0) return;
 
+		const dataToExport = filterRaindexData(raindexData);
 		const headers = [
 			'Timestamp',
 			'Order Hash',
+			'Order Type',
 			'Token In',
 			'Token Out',
 			'Amount In',
@@ -212,9 +253,10 @@
 			'Transaction Hash'
 		];
 
-		const csvData = raindexData.map((item: RaindexData) => [
+		const csvData = dataToExport.map((item: RaindexData) => [
 			item.timestamp,
 			item.orderHash,
+			item.orderType,
 			item.tokenIn,
 			item.tokenOut,
 			item.amountIn,
@@ -273,35 +315,55 @@
 			</select>
 		</div>
 
-		{#if token}
-			<div class="w-full md:w-44">
-				<input
-					type="datetime-local"
-					placeholder="From"
-					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
-					bind:value={fromTimestamp}
-				/>
-			</div>
+		<!-- {#if token} -->
+		<div class="w-full md:w-44">
+			<input
+				type="datetime-local"
+				placeholder="From"
+				class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
+				bind:value={fromTimestamp}
+			/>
+		</div>
 
-			<div class="w-full md:w-44">
-				<input
-					type="datetime-local"
-					placeholder="To"
-					class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
-					bind:value={toTimestamp}
-				/>
-			</div>
+		<div class="w-full md:w-44">
+			<input
+				type="datetime-local"
+				placeholder="To"
+				class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
+				bind:value={toTimestamp}
+			/>
+		</div>
 
-			<div class="w-full md:w-auto">
-				<button
-					on:click={getRaindexData}
-					disabled={!fromTimestamp || !toTimestamp || !network || !token}
-					class="w-full rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto md:px-4 md:py-2 md:text-sm"
-				>
-					Apply Filter
-				</button>
-			</div>
-		{/if}
+		<div class="w-full md:w-96">
+			<input
+				type="text"
+				placeholder="Filter by Order Hash"
+				class="w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 md:px-3 md:py-2 md:text-sm"
+				bind:value={filterOrderHash}
+			/>
+		</div>
+
+		<div class="flex items-center gap-2">
+			<label class="flex items-center gap-2 text-sm text-gray-700">
+				<input
+					type="checkbox"
+					class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+					bind:checked={showOnlyDsf}
+				/>
+				<span>Show only DSF orders</span>
+			</label>
+		</div>
+
+		<div class="w-full md:w-auto">
+			<button
+				on:click={getRaindexData}
+				disabled={!fromTimestamp || !toTimestamp || !network || !token}
+				class="w-full rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto md:px-4 md:py-2 md:text-sm"
+			>
+				Apply
+			</button>
+		</div>
+		<!-- {/if} -->
 	</div>
 
 	{#if isLoading}

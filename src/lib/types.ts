@@ -14,6 +14,8 @@ export interface RaindexData {
 	timestamp: number;
 	transactionHash: string;
 	orderHash: string;
+	orderMeta: string;
+	orderType: 'DSF' | 'NON-DSF';
 	sender: string;
 	tokenIn: string;
 	tokenOut: string;
