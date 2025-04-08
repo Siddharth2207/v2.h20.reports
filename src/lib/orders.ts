@@ -387,7 +387,7 @@ export function isOrderDsf(orderMeta: string): boolean {
 :set(hash(order-hash() "last-trade-io") last-io),
 :set(hash(order-hash() "last-trade-output-token") output-token());`
 		);
-	} catch (error) {
+	} catch {
 		return false;
 	}
 }
