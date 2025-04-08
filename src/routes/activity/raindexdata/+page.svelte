@@ -65,7 +65,7 @@
 
 		// Apply selected token symbol filter
 		if (selectedTokenSymbol) {
-			const [_, selectedAddress] = selectedTokenSymbol.split('-');
+			const [, selectedAddress] = selectedTokenSymbol.split('-');
 			if (selectedAddress) {
 				filteredData = filteredData.filter(
 					(trade) =>
