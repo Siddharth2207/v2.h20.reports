@@ -20,11 +20,11 @@ export interface RaindexData {
 	sender: string;
 	tokenIn: SgErc20;
 	tokenOut: SgErc20;
-	amountIn: number;
-	amountOut: number;
-	amountInUsd: number;
-	amountOutUsd: number;
-	ioRatio: number;
+	amountIn: string;
+	amountOut: string;
+	amountInUsd: string;
+	amountOutUsd: string;
+	ioRatio: string;
 }
 export interface PoolData {
 	token0Address: string;
@@ -42,11 +42,11 @@ export interface PoolTrade {
 	blockNumber: number;
 	poolAddress: string;
 	transactionHash: string;
-	amount0: number;
-	amount1: number;
+	amount0: string;
+	amount1: string;
 	timestamp: number;
-	ratio0: number;
-	ratio1: number;
+	ratio0: string;
+	ratio1: string;
 }
 export interface VaultAnalyticsToken {
 	address: string;

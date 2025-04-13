@@ -14,6 +14,7 @@
 	import { ethers } from 'ethers';
 	import type { RaindexData } from '$lib/types';
 	import type { SgTrade } from '@rainlanguage/orderbook/js_api';
+	import { etherlinkTestnet } from 'viem/chains';
 	const { settings } = $page.data.stores;
 	let network = '';
 	let token = '';
@@ -221,38 +222,34 @@
 				}
 			}
 			for (const trade of raindexTrades) {
-				const amountIn = Math.abs(
-					parseFloat(
-						ethers.utils.formatUnits(
-							trade.inputVaultBalanceChange.amount,
-							trade.inputVaultBalanceChange.vault.token.decimals
-						)
-					)
+				const amountIn = ethers.utils.formatUnits(
+					ethers.BigNumber.from(trade.inputVaultBalanceChange.amount).abs().toString(),
+					trade.inputVaultBalanceChange.vault.token.decimals
 				);
-				const amountOut = Math.abs(
-					parseFloat(
-						ethers.utils.formatUnits(
-							trade.outputVaultBalanceChange.amount,
-							trade.outputVaultBalanceChange.vault.token.decimals
-						)
-					)
+				const amountOut = ethers.utils.formatUnits(
+					ethers.BigNumber.from(trade.outputVaultBalanceChange.amount).abs().toString(),
+					trade.outputVaultBalanceChange.vault.token.decimals
 				);
 
-				let amountInUsd = 0;
-				let amountOutUsd = 0;
+				let amountInUsd = '0';
+				let amountOutUsd = '0';
 				if (tokenPriceUsdMap.has(trade.inputVaultBalanceChange.vault.token.address)) {
 					const tokenPriceMap = tokenPriceUsdMap.get(
 						trade.inputVaultBalanceChange.vault.token.address
 					);
-					amountInUsd = amountIn * (tokenPriceMap?.price ?? 0);
+					amountInUsd = (parseFloat(amountIn) * (tokenPriceMap?.price ?? 0)).toString();
 				}
 				if (tokenPriceUsdMap.has(trade.outputVaultBalanceChange.vault.token.address)) {
 					const tokenPriceMap = tokenPriceUsdMap.get(
 						trade.outputVaultBalanceChange.vault.token.address
 					);
-					amountOutUsd = amountOut * (tokenPriceMap?.price ?? 0);
+					amountOutUsd = (parseFloat(amountOut) * (tokenPriceMap?.price ?? 0)).toString();
 				}
-				const ioRatio = amountOut > 0 ? amountIn / amountOut : 0;
+				const fp18AmountIn = ethers.BigNumber.from(trade.inputVaultBalanceChange.amount).abs().mul(ethers.BigNumber.from('1'+'0'.repeat(18-trade.inputVaultBalanceChange.vault.token.decimals)));
+				console.log(fp18AmountIn.toString());
+				const fp18AmountOut = ethers.BigNumber.from(trade.outputVaultBalanceChange.amount).abs().mul(ethers.BigNumber.from('1'+'0'.repeat(18-trade.outputVaultBalanceChange.vault.token.decimals)));
+				console.log(fp18AmountOut.toString());
+				const ioRatio = fp18AmountOut.gt(ethers.BigNumber.from(0)) ? fp18AmountIn.mul(ethers.BigNumber.from('1'+'0'.repeat(18))).div(fp18AmountOut).toString() : ethers.BigNumber.from(0).toString();
 				raindexData.push({
 					blockNumber: trade.tradeEvent.transaction.blockNumber,
 					timestamp: trade.tradeEvent.transaction.timestamp,
@@ -277,7 +274,7 @@
 					amountOut: amountOut,
 					amountInUsd: amountInUsd,
 					amountOutUsd: amountOutUsd,
-					ioRatio: ioRatio
+					ioRatio: ethers.utils.formatUnits(ioRatio, 18)
 				});
 			}
 			currentPage = 1;
@@ -571,19 +568,19 @@
 									<TableBodyCell
 										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
 									>
-										{trade.amountIn.toFixed(2)}
-										{trade.tokenIn.symbol} (${trade.amountInUsd.toFixed(2)})
+										{parseFloat(trade.amountIn).toFixed(2)}
+										{trade.tokenIn.symbol} (${parseFloat(trade.amountInUsd).toFixed(2)})
 									</TableBodyCell>
 									<TableBodyCell
 										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
 									>
-										{trade.amountOut.toFixed(2)}
-										{trade.tokenOut.symbol} (${trade.amountOutUsd.toFixed(2)})
+										{parseFloat(trade.amountOut).toFixed(2)}
+										{trade.tokenOut.symbol} (${parseFloat(trade.amountOutUsd).toFixed(2)})
 									</TableBodyCell>
 									<TableBodyCell
 										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
 									>
-										{trade.ioRatio.toFixed(6)}
+										{parseFloat(trade.ioRatio).toFixed(2)}
 									</TableBodyCell>
 									<TableBodyCell
 										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"

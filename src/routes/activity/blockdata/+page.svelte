@@ -257,8 +257,8 @@
 		</div>
 		<div class="relative h-[calc(100vh-200px)] w-full md:h-[calc(100vh-250px)]">
 			<div class="absolute inset-0 overflow-auto rounded-lg">
-				<div class="min-w-full overflow-x-auto">
-					<Table class="relative w-full table-fixed border-collapse bg-white text-left">
+				<div class="min-w-full">
+					<Table class="relative table-auto border-collapse whitespace-nowrap bg-white text-left">
 						<TableHead class="sticky top-0 z-10 bg-gray-50 shadow-sm">
 							<TableHeadCell
 								class="w-20 px-2 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-900 md:w-32 md:px-6 md:py-3 md:text-xs"
@@ -300,37 +300,37 @@
 							{#each visibleTrades as trade}
 								<TableBodyRow class="hover:bg-gray-50">
 									<TableBodyCell
-										class="truncate px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
+										class="px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
 									>
 										{trade.blockNumber}
 									</TableBodyCell>
 									<TableBodyCell
-										class="truncate px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
+										class="px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
 									>
 										{trade.transactionHash}
 									</TableBodyCell>
 									<TableBodyCell
-										class="truncate px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
+										class="px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
 									>
 										{trade.amount0}
 									</TableBodyCell>
 									<TableBodyCell
-										class="truncate px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
+										class="px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
 									>
 										{trade.amount1}
 									</TableBodyCell>
 									<TableBodyCell
-										class="truncate px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
+										class="px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
 									>
 										{trade.timestamp}
 									</TableBodyCell>
 									<TableBodyCell
-										class="truncate px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
+										class="px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
 									>
 										{trade.ratio0}
 									</TableBodyCell>
 									<TableBodyCell
-										class="truncate px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
+										class="px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
 									>
 										{trade.ratio1}
 									</TableBodyCell>
