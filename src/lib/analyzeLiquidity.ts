@@ -701,11 +701,24 @@ export async function getBlockData(
 				const amount0Formated = ethers.utils.formatUnits(amount0.toString(), token0Decimals);
 				const amount1Formated = ethers.utils.formatUnits(amount1.toString(), token1Decimals);
 
-				const fpAmount0 = ethers.BigNumber.from(amount0).abs().mul(ethers.BigNumber.from('1'+'0'.repeat(18-token0Decimals)));
-				const fpAmount1 = ethers.BigNumber.from(amount1).abs().mul(ethers.BigNumber.from('1'+'0'.repeat(18-token1Decimals)));
-				const ratio0 = fpAmount1.gt(ethers.BigNumber.from(0)) ? fpAmount0.mul(ethers.BigNumber.from('1'+'0'.repeat(18))).div(fpAmount1).toString() : ethers.BigNumber.from(0).toString();
-				const ratio1 = fpAmount0.gt(ethers.BigNumber.from(0)) ? fpAmount1.mul(ethers.BigNumber.from('1'+'0'.repeat(18))).div(fpAmount0).toString() : ethers.BigNumber.from(0).toString();
-
+				const fpAmount0 = ethers.BigNumber.from(amount0)
+					.abs()
+					.mul(ethers.BigNumber.from('1' + '0'.repeat(18 - token0Decimals)));
+				const fpAmount1 = ethers.BigNumber.from(amount1)
+					.abs()
+					.mul(ethers.BigNumber.from('1' + '0'.repeat(18 - token1Decimals)));
+				const ratio0 = fpAmount1.gt(ethers.BigNumber.from(0))
+					? fpAmount0
+							.mul(ethers.BigNumber.from('1' + '0'.repeat(18)))
+							.div(fpAmount1)
+							.toString()
+					: ethers.BigNumber.from(0).toString();
+				const ratio1 = fpAmount0.gt(ethers.BigNumber.from(0))
+					? fpAmount1
+							.mul(ethers.BigNumber.from('1' + '0'.repeat(18)))
+							.div(fpAmount0)
+							.toString()
+					: ethers.BigNumber.from(0).toString();
 
 				poolTrades.push({
 					blockNumber: swapQueryResult[i].block_number,

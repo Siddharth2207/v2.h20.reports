@@ -14,7 +14,6 @@
 	import { ethers } from 'ethers';
 	import type { RaindexData } from '$lib/types';
 	import type { SgTrade } from '@rainlanguage/orderbook/js_api';
-	import { etherlinkTestnet } from 'viem/chains';
 	const { settings } = $page.data.stores;
 	let network = '';
 	let token = '';
@@ -245,11 +244,28 @@
 					);
 					amountOutUsd = (parseFloat(amountOut) * (tokenPriceMap?.price ?? 0)).toString();
 				}
-				const fp18AmountIn = ethers.BigNumber.from(trade.inputVaultBalanceChange.amount).abs().mul(ethers.BigNumber.from('1'+'0'.repeat(18-trade.inputVaultBalanceChange.vault.token.decimals)));
+				const fp18AmountIn = ethers.BigNumber.from(trade.inputVaultBalanceChange.amount)
+					.abs()
+					.mul(
+						ethers.BigNumber.from(
+							'1' + '0'.repeat(18 - trade.inputVaultBalanceChange.vault.token.decimals)
+						)
+					);
 				console.log(fp18AmountIn.toString());
-				const fp18AmountOut = ethers.BigNumber.from(trade.outputVaultBalanceChange.amount).abs().mul(ethers.BigNumber.from('1'+'0'.repeat(18-trade.outputVaultBalanceChange.vault.token.decimals)));
+				const fp18AmountOut = ethers.BigNumber.from(trade.outputVaultBalanceChange.amount)
+					.abs()
+					.mul(
+						ethers.BigNumber.from(
+							'1' + '0'.repeat(18 - trade.outputVaultBalanceChange.vault.token.decimals)
+						)
+					);
 				console.log(fp18AmountOut.toString());
-				const ioRatio = fp18AmountOut.gt(ethers.BigNumber.from(0)) ? fp18AmountIn.mul(ethers.BigNumber.from('1'+'0'.repeat(18))).div(fp18AmountOut).toString() : ethers.BigNumber.from(0).toString();
+				const ioRatio = fp18AmountOut.gt(ethers.BigNumber.from(0))
+					? fp18AmountIn
+							.mul(ethers.BigNumber.from('1' + '0'.repeat(18)))
+							.div(fp18AmountOut)
+							.toString()
+					: ethers.BigNumber.from(0).toString();
 				raindexData.push({
 					blockNumber: trade.tradeEvent.transaction.blockNumber,
 					timestamp: trade.tradeEvent.transaction.timestamp,
