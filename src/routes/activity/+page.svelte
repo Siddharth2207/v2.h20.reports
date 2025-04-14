@@ -19,10 +19,7 @@
     skip: $skip
     first: $first
     where: {
-      or: [
-        { trades_: { timestamp_gt: $timestampGt } } # Use variable for dynamic filtering
-        { timestampAdded_gt: $timestampGt }
-      ]
+      trades_: { timestamp_gt: $timestampGt }
     }
   ) {
     id
