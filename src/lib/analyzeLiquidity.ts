@@ -755,12 +755,15 @@ export async function getBlockData(
 				const ratio = Math.pow(10, token1Decimals) / Math.pow(10, token0Decimals);
 				const ratio0 = ratio / priceEthInUsdc;
 				const ratio1 = 1 / ratio0;
-				
+
 				// Format values to avoid scientific notation
 				const formatDecimal = (value: number): string => {
-					return value.toLocaleString('fullwide', { useGrouping: false, maximumFractionDigits: 20 });
+					return value.toLocaleString('fullwide', {
+						useGrouping: false,
+						maximumFractionDigits: 20
+					});
 				};
-				
+
 				poolTrades.push({
 					blockNumber: swapQueryResult[i].block_number,
 					poolAddress: poolAddress,
