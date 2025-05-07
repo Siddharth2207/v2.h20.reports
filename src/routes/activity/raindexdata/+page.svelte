@@ -251,7 +251,6 @@
 							'1' + '0'.repeat(18 - trade.inputVaultBalanceChange.vault.token.decimals)
 						)
 					);
-				console.log(fp18AmountIn.toString());
 				const fp18AmountOut = ethers.BigNumber.from(trade.outputVaultBalanceChange.amount)
 					.abs()
 					.mul(
@@ -259,7 +258,6 @@
 							'1' + '0'.repeat(18 - trade.outputVaultBalanceChange.vault.token.decimals)
 						)
 					);
-				console.log(fp18AmountOut.toString());
 				const ioRatio = fp18AmountOut.gt(ethers.BigNumber.from(0))
 					? fp18AmountIn
 							.mul(ethers.BigNumber.from('1' + '0'.repeat(18)))
