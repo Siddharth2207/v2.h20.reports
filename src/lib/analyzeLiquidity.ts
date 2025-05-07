@@ -755,6 +755,12 @@ export async function getBlockData(
 				const ratio = Math.pow(10, token1Decimals) / Math.pow(10, token0Decimals);
 				const ratio0 = ratio / priceEthInUsdc;
 				const ratio1 = 1 / ratio0;
+				
+				// Format values to avoid scientific notation
+				const formatDecimal = (value: number): string => {
+					return value.toLocaleString('fullwide', { useGrouping: false, maximumFractionDigits: 20 });
+				};
+				
 				poolTrades.push({
 					blockNumber: swapQueryResult[i].block_number,
 					poolAddress: poolAddress,
@@ -762,8 +768,8 @@ export async function getBlockData(
 					amount0: ethers.utils.formatUnits(totalAmount0.toString(), token0Decimals),
 					amount1: ethers.utils.formatUnits(totalAmount1.toString(), token1Decimals),
 					timestamp: swapQueryResult[i].timestamp,
-					ratio0: ratio0.toString(),
-					ratio1: ratio1.toString()
+					ratio0: formatDecimal(ratio0),
+					ratio1: formatDecimal(ratio1)
 				});
 			}
 		}

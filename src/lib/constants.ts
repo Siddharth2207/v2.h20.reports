@@ -322,6 +322,15 @@ export const tokenConfig: Config = {
 		poolsV3: ['0x7d45a2557becd766a285d07a4701f5c64d716e2f'],
 		poolsPancakSwapV3: []
 	},
+	HOT: {
+		symbol: 'HOT',
+		network: 'ethereum',
+		decimals: 18,
+		address: '0x6c6ee5e31d828de241282b9606c8e98ea48526e2',
+		poolsV2: ['0xf5ef67632cd2256d939702a126fe2c047d0a07bf'],
+		poolsV3: ['0xf7849d0852fc588210b9c0d8b26f43c0c9bc1470'],
+		poolsPancakSwapV3: []
+	},
 	UMJA: {
 		symbol: 'UMJA',
 		network: 'arbitrum',
