@@ -61,6 +61,8 @@ export async function analyzeLiquidity(
 	};
 }
 
+// TODO: Remove this function
+// eslint-disable-next-line
 async function getBlockNumberForTimestampByBlockTime(
 	network: NetworkConfigSourceWithBlockTime,
 	targetTimestamp: number
@@ -216,11 +218,7 @@ export async function getBlockNumberForTimestamp(
 	network: NetworkConfigSourceWithBlockTime,
 	targetTimestamp: number
 ): Promise<number> {
-	if (network['chain-id'] === 42161) {
-		return getBlockNumberForTimestampByBlockTime(network, targetTimestamp);
-	} else {
-		return getBlockNumberForTimestampByHyperSync(network, targetTimestamp);
-	}
+	return getBlockNumberForTimestampByHyperSync(network, targetTimestamp);
 }
 
 async function analyzeHyperSyncData(
