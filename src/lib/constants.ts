@@ -232,6 +232,27 @@ export const tokenConfig: Config = {
 		poolsV3: [],
 		poolsPancakSwapV3: ['0xe4bfcc208f3447cc5d2f5ccb40c52778d4be2004']
 	},
+	NST: {
+		symbol: 'NST',
+		network: 'arbitrum',
+		decimals: 18,
+		address: '0x88a269df8fe7f53e590c561954c52fccc8ec0cfb',
+		poolsV2: [],
+		poolsV3: [
+			'0x53d3e59faac08184720bcb2816f4cf5b36d6767d',
+			'0xbb219cfdf6cd847554600d7c88034536f2656401'
+		],
+		poolsPancakSwapV3: []
+	},
+	BO: {
+		symbol: 'BO',
+		network: 'arbitrum',
+		decimals: 18,
+		address: '0x60460971a3d79ef265dfafa393ffbce97d91e8b8',
+		poolsV2: ['0x348821a9326fb05949e7b0f56eca46436153a3ba'],
+		poolsV3: [],
+		poolsPancakSwapV3: []
+	},
 	WFLR: {
 		symbol: 'WFLR',
 		network: 'flare',
