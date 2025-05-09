@@ -95,6 +95,7 @@
 
 		const headers = [
 			'Block Number',
+			'Pool Address',
 			'Transaction Hash',
 			`${poolData.token0Symbol} Amount`,
 			`${poolData.token1Symbol} Amount`,
@@ -105,6 +106,7 @@
 
 		const csvData = poolData.poolTrades.map((item) => [
 			item.blockNumber,
+			item.poolAddress,
 			item.transactionHash,
 			item.amount0,
 			item.amount1,
@@ -268,6 +270,11 @@
 							<TableHeadCell
 								class="w-28 px-2 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-900 md:w-96 md:px-6 md:py-3 md:text-xs"
 							>
+								Pool Address
+							</TableHeadCell>
+							<TableHeadCell
+								class="w-28 px-2 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-900 md:w-96 md:px-6 md:py-3 md:text-xs"
+							>
 								Transaction Hash
 							</TableHeadCell>
 							<TableHeadCell
@@ -303,6 +310,11 @@
 										class="px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
 									>
 										{trade.blockNumber}
+									</TableBodyCell>
+									<TableBodyCell
+										class="px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
+									>
+										{trade.poolAddress}
 									</TableBodyCell>
 									<TableBodyCell
 										class="px-2 py-2 text-[11px] text-gray-600 md:px-6 md:py-3 md:text-sm"
