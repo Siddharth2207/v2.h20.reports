@@ -50,9 +50,9 @@
 		let filteredData = data;
 
 		filteredData = filteredData.filter((trade) => {
-            if (!trade.orderMeta) return false;
-            return isOrderDsf(trade.orderMeta);
-        });
+			if (!trade.orderMeta) return false;
+			return isOrderDsf(trade.orderMeta);
+		});
 
 		// Apply selected order hash filter
 		if (selectedOrderHash) {
@@ -74,19 +74,13 @@
 	}
 
 	$: if (raindexData) {
-		console.log('raindexData : ', JSON.stringify(raindexData));
 		const filteredData = filterRaindexData(raindexData);
 		totalPages = Math.ceil(filteredData.length / itemsPerPage);
 		currentPage = Math.min(currentPage, totalPages) || 1;
 		updateVisibleTrades(filteredData);
-		
 	}
 
-
-	$: if (
-		selectedOrderHash !== undefined ||
-		selectedTokenSymbol !== undefined
-	) {
+	$: if (selectedOrderHash !== undefined || selectedTokenSymbol !== undefined) {
 		currentPage = 1;
 		if (raindexData) {
 			const filteredData = filterRaindexData(raindexData);
@@ -219,7 +213,46 @@
 					}
 				}
 			}
-			for (const trade of raindexTrades) {
+
+			// Create nested map to track net amounts: orderHash -> tokenAddress -> amount
+			const orderTokenNetAmounts = new Map<string, Map<string, ethers.BigNumber>>();
+
+			// Process trades in reverse order
+			for (let i = raindexTrades.length - 1; i >= 0; i--) {
+				const trade = raindexTrades[i];
+				const orderHash = trade.order.orderHash;
+				const inputTokenAddress = trade.inputVaultBalanceChange.vault.token.address;
+				const outputTokenAddress = trade.outputVaultBalanceChange.vault.token.address;
+
+				// Initialize maps for this order if not exists
+				if (!orderTokenNetAmounts.has(orderHash)) {
+					orderTokenNetAmounts.set(orderHash, new Map<string, ethers.BigNumber>());
+				}
+				const orderAmounts = orderTokenNetAmounts.get(orderHash)!;
+
+				// Initialize amounts for both tokens if not exists
+				if (!orderAmounts.has(inputTokenAddress)) {
+					orderAmounts.set(inputTokenAddress, ethers.BigNumber.from(0));
+				}
+				if (!orderAmounts.has(outputTokenAddress)) {
+					orderAmounts.set(outputTokenAddress, ethers.BigNumber.from(0));
+				}
+
+				// Update net amounts for this order
+				orderAmounts.set(
+					inputTokenAddress,
+					orderAmounts
+						.get(inputTokenAddress)!
+						.add(ethers.BigNumber.from(trade.inputVaultBalanceChange.amount).abs())
+				);
+
+				orderAmounts.set(
+					outputTokenAddress,
+					orderAmounts
+						.get(outputTokenAddress)!
+						.sub(ethers.BigNumber.from(trade.outputVaultBalanceChange.amount).abs())
+				);
+
 				const amountIn = ethers.utils.formatUnits(
 					ethers.BigNumber.from(trade.inputVaultBalanceChange.amount).abs().toString(),
 					trade.inputVaultBalanceChange.vault.token.decimals
@@ -297,9 +330,18 @@
 					amountOutUsd: amountOutUsd,
 					tokenInBalance: tokenInBalance,
 					tokenOutBalance: tokenOutBalance,
-					ioRatio: ethers.utils.formatUnits(ioRatio, 18)
+					ioRatio: ethers.utils.formatUnits(ioRatio, 18),
+					netTokenInAmount: ethers.utils.formatUnits(
+						orderAmounts.get(inputTokenAddress)?.toString() || '0',
+						trade.inputVaultBalanceChange.vault.token.decimals
+					),
+					netTokenOutAmount: ethers.utils.formatUnits(
+						orderAmounts.get(outputTokenAddress)?.toString() || '0',
+						trade.outputVaultBalanceChange.vault.token.decimals
+					)
 				});
 			}
+			raindexData = raindexData.sort((a, b) => b.timestamp - a.timestamp);
 			currentPage = 1;
 			totalPages = Math.ceil(raindexData.length / itemsPerPage);
 			updateVisibleTrades();
@@ -341,6 +383,8 @@
 			'Amount In Usd',
 			'Amount Out Usd',
 			'IO Ratio',
+			'Net Token In Amount',
+			'Net Token Out Amount',
 			'Sender',
 			'Transaction Hash'
 		];
@@ -356,6 +400,8 @@
 			item.amountInUsd,
 			item.amountOutUsd,
 			item.ioRatio,
+			item.netTokenInAmount,
+			item.netTokenOutAmount,
 			item.sender,
 			item.transactionHash
 		]);
@@ -553,6 +599,16 @@
 							<TableHeadCell
 								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
 							>
+								Net Token In Amount
+							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
+								Net Token Out Amount
+							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
 								Sender
 							</TableHeadCell>
 							<TableHeadCell
@@ -610,12 +666,24 @@
 									<TableBodyCell
 										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
 									>
-										{(trade.tokenInBalance)}
+										{trade.tokenInBalance}
 									</TableBodyCell>
 									<TableBodyCell
 										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
 									>
-										{(trade.tokenOutBalance)}
+										{trade.tokenOutBalance}
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										{trade.netTokenInAmount}
+										{trade.tokenIn.symbol}
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										{trade.netTokenOutAmount}
+										{trade.tokenOut.symbol}
 									</TableBodyCell>
 									<TableBodyCell
 										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
