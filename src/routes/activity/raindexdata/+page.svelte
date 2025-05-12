@@ -300,7 +300,9 @@
 					amountOutUsd: amountOutUsd,
 					tokenInBalance: tokenInBalance,
 					tokenOutBalance: tokenOutBalance,
-					ioRatio: ethers.utils.formatUnits(ioRatio, 18)
+					ioRatio: ethers.utils.formatUnits(ioRatio, 18),
+					netTokenInAmount: '0',
+					netTokenOutAmount: '0'
 				});
 			}
 			currentPage = 1;
