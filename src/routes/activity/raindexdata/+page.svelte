@@ -621,12 +621,12 @@
 									<TableBodyCell
 										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
 									>
-										{(trade.tokenInBalance)}
+										{trade.tokenInBalance}
 									</TableBodyCell>
 									<TableBodyCell
 										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
 									>
-										{(trade.tokenOutBalance)}
+										{trade.tokenOutBalance}
 									</TableBodyCell>
 									<TableBodyCell
 										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"

@@ -393,17 +393,13 @@ export function isOrderDsf(orderMeta: string): boolean {
 :set(hash(order-hash() "last-trade-io") last-io),
 :set(hash(order-hash() "last-trade-output-token") output-token());`
 		);
-		
 	} catch {
 		return false;
 	}
 }
 
 export function getDsfParams(rainlangDoc: string) {
-	const stratParams = [
-		`min-trade-amount: mul(`,
-		`variable-component: sub(`,
-	]
+	const stratParams = [`min-trade-amount: mul(`, `variable-component: sub(`];
 	const params = stratParams.map((param) => extractStratParams(rainlangDoc, param));
 	return params;
 }
@@ -444,10 +440,10 @@ function extractNumber(str: string, idx: number) {
 	// number = digits, optional ".", digits
 	const m = slice.match(/^(\d+(?:\.\d+)?)/);
 	if (!m) return null;
-  
+
 	const literal = m[1];
 	return {
-	  value: Number(literal),
-	  end: idx + literal.length
+		value: Number(literal),
+		end: idx + literal.length
 	};
-  }
+}
