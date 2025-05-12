@@ -25,6 +25,10 @@ export interface RaindexData {
 	amountInUsd: string;
 	amountOutUsd: string;
 	ioRatio: string;
+	tokenInBalance: string;
+	tokenOutBalance: string;
+	netTokenInAmount: string;
+	netTokenOutAmount: string;
 }
 export interface PoolData {
 	token0Address: string;
