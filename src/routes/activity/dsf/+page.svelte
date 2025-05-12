@@ -19,7 +19,6 @@
 	let token = '';
 	let fromTimestamp = '';
 	let toTimestamp = '';
-	let showOnlyDsf = false;
 
 	let isLoading = false;
 	let raindexData: RaindexData[] = [];
@@ -50,13 +49,10 @@
 		if (!data) return [];
 		let filteredData = data;
 
-		// Apply order type filter
-		if (showOnlyDsf) {
-			filteredData = filteredData.filter((trade) => {
-				if (!trade.orderMeta) return false;
-				return isOrderDsf(trade.orderMeta);
-			});
-		}
+		filteredData = filteredData.filter((trade) => {
+            if (!trade.orderMeta) return false;
+            return isOrderDsf(trade.orderMeta);
+        });
 
 		// Apply selected order hash filter
 		if (selectedOrderHash) {
@@ -78,15 +74,16 @@
 	}
 
 	$: if (raindexData) {
+		console.log('raindexData : ', JSON.stringify(raindexData));
 		const filteredData = filterRaindexData(raindexData);
 		totalPages = Math.ceil(filteredData.length / itemsPerPage);
 		currentPage = Math.min(currentPage, totalPages) || 1;
 		updateVisibleTrades(filteredData);
+		
 	}
 
-	// Watch for changes in showOnlyDsf, selectedOrderHash, and selectedTokenSymbol and reset page
+
 	$: if (
-		showOnlyDsf !== undefined ||
 		selectedOrderHash !== undefined ||
 		selectedTokenSymbol !== undefined
 	) {
@@ -494,14 +491,6 @@
 							{/each}
 						</select>
 					</div>
-					<label class="flex items-center gap-2 text-sm text-gray-700">
-						<input
-							type="checkbox"
-							class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-							bind:checked={showOnlyDsf}
-						/>
-						<span>Show only DSF orders</span>
-					</label>
 					<button
 						on:click={exportToCsv}
 						class="rounded bg-blue-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-blue-700 md:px-4 md:py-2 md:text-base"

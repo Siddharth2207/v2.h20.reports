@@ -382,15 +382,30 @@ export function isOrderDsf(orderMeta: string): boolean {
 		const decoded = CBOR.decodeAllSync(rainlangDoc);
 		const structure = bytesToMeta(decoded[0].get(0), 'string');
 
+		// const minTradeAmount = getDsfParams(rainlangDoc)[0];
+		// const variableComponent = getDsfParams(rainlangDoc)[1];
+		// console.log('minTradeAmount : ', minTradeAmount);
+		// console.log('variableComponent : ', variableComponent);
+
 		return structure.includes(
 			`last-io:,
 :set(hash(order-hash() "last-trade-time") now()),
 :set(hash(order-hash() "last-trade-io") last-io),
 :set(hash(order-hash() "last-trade-output-token") output-token());`
 		);
+		
 	} catch {
 		return false;
 	}
+}
+
+export function getDsfParams(rainlangDoc: string) {
+	const stratParams = [
+		`min-trade-amount: mul(`,
+		`variable-component: sub(`,
+	]
+	const params = stratParams.map((param) => extractStratParams(rainlangDoc, param));
+	return params;
 }
 
 function bytesToMeta(bytes: string | Uint8Array, type: 'json' | 'string'): string {
@@ -416,3 +431,23 @@ function bytesToMeta(bytes: string | Uint8Array, type: 'json' | 'string'): strin
 		return '';
 	}
 }
+
+function extractStratParams(rainlangDoc: string, params: string): number | undefined {
+	const anchor = rainlangDoc.indexOf(params);
+	const startAfterMul = anchor + params.length;
+	const first = extractNumber(rainlangDoc, startAfterMul);
+	return first?.value;
+}
+
+function extractNumber(str: string, idx: number) {
+	const slice = str.slice(idx);
+	// number = digits, optional ".", digits
+	const m = slice.match(/^(\d+(?:\.\d+)?)/);
+	if (!m) return null;
+  
+	const literal = m[1];
+	return {
+	  value: Number(literal),
+	  end: idx + literal.length
+	};
+  }
