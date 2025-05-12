@@ -223,6 +223,22 @@ export const tokenConfig: Config = {
 		poolsV3: ['0x1536ee1506e24e5a36be99c73136cd82907a902e'],
 		poolsPancakSwapV3: []
 	},
+	NILE: {
+		symbol: 'NILE',
+		network: 'linea',
+		decimals: 18,
+		address: '0xaaaac83751090c6ea42379626435f805ddf54dc8',
+		poolsV2: [
+			'0xfc6a4cd4007c3d24d37114d81a801a56f9536625',
+			'0x9971dba6e18536b0415a6fbbf49d81ab12068ab7'
+		],
+		poolsV3: [
+			'0xe0557855d30c1e0fc2c16755389fd2caf31f4e3c',
+			'0x9a7d4b6ec73ed2fc7cf0305e38aed62202520fc6',
+			'0x2c85324d75313416c5d1bd688d2c87268c7cafb0'
+		],
+		poolsPancakSwapV3: []
+	},
 	KIMA: {
 		symbol: 'KIMA',
 		network: 'arbitrum',
