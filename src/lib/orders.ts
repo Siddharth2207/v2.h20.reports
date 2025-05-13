@@ -382,11 +382,6 @@ export function isOrderDsf(orderMeta: string): boolean {
 		const decoded = CBOR.decodeAllSync(rainlangDoc);
 		const structure = bytesToMeta(decoded[0].get(0), 'string');
 
-		// const minTradeAmount = getDsfParams(rainlangDoc)[0];
-		// const variableComponent = getDsfParams(rainlangDoc)[1];
-		// console.log('minTradeAmount : ', minTradeAmount);
-		// console.log('variableComponent : ', variableComponent);
-
 		return structure.includes(
 			`last-io:,
 :set(hash(order-hash() "last-trade-time") now()),
@@ -398,9 +393,21 @@ export function isOrderDsf(orderMeta: string): boolean {
 	}
 }
 
-export function getDsfParams(rainlangDoc: string) {
-	const stratParams = [`min-trade-amount: mul(`, `variable-component: sub(`];
-	const params = stratParams.map((param) => extractStratParams(rainlangDoc, param));
+export function getDsfParams(orderMeta: string) {
+
+	const rainlangDoc = orderMeta.slice(18, orderMeta.length);
+	const decoded = CBOR.decodeAllSync(rainlangDoc);
+	const structure = bytesToMeta(decoded[0].get(0), 'string');
+	const stratParams = [
+		`min-trade-amount: mul(`,
+		/variable-component:\s*sub\(\s*(\d+(?:\.\d+)?)/g,
+		`max-next-trade: mul(max(cost-basis-io last-io) `,
+		`cost-basis-io: mul(any(this-vwaio inv(any(other-vwaio max-value()))) `,
+		`epochs: div(duration`,
+		/if\(call<6>\(\)\s*(\d)\s*(\d)/,
+		/if\(call<6>\(\)\s*\d\s*(\d)/
+	];
+	const params = stratParams.map((param) => extractStratParams(structure, param));
 	return params;
 }
 
@@ -428,22 +435,21 @@ function bytesToMeta(bytes: string | Uint8Array, type: 'json' | 'string'): strin
 	}
 }
 
-function extractStratParams(rainlangDoc: string, params: string): number | undefined {
-	const anchor = rainlangDoc.indexOf(params);
-	const startAfterMul = anchor + params.length;
-	const first = extractNumber(rainlangDoc, startAfterMul);
-	return first?.value;
-}
+function extractStratParams(rainlangDoc: string, params: string | RegExp): number | undefined {
+	let match: RegExpMatchArray | null = null;
 
-function extractNumber(str: string, idx: number) {
-	const slice = str.slice(idx);
-	// number = digits, optional ".", digits
-	const m = slice.match(/^(\d+(?:\.\d+)?)/);
-	if (!m) return null;
+	if (typeof params === "string") {
+		const anchor = rainlangDoc.indexOf(params);
+		if (anchor === -1) return undefined;
 
-	const literal = m[1];
-	return {
-		value: Number(literal),
-		end: idx + literal.length
-	};
+		const startAfterAnchor = anchor + params.length;
+		match = rainlangDoc
+		.slice(startAfterAnchor)
+		.match(/^\s*(\d+(?:\.\d+)?)/);
+	} else {
+		match = params.exec(rainlangDoc);
+		if (params.global) params.lastIndex = 0;
+	}
+
+	return match && match[1] !== undefined ? Number(match[1]) : undefined;
 }

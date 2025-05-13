@@ -9,10 +9,10 @@
 		TableHead
 	} from 'flowbite-svelte';
 	import { tokenConfig } from '$lib/constants';
-	import { fetchAllPaginatedData, isOrderDsf } from '$lib/orders';
+	import { fetchAllPaginatedData, getDsfParams, isOrderDsf } from '$lib/orders';
 	import { getTokenPriceUsd } from '$lib/price';
 	import { ethers } from 'ethers';
-	import type { RaindexData } from '$lib/types';
+	import type { RaindexData, DsfData } from '$lib/types';
 	import type { SgTrade } from '@rainlanguage/orderbook/js_api';
 	const { settings } = $page.data.stores;
 	let network = '';
@@ -21,11 +21,11 @@
 	let toTimestamp = '';
 
 	let isLoading = false;
-	let raindexData: RaindexData[] = [];
+	let raindexData: DsfData[] = [];
 	let currentPage = 1;
 	let itemsPerPage = 50;
 	let totalPages = 1;
-	let visibleTrades: RaindexData[] = [];
+	let visibleTrades: DsfData[] = [];
 
 	let tokenPriceUsdMap = new Map<
 		string,
@@ -45,7 +45,7 @@
 		(t) => t.address.toLowerCase() !== (tokenConfig[token]?.address || '').toLowerCase()
 	);
 
-	function filterRaindexData(data: RaindexData[]): RaindexData[] {
+	function filterRaindexData(data: DsfData[]): DsfData[] {
 		if (!data) return [];
 		let filteredData = data;
 
@@ -304,6 +304,7 @@
 					ethers.BigNumber.from(trade.outputVaultBalanceChange.newVaultBalance).toString(),
 					trade.outputVaultBalanceChange.vault.token.decimals
 				);
+				const dsfParams = getDsfParams(trade.order.meta);
 				raindexData.push({
 					blockNumber: trade.tradeEvent.transaction.blockNumber,
 					timestamp: trade.tradeEvent.transaction.timestamp,
@@ -338,10 +339,16 @@
 					netTokenOutAmount: ethers.utils.formatUnits(
 						orderAmounts.get(outputTokenAddress)?.toString() || '0',
 						trade.outputVaultBalanceChange.vault.token.decimals
-					)
+					),
+					minTradeAmount: dsfParams[0] || 0,
+					maxTradeAmount: dsfParams[1] || 0,
+					nextTradeMultiplier: dsfParams[2] || 0,
+					costBasisMultiplier: dsfParams[3] || 0,
+					epochs: dsfParams[4] || 0,
+					amount0FastExit: dsfParams[5] || 0,
+					amount1FastExit: dsfParams[6] || 0
 				});
 			}
-			raindexData = raindexData.sort((a, b) => b.timestamp - a.timestamp);
 			currentPage = 1;
 			totalPages = Math.ceil(raindexData.length / itemsPerPage);
 			updateVisibleTrades();
@@ -386,10 +393,17 @@
 			'Net Token In Amount',
 			'Net Token Out Amount',
 			'Sender',
-			'Transaction Hash'
+			'Transaction Hash',
+			'Min Trade Amount',
+			'Max Trade Amount',
+			'Next Trade Multiplier',
+			'Cost Basis Multiplier',
+			'Epochs',
+			'Amount 0 Fast Exit',
+			'Amount 1 Fast Exit'
 		];
 
-		const csvData = dataToExport.map((item: RaindexData) => [
+		const csvData = dataToExport.map((item: DsfData) => [
 			item.timestamp,
 			item.orderHash,
 			item.orderType,
@@ -403,7 +417,14 @@
 			item.netTokenInAmount,
 			item.netTokenOutAmount,
 			item.sender,
-			item.transactionHash
+			item.transactionHash,
+			item.minTradeAmount,
+			item.maxTradeAmount,
+			item.nextTradeMultiplier,
+			item.costBasisMultiplier,
+			item.epochs,
+			item.amount0FastExit,
+			item.amount1FastExit
 		]);
 
 		const csvContent = [headers.join(','), ...csvData.map((row) => row.join(','))].join('\n');
@@ -616,6 +637,43 @@
 							>
 								Transaction Hash
 							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
+								Min Trade Amount
+							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
+								Max Trade Amount
+							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
+								Next Trade Multiplier
+							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
+								Cost Basis Multiplier
+							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
+								Epochs
+							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
+								Amount 0 Fast Exit
+							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
+								Amount 1 Fast Exit
+							</TableHeadCell>
+							
+
 						</TableHead>
 						<TableBody tableBodyClass="divide-y divide-gray-200">
 							{#each visibleTrades as trade}
@@ -694,6 +752,41 @@
 										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
 									>
 										{trade.transactionHash}
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										{trade.minTradeAmount}
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										{trade.maxTradeAmount}
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										{trade.nextTradeMultiplier}
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										{trade.costBasisMultiplier}
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										{trade.epochs}
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										{trade.amount0FastExit}
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										{trade.amount1FastExit}
 									</TableBodyCell>
 								</TableBodyRow>
 							{/each}
