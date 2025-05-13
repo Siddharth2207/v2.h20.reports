@@ -345,6 +345,8 @@
 			'Amount In Usd',
 			'Amount Out Usd',
 			'IO Ratio',
+			'Token In Balance',
+			'Token Out Balance',
 			'Sender',
 			'Transaction Hash'
 		];
@@ -360,6 +362,8 @@
 			item.amountInUsd,
 			item.amountOutUsd,
 			item.ioRatio,
+			item.tokenInBalance,
+			item.tokenOutBalance,
 			item.sender,
 			item.transactionHash
 		]);

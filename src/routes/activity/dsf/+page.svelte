@@ -390,6 +390,8 @@
 			'Amount In Usd',
 			'Amount Out Usd',
 			'IO Ratio',
+			'Token In Balance',
+			'Token Out Balance',
 			'Net Token In Amount',
 			'Net Token Out Amount',
 			'Sender',
@@ -414,6 +416,8 @@
 			item.amountInUsd,
 			item.amountOutUsd,
 			item.ioRatio,
+			item.tokenInBalance,
+			item.tokenOutBalance,
 			item.netTokenInAmount,
 			item.netTokenOutAmount,
 			item.sender,
@@ -443,7 +447,7 @@
 
 <div class="flex min-h-screen flex-col p-2 md:p-4">
 	<div class="mb-3 flex flex-col items-center gap-2 md:mb-5 md:gap-4">
-		<h2 class="text-lg font-bold text-gray-800 md:text-2xl">Raindex Data</h2>
+		<h2 class="text-lg font-bold text-gray-800 md:text-2xl">Raindex Dynamic Spread Data</h2>
 	</div>
 	<div
 		class="mb-3 flex flex-col items-center gap-2 overflow-x-auto rounded-lg bg-white p-2 shadow-sm md:mb-5 md:flex-row md:gap-4 md:p-3"
