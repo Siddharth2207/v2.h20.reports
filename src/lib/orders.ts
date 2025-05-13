@@ -393,6 +393,23 @@ export function isOrderDsf(orderMeta: string): boolean {
 	}
 }
 
+// Non-canonical order check
+export function isOrderPortfolio(orderMeta: string): boolean {
+	try {
+		const rainlangDoc = orderMeta.slice(18, orderMeta.length);
+		const decoded = CBOR.decodeAllSync(rainlangDoc);
+		const structure = bytesToMeta(decoded[0].get(0), 'string');
+
+		return structure.includes(
+			`:ensure(every(input-vault-before() output-vault-before()) "zero balance"),
+base-io: div(input-vault-before() output-vault-before()),`
+		);
+	} catch {
+		return false;
+	}
+}
+
+// Non-canonical extraction of DSF params
 export function getDsfParams(orderMeta: string) {
 	const rainlangDoc = orderMeta.slice(18, orderMeta.length);
 	const decoded = CBOR.decodeAllSync(rainlangDoc);
