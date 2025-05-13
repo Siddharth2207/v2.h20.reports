@@ -81,10 +81,7 @@
 	}
 
 	// Watch for changes in selectedOrderHash, and selectedTokenSymbol and reset page
-	$: if (
-		selectedOrderHash !== undefined ||
-		selectedTokenSymbol !== undefined
-	) {
+	$: if (selectedOrderHash !== undefined || selectedTokenSymbol !== undefined) {
 		currentPage = 1;
 		if (raindexData) {
 			const filteredData = filterRaindexData(raindexData);

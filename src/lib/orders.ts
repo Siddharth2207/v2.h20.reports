@@ -396,7 +396,7 @@ export function isOrderDsf(orderMeta: string): boolean {
 // Non-canonical order check
 export function isOrderPortfolio(orderMeta: string): boolean {
 	try {
-		console.log("is order portfolio");
+		console.log('is order portfolio');
 		const rainlangDoc = orderMeta.slice(18, orderMeta.length);
 		const decoded = CBOR.decodeAllSync(rainlangDoc);
 		const structure = bytesToMeta(decoded[0].get(0), 'string');
