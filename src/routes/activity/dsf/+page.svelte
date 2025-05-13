@@ -12,7 +12,7 @@
 	import { fetchAllPaginatedData, getDsfParams, isOrderDsf } from '$lib/orders';
 	import { getTokenPriceUsd } from '$lib/price';
 	import { ethers } from 'ethers';
-	import type { RaindexData, DsfData } from '$lib/types';
+	import type { DsfData } from '$lib/types';
 	import type { SgTrade } from '@rainlanguage/orderbook/js_api';
 	const { settings } = $page.data.stores;
 	let network = '';
@@ -672,8 +672,6 @@
 							>
 								Amount 1 Fast Exit
 							</TableHeadCell>
-							
-
 						</TableHead>
 						<TableBody tableBodyClass="divide-y divide-gray-200">
 							{#each visibleTrades as trade}

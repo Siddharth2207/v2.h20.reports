@@ -394,7 +394,6 @@ export function isOrderDsf(orderMeta: string): boolean {
 }
 
 export function getDsfParams(orderMeta: string) {
-
 	const rainlangDoc = orderMeta.slice(18, orderMeta.length);
 	const decoded = CBOR.decodeAllSync(rainlangDoc);
 	const structure = bytesToMeta(decoded[0].get(0), 'string');
@@ -438,14 +437,12 @@ function bytesToMeta(bytes: string | Uint8Array, type: 'json' | 'string'): strin
 function extractStratParams(rainlangDoc: string, params: string | RegExp): number | undefined {
 	let match: RegExpMatchArray | null = null;
 
-	if (typeof params === "string") {
+	if (typeof params === 'string') {
 		const anchor = rainlangDoc.indexOf(params);
 		if (anchor === -1) return undefined;
 
 		const startAfterAnchor = anchor + params.length;
-		match = rainlangDoc
-		.slice(startAfterAnchor)
-		.match(/^\s*(\d+(?:\.\d+)?)/);
+		match = rainlangDoc.slice(startAfterAnchor).match(/^\s*(\d+(?:\.\d+)?)/);
 	} else {
 		match = params.exec(rainlangDoc);
 		if (params.global) params.lastIndex = 0;
