@@ -300,11 +300,10 @@
 					amountOutUsd: amountOutUsd,
 					tokenInBalance: tokenInBalance,
 					tokenOutBalance: tokenOutBalance,
-					ioRatio: ethers.utils.formatUnits(ioRatio, 18),
-					netTokenInAmount: '0',
-					netTokenOutAmount: '0'
+					ioRatio: ethers.utils.formatUnits(ioRatio, 18)
 				});
 			}
+			raindexData.sort((a, b) => a.blockNumber - b.blockNumber);
 			currentPage = 1;
 			totalPages = Math.ceil(raindexData.length / itemsPerPage);
 			updateVisibleTrades();

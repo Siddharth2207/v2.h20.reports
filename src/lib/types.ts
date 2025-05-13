@@ -27,8 +27,18 @@ export interface RaindexData {
 	ioRatio: string;
 	tokenInBalance: string;
 	tokenOutBalance: string;
+}
+
+export interface DsfData extends RaindexData {
 	netTokenInAmount: string;
 	netTokenOutAmount: string;
+	minTradeAmount: number;
+	maxTradeAmount: number;
+	nextTradeMultiplier: number;
+	costBasisMultiplier: number;
+	epochs: number;
+	amount0FastExit: number;
+	amount1FastExit: number;
 }
 export interface PoolData {
 	token0Address: string;
