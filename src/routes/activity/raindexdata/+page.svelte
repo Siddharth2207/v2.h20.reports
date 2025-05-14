@@ -339,7 +339,9 @@
 			'Order Hash',
 			'Order Type',
 			'Token In',
+			'Token In Address',
 			'Token Out',
+			'Token Out Address',
 			'Amount In',
 			'Amount Out',
 			'Amount In Usd',
@@ -356,7 +358,9 @@
 			item.orderHash,
 			item.orderType,
 			item.tokenIn.symbol,
+			item.tokenIn.address,
 			item.tokenOut.symbol,
+			item.tokenOut.address,
 			item.amountIn,
 			item.amountOut,
 			item.amountInUsd,
@@ -539,7 +543,17 @@
 							<TableHeadCell
 								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
 							>
+								Token In Address
+							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
 								Token Out
+							</TableHeadCell>
+							<TableHeadCell
+								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
+							>
+								Token Out Address
 							</TableHeadCell>
 							<TableHeadCell
 								class="whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-900 md:px-4 md:py-3 md:text-xs"
@@ -604,7 +618,17 @@
 									<TableBodyCell
 										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
 									>
+										{trade.tokenIn.address}
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
 										{trade.tokenOut.symbol}
+									</TableBodyCell>
+									<TableBodyCell
+										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
+									>
+										{trade.tokenOut.address}
 									</TableBodyCell>
 									<TableBodyCell
 										class="whitespace-nowrap px-2 py-2 text-[10px] text-gray-600 md:px-4 md:py-3 md:text-sm"
