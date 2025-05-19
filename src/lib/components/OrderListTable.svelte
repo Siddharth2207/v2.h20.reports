@@ -44,6 +44,7 @@
 	export let roiPercentFlag: boolean = true;
 	export let apyFlag: boolean = true;
 	export let apyPercentFlag: boolean = true;
+	export let durationInSeconds: number = 86400;
 
 	let sortOrder: 'asc' | 'desc' = 'asc';
 	let currentSort = 'totalTrades';
@@ -95,10 +96,12 @@
 					case 'trades24h': {
 						const comparisonTrades24h =
 							a.order.trades.filter(
-								(trade: SgTrade) => Date.now() / 1000 - parseFloat(trade.timestamp) <= 86400
+								(trade: SgTrade) =>
+									Date.now() / 1000 - parseFloat(trade.timestamp) <= durationInSeconds
 							).length -
 							b.order.trades.filter(
-								(trade: SgTrade) => Date.now() / 1000 - parseFloat(trade.timestamp) <= 86400
+								(trade: SgTrade) =>
+									Date.now() / 1000 - parseFloat(trade.timestamp) <= durationInSeconds
 							).length;
 						return sortOrder === 'asc' ? comparisonTrades24h : -comparisonTrades24h;
 					}
@@ -266,6 +269,16 @@
 		}
 		sortedData = applySorting($query.data);
 	}
+	function getDurationLabel(durationInSeconds: number) {
+		const durationInMinutes = durationInSeconds / 60;
+		const durationInHours = durationInMinutes / 60;
+		const durationInDays = durationInHours / 24;
+		return durationInDays > 1
+			? `${durationInDays}d`
+			: durationInHours > 1
+				? `${durationInHours}h`
+				: `${durationInMinutes}m`;
+	}
 </script>
 
 {#if $query.isLoading || $query.isFetchingNextPage}
@@ -370,10 +383,10 @@
 						on:change={() => sortData('trades24h')}
 					>
 						<option selected={currentSort === 'trades24h' && sortOrder === 'asc'}
-							>24h Trades ↑</option
+							>{getDurationLabel(durationInSeconds)} Trades ↑</option
 						>
 						<option selected={currentSort === 'trades24h' && sortOrder === 'desc'}
-							>24h Trades ↓</option
+							>{getDurationLabel(durationInSeconds)} Trades ↓</option
 						>
 					</select>
 				</TableHeadCell>
@@ -402,10 +415,10 @@
 						on:change={() => sortData('volume24h')}
 					>
 						<option selected={currentSort === 'volume24h' && sortOrder === 'asc'}
-							>24h Volume ↑</option
+							>{getDurationLabel(durationInSeconds)} Volume↑</option
 						>
 						<option selected={currentSort === 'volume24h' && sortOrder === 'desc'}
-							>24h Volume ↓</option
+							>{getDurationLabel(durationInSeconds)} Volume↓</option
 						>
 					</select>
 				</TableHeadCell>
@@ -665,7 +678,8 @@
 									<TableBodyCell class="px-4 py-3 text-center text-sm">
 										{order.order.trades.length > 0
 											? order.order.trades.filter(
-													(trade) => Date.now() / 1000 - parseFloat(trade.timestamp) <= 86400
+													(trade) =>
+														Date.now() / 1000 - parseFloat(trade.timestamp) <= durationInSeconds
 												).length
 											: 'N/A'}
 									</TableBodyCell>
@@ -726,7 +740,9 @@
 													${formatBalance(
 														order.order.trades
 															.filter(
-																(trade) => parseFloat(trade.timestamp) > Date.now() / 1000 - 86400
+																(trade) =>
+																	parseFloat(trade.timestamp) >
+																	Date.now() / 1000 - durationInSeconds
 															)
 															.reduce(
 																(acc, trade) =>
