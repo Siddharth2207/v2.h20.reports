@@ -12,6 +12,7 @@
 	const now = Math.floor(Date.now() / 1000);
 
 	let activeTab = '15min';
+	let durationInSeconds = 15 * 60;
 	const fetchAllNetworksOrderQuery = `query OrderTakesListQuery($skip: Int = 0, $first: Int = 1000, $timestampGt: Int!) {
   orders(
     orderBy: timestampAdded
@@ -86,7 +87,7 @@
 	$: ordersQuery = createInfiniteQuery({
 		queryKey: ['orders', activeTab],
 		queryFn: async () => {
-			const durationInSeconds =
+			durationInSeconds =
 				activeTab === '15min'
 					? 15 * 60
 					: activeTab === '1h'
@@ -104,7 +105,7 @@
 				order.order['totalVolume'] = calculateTradeVolume(order.order.trades);
 				order.order['totalVolume24h'] = calculateTradeVolume(
 					order.order.trades.filter(
-						(trade: SgTrade) => Date.now() / 1000 - parseFloat(trade.timestamp) <= 86400
+						(trade: SgTrade) => Date.now() / 1000 - parseFloat(trade.timestamp) <= durationInSeconds
 					)
 				);
 			}
@@ -218,5 +219,6 @@
 		roiPercentFlag={false}
 		apyFlag={false}
 		apyPercentFlag={false}
+		durationInSeconds={durationInSeconds}
 	/>
 </div>
