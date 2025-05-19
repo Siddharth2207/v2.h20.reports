@@ -219,6 +219,6 @@
 		roiPercentFlag={false}
 		apyFlag={false}
 		apyPercentFlag={false}
-		durationInSeconds={durationInSeconds}
+		{durationInSeconds}
 	/>
 </div>

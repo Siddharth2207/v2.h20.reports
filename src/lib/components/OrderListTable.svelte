@@ -96,10 +96,12 @@
 					case 'trades24h': {
 						const comparisonTrades24h =
 							a.order.trades.filter(
-								(trade: SgTrade) => Date.now() / 1000 - parseFloat(trade.timestamp) <= durationInSeconds
+								(trade: SgTrade) =>
+									Date.now() / 1000 - parseFloat(trade.timestamp) <= durationInSeconds
 							).length -
 							b.order.trades.filter(
-								(trade: SgTrade) => Date.now() / 1000 - parseFloat(trade.timestamp) <= durationInSeconds
+								(trade: SgTrade) =>
+									Date.now() / 1000 - parseFloat(trade.timestamp) <= durationInSeconds
 							).length;
 						return sortOrder === 'asc' ? comparisonTrades24h : -comparisonTrades24h;
 					}
@@ -271,7 +273,11 @@
 		const durationInMinutes = durationInSeconds / 60;
 		const durationInHours = durationInMinutes / 60;
 		const durationInDays = durationInHours / 24;
-		return durationInDays > 1 ? `${durationInDays}d` : durationInHours > 1 ? `${durationInHours}h` : `${durationInMinutes}m`;
+		return durationInDays > 1
+			? `${durationInDays}d`
+			: durationInHours > 1
+				? `${durationInHours}h`
+				: `${durationInMinutes}m`;
 	}
 </script>
 
@@ -672,7 +678,8 @@
 									<TableBodyCell class="px-4 py-3 text-center text-sm">
 										{order.order.trades.length > 0
 											? order.order.trades.filter(
-													(trade) => Date.now() / 1000 - parseFloat(trade.timestamp) <= durationInSeconds
+													(trade) =>
+														Date.now() / 1000 - parseFloat(trade.timestamp) <= durationInSeconds
 												).length
 											: 'N/A'}
 									</TableBodyCell>
@@ -733,7 +740,9 @@
 													${formatBalance(
 														order.order.trades
 															.filter(
-																(trade) => parseFloat(trade.timestamp) > Date.now() / 1000 - durationInSeconds
+																(trade) =>
+																	parseFloat(trade.timestamp) >
+																	Date.now() / 1000 - durationInSeconds
 															)
 															.reduce(
 																(acc, trade) =>
