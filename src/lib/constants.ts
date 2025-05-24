@@ -82,6 +82,15 @@ export const tokenConfig: Config = {
 		],
 		poolsPancakSwapV3: []
 	},
+	MNW_ETHEREUM: {
+        symbol: "MNW",
+        decimals: 18,
+        network: "ethereum",
+        address: "0xd3e4ba569045546d09cf021ecc5dfe42b1d7f6e4",
+        poolsV2: [],
+        poolsV3: [],
+        poolsPancakSwapV3: [],
+    },
 	WPOL: {
 		symbol: 'WPOL',
 		network: 'polygon',
@@ -214,6 +223,23 @@ export const tokenConfig: Config = {
 		poolsV3: ['0xb36d05a38eb28c424338c7549cc2947bcb3eda9e'],
 		poolsPancakSwapV3: []
 	},
+	TIBBIR: {
+        symbol: "TIBBIR",
+        network: "base",
+        decimals: 18,
+        address: "0xa4a2e2ca3fbfe21aed83471d28b6f65a233c6e00",
+        poolsV2: [
+            '0x0c3b466104545efa096b8f944c1e524e1d0d4888'
+        ],
+        poolsV3: [
+            '0x0f664affb82f074937d5cfcd61b97f3f32d5dc50',
+            '0xb08a32fb67f910fcfe5dc9561a6ea4a159bd9908'
+        ],
+        poolsPancakSwapV3: [
+            '0xa917744c47706f3cd6a893c2f85bff9d34620a9a',
+            '0x1b82bd3ffd1b45bf11a98eccc12abe14ca64ed48'
+        ],
+    },
 	WLTH: {
 		symbol: 'WLTH',
 		network: 'base',
