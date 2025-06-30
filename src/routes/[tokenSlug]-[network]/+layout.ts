@@ -13,6 +13,7 @@ export const load = async ({ fetch, params }) => {
 	const processedYamlText = yamlText.replace(/(0x[a-fA-F0-9]{40})/g, '"$1"');
 
 	// Parse the processed YAML
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const settingsJson = yaml.load(processedYamlText) as any;
 
 	// Transform networks from rpcs arrays to single rpc strings
@@ -30,6 +31,7 @@ export const load = async ({ fetch, params }) => {
 		Object.entries(settingsJson.networks).map((network: [string, unknown]) => {
 			const networkConfig: NetworkConfigSourceWithBlockTime =
 				network[1] as NetworkConfigSourceWithBlockTime;
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			networkConfig.blockTime = networkBlockTime[(networkConfig as any)['chain-id']];
 			return [network[0], networkConfig];
 		})
