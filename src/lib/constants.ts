@@ -471,7 +471,6 @@ export const networkConfig: NetworkConfigurations = {
 		chainId: 137,
 		rpc: [
 			'https://polygon-mainnet.g.alchemy.com/v2/y3BXawVv5uuP_g8BaDlKbKoTBGHo9zD9',
-			'https://1rpc.io/matic',
 			'https://polygon.drpc.org',
 			'https://polygon.meowrpc.com',
 			'wss://polygon-bor-rpc.publicnode.com',
@@ -510,7 +509,6 @@ export const networkConfig: NetworkConfigurations = {
 		rpc: [
 			'https://arbitrum.meowrpc.com',
 			'https://arbitrum.drpc.org',
-			'https://1rpc.io/arb',
 			'https://arb1.arbitrum.io/rpc',
 			'https://arb1.lava.build',
 			'https://arbitrum.gateway.tenderly.co',
@@ -543,7 +541,6 @@ export const networkConfig: NetworkConfigurations = {
 			'https://binance.llamarpc.com',
 			'https://bsc.drpc.org',
 			'https://bsc.meowrpc.com',
-			'https://1rpc.io/bnb',
 			'https://bsc-dataseed2.bnbchain.org'
 		],
 		blockTime: 3,
@@ -570,7 +567,6 @@ export const networkConfig: NetworkConfigurations = {
 	base: {
 		chainId: 8453,
 		rpc: [
-			'https://1rpc.io/base',
 			'https://base.llamarpc.com',
 			'https://0xrpc.io/base',
 			'https://base.drpc.org',
@@ -610,7 +606,6 @@ export const networkConfig: NetworkConfigurations = {
 		chainId: 1,
 		blockTime: 12,
 		rpc: [
-			'https://1rpc.io/eth',
 			'https://eth.llamarpc.com',
 			'https://rpc.mevblocker.io',
 			'https://eth.meowrpc.com',
