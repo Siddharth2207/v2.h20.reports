@@ -12,6 +12,7 @@ export const load = async ({ fetch }) => {
 	const processedYamlText = yamlText.replace(/(0x[a-fA-F0-9]{40})/g, '"$1"');
 
 	// Parse the processed YAML
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const settingsJson = yaml.load(processedYamlText) as any;
 
 	// Transform networks from rpcs arrays to single rpc strings
