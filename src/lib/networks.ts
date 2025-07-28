@@ -12,10 +12,10 @@ const networkToChainId: Record<string, number> = {
 };
 
 export function getNetworkNameById(id: number): string | undefined {
-  const chain = Object.values(chains).find(chain => chain.id === id);
-  return chain?.name;
+	const chain = Object.values(chains).find((chain) => chain.id === id);
+	return chain?.name;
 }
 
 export function getChainIdByName(name: string): number | undefined {
-  return networkToChainId[name];
+	return networkToChainId[name];
 }
