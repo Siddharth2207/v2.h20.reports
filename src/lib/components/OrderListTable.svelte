@@ -18,6 +18,7 @@
 		OrderListVault
 	} from '$lib/types';
 	import type { SgTrade } from '@rainlanguage/orderbook/js_api';
+	import { getChainIdByName } from '$lib/networks';
 
 	export let query: CreateInfiniteQueryResult<
 		InfiniteData<{ orders: OrderListOrderWithSubgraphName[] }, unknown>,
@@ -1060,7 +1061,7 @@
 
 								<TableBodyCell class="px-4 py-3 text-center text-sm">
 									<a
-										href={`https://v2.raindex.finance/orders/${order.subgraphName}-${order.order.orderHash}`}
+										href={`https://v2.raindex.finance/orders/${getChainIdByName(order.subgraphName)}-${order.order.orderbook.id}-${order.order.orderHash}`}
 										target="_blank"
 									>
 										<span class="text-blue-500 hover:text-blue-700"

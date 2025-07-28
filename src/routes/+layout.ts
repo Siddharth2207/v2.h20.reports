@@ -4,7 +4,7 @@ export const ssr = false;
 import { settings } from '$lib/stores/report';
 export const load = async ({ fetch }) => {
 	const response = await fetch(
-		'https://raw.githubusercontent.com/rainlanguage/rain.strategies/refs/heads/main/settings.yaml'
+		'https://raw.githubusercontent.com/rainlanguage/rain.strategies/9c76ed72ebd83744082bb1562082db6d9f80590d/settings.yaml'
 	);
 	const yamlText = await response.text();
 
