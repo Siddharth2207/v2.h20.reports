@@ -22,6 +22,8 @@
 	let chartContainer: HTMLElement;
 	let chartExpanded = true;
 	let selectedTimeFilter = '1w';
+
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	let filteredData: any[] = [];
 
 	const timeFilters = [
@@ -79,6 +81,7 @@
 		}
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	function calculateStats(transactions: any[]) {
 		if (!transactions || transactions.length === 0) {
 			// Reset stats if no data
@@ -135,6 +138,7 @@
 		calculateDowntimeAnalysis(transactions);
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	function calculateDowntimeAnalysis(transactions: any[]) {
 		// Sort transactions by timestamp
 		const sortedTxs = transactions
